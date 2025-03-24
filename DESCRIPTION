@@ -8,7 +8,7 @@ Authors@R: c(
 Description: USE performs uniform sampling of the environmental space.
 Depends: R (>= 3.6.0)
 Imports: sf, parallel, terra, ks, ggplot2, cowplot
-License: GPL(>=2)
+License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 URL: https://danddr.github.io/USE/, https://github.com/danddr/USE

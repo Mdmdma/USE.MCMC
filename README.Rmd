@@ -1,1 +1,9 @@
-## This is a development repository. It forks \href{https://github.com/danddr/USE/}{USE it} with the goal to extend it to enable MCMC sampling in higher dimensional spaces
+---
+title: "Development Repository"
+output: github_document
+---
+
+## This is a development repository
+
+It forks \href{https://github.com/danddr/USE/}{USE it} with the goal to extend it to enable MCMC sampling in higher dimensional spaces.
+
