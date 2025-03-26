@@ -1,4 +1,4 @@
-Package: USE
+Package: USE.MCMC
 Title: Uniform Sampling of the Environmental space
 Version: 0.1.6
 Authors@R: c(
