@@ -7,14 +7,21 @@ Authors@R: c(
     person("Manuele", "Bazzichetto", email = "manuele.bazzichetto@gmail.com", comment=c(ORCID= "0000-0002-9874-5064"),  role = "aut"))
 Description: USE performs uniform sampling of the environmental space.
 Depends: R (>= 3.6.0)
-Imports: sf, parallel, terra, ks, ggplot2, cowplot
+Imports: 
+    sf,
+    parallel,
+    terra,
+    ks,
+    ggplot2,
+    cowplot,
+    mvtnorm
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 URL: https://danddr.github.io/USE/, https://github.com/danddr/USE
 BugReports: https://github.com/danddr/USE/issues
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Suggests: 
     rmarkdown,
     knitr,
@@ -23,6 +30,7 @@ Suggests:
     viridis,
     virtualspecies,
     dplyr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    geodata
 VignetteBuilder: knitr
 Config/testthat/edition: 3

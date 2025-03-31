@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(USE)
+library(USE.MCMC)
 
-test_check("USE")
+test_check("USE.MCMC")

@@ -1,10 +1,10 @@
 #' Uniform sampling of the environmental space
 #'
-#'\code{uniformSampling} performs the uniform sampling of observations within the environmental space. Note that \code{uniformSampling} can be more generally used to sample observations (not necessarily associated with species occurrence data) within bi-dimensional spaces (e.g., vegetation plots). Being designed with species distribution models in mind, \code{uniformSampling} allows collectively sampling observations for both the training and testing dataset (optional). 
-#'In both cases, the user must provide a number of observations that will be sampled in each cell of the sampling grid (\code{n.tr}: points for the training dataset; \code{n.ts}: points for the testing dataset). Note that the optimal resolution of the sampling grid can be found using the \code{optimRes} function. 
+#'\code{uniformSampling} performs the uniform sampling of observations within the environmental space. Note that \code{uniformSampling} can be more generally used to sample observations (not necessarily associated with species occurrence data) within bi-dimensional spaces (e.g., vegetation plots). Being designed with species distribution models in mind, \code{uniformSampling} allows collectively sampling observations for both the training and testing dataset (optional).
+#'In both cases, the user must provide a number of observations that will be sampled in each cell of the sampling grid (\code{n.tr}: points for the training dataset; \code{n.ts}: points for the testing dataset). Note that the optimal resolution of the sampling grid can be found using the \code{optimRes} function.
 
 #' @param sdf an sf object having point geometry given by the PC-scores values
-#' @param grid.res (integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes()} function. 
+#' @param grid.res (integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes()} function.
 #' @param n.tr (integer) number of points for the training dataset to sample in each cell of the sampling grid
 #' @param n.tr (integer; optional) number of expected points given a certain prevalence threshold for the training dataset.
 #' @param n.ts (integer; optional) number of  points for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.
@@ -22,6 +22,7 @@ uniformSampling <- function(sdf, grid.res, n.tr = 5, n.prev = NULL, sub.ts = FAL
   if(!is.logical(plot_proc)) stop("plot_proc is not of class 'logical'; it has class 'numeric'.")
   grid <- sf::st_make_grid(sdf, n = grid.res)
   sdf$ID <- row.names(sdf)
+  print(sdf)
   res <- do.call(rbind, lapply(seq_len(length(grid)), function(i) {
     if(isTRUE(verbose)) message(paste("Processing tile", i, sep = " "))
     if(isTRUE(plot_proc)) {
@@ -43,32 +44,32 @@ uniformSampling <- function(sdf, grid.res, n.tr = 5, n.prev = NULL, sub.ts = FAL
   if(!is.null(n.prev)) {
     if(nrow(res) < n.prev) {
       n.cell <- length(grid)
-      dif.abs <- n.prev - nrow(res) 
+      dif.abs <- n.prev - nrow(res)
       if(dif.abs < length(grid)) {
-        Subs <- sdf[!(sdf$ID %in% res$ID), ] 
-        while(dif.abs > 0) { 
-          ID_cell <- sample(n.cell, size = 1) 
-          abs <- Subs[grid[ID_cell], ] 
-          if(nrow(abs) == 0) next 
-          abs <- abs[sample(nrow(abs), 1), ] 
+        Subs <- sdf[!(sdf$ID %in% res$ID), ]
+        while(dif.abs > 0) {
+          ID_cell <- sample(n.cell, size = 1)
+          abs <- Subs[grid[ID_cell], ]
+          if(nrow(abs) == 0) next
+          abs <- abs[sample(nrow(abs), 1), ]
           absID <- abs$ID #get the obs ID
-          dif.abs <- (dif.abs - 1) 
-          Subs <- Subs[!(Subs$ID %in% absID), ] 
-          res <- rbind(res, abs) 
-          if(nrow(Subs) == 0) { 
-            message("There are not points left in the environmental space to reach prevalence")
-            break 
-          }
-        }
-      } else {
-        Subs <- sdf[!(sdf$ID %in% res$ID), ] 
-        ratio <- floor(n.prev/length(grid)) 
-        while(dif.abs > 0) { 
-          if(ratio == 0 ) { 
+          dif.abs <- (dif.abs - 1)
+          Subs <- Subs[!(Subs$ID %in% absID), ]
+          res <- rbind(res, abs)
+          if(nrow(Subs) == 0) {
             message("There are not points left in the environmental space to reach prevalence")
             break
           }
-          new_set <- do.call(rbind, lapply(seq_len(n.cell), function(.) { 
+        }
+      } else {
+        Subs <- sdf[!(sdf$ID %in% res$ID), ]
+        ratio <- floor(n.prev/length(grid))
+        while(dif.abs > 0) {
+          if(ratio == 0 ) {
+            message("There are not points left in the environmental space to reach prevalence")
+            break
+          }
+          new_set <- do.call(rbind, lapply(seq_len(n.cell), function(.) {
             subs <- Subs[grid[.], ]
             if(nrow(subs) == 0) {
               return(subs)
