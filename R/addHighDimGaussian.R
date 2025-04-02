@@ -2,16 +2,19 @@
 #'
 #' Adds high dimensional Gaussian noise to specific parameters of a point given as a dataframe.
 #'
-#' @param currentPoint Current point as a dataframe from which a new point should be generated
-#' @param dim vector with the names of the columns on which we want to add
+#'
+#' @param dim integer that specifies the number of dimensions that should be altered
 #' @param mean_vec vector of the means of the Gaussian to be added
 #' @param cov_mat covariance matrix of the Gaussian to be added
 #'
-#' @returns dataframe with Gaussian noise added to the specified columns
-#' @keywords internal
+#' @returns a function that takes a point given as a dataframe as input and returns it with gaussian noise added to the specified dimensions
+#' @export
 #' @importFrom dplyr %>%
 #'
-addHighDimGaussian <- function(currentPoint, dim = "", mean_vec = matrix(0, ncol = length(dim)), cov_mat = 2.3 * diag(length(dim))){
-  randomVector <- mvtnorm::rmvnorm(1, mean = mean_vec, sigma = cov_mat) %>% c(0)
-  currentPoint <- currentPoint %>% dplyr::mutate(dplyr::across(dplyr::all_of(dim), ~ . + randomVector[match(cur_column(), dim)]))
+addHighDimGaussian <- function(dim = 0, mean_vec = matrix(0, ncol = dim), cov_mat = diag(dim)){
+  addedHighDimGaussian <- function(currentPoint, dim = ""){
+    randomVector <- mvtnorm::rmvnorm(1, mean = mean_vec, sigma = cov_mat) %>% c(0)
+    currentPoint <- currentPoint %>% dplyr::mutate(dplyr::across(dplyr::all_of(dim), ~ . + randomVector[match(dplyr::cur_column(), dim)]))
+  }
+
 }

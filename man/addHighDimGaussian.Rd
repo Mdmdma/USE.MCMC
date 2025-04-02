@@ -5,25 +5,21 @@
 \title{addHighDimGaussian}
 \usage{
 addHighDimGaussian(
-  currentPoint,
-  dim = "",
-  mean_vec = matrix(0, ncol = length(dim)),
-  cov_mat = 2.3 * diag(length(dim))
+  dim = 0,
+  mean_vec = matrix(0, ncol = dim),
+  cov_mat = diag(dim)
 )
 }
 \arguments{
-\item{currentPoint}{Current point as a dataframe from which a new point should be generated}
-
-\item{dim}{vector with the names of the columns on which we want to add}
+\item{dim}{integer that specifies the number of dimensions that should be altered}
 
 \item{mean_vec}{vector of the means of the Gaussian to be added}
 
 \item{cov_mat}{covariance matrix of the Gaussian to be added}
 }
 \value{
-dataframe with Gaussian noise added to the specified columns
+a function that takes a point given as a dataframe as input and returns it with gaussian noise added to the specified dimensions
 }
 \description{
 Adds high dimensional Gaussian noise to specific parameters of a point given as a dataframe.
 }
-\keyword{internal}

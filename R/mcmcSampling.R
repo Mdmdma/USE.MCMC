@@ -9,21 +9,21 @@
 #' @returns A sf dataframe containing the sampled points
 #' @export
 #'
-mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian , n.sample.points = 0){
+mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian(dim = lengt(dimensions)), n.sample.points = 0){
+  pb <- txtProgressBar(min = 0, max = n.sample.points, style = 3)
   starting.index <- stats::runif(1,1,nrow(dataset))
   current.point <- dataset[starting.index,]
   dataset <- dataset[-starting.index,]
   sampled.points <- dataset[0, ]
   while (nrow(sampled.points) < n.sample.points) {
-    print(paste("sampling point number", nrow(sampled.points)))
-    proposed.point <- addHighDimGaussian(currentPoint = current.point, dim = dimensions)
+
+    proposed.point <- proposalFunction(current.point, dim = dimensions)
     if (acceptNextPoint(current.point, proposed.point, densityFunction)){
-      distances <- apply(dataset, 1, function(row) euclidianMetric(row, current.point, dimensions))
+      distances <- apply(dataset, 1, function(row) euclidianMetric(row, proposed.point, dimensions))
       min.dist.index <- which.min(distances)
       current.point <- dataset[min.dist.index,]
-      dataset <- dataset[-min.dist.index,]
       sampled.points <- rbind(sampled.points, current.point)
-      print(nrow(dataset))
+      setTxtProgressBar(pb, nrow(sampled.points))
     }
   }
   return(sampled.points)
