@@ -1,51 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>~ https://danddr.github.io/USE/404.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/articles/USE_vignette.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/authors.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/index.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/news/index.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/SpatialProba.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/Worldclim_tmp.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/optimRes.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/paSampling.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/pca_predict.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/princompCustom.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/rastPCA.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/thresh.inspect.html</loc>
-  </url>
-  <url>
-    <loc>~ https://danddr.github.io/USE/reference/uniformSampling.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>~ https://danddr.github.io/USE/404.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/LICENSE.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/articles/USE_vignette.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/articles/index.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/authors.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/index.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/news/index.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/SpatialProba.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/Worldclim_tmp.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/acceptNextPoint.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/addHighDimGaussian.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/alwaysOne.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/euclidianMetric.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/highDimGaussian.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/index.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/mcmcSampling.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/optimRes.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/paSampling.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/pca_predict.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/plot_points_with_lines.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/princompCustom.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/rastPCA.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/thresh.inspect.html</loc></url>
+<url><loc>~ https://danddr.github.io/USE/reference/uniformSampling.html</loc></url>
 </urlset>
+
