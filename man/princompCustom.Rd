@@ -3,7 +3,9 @@
 \name{princompCustom}
 \alias{princompCustom}
 \title{Custom version of princomp
-The warning() at L53 substitutes the stop() in the original version of "princomp".}
+The warning() at L53 substitutes the stop() in the original version of "princomp".
+param formula a formula with no response variable, referring only to numeric variables.
+param data an optional data frame (or similar: see model.frame) containing the variables in the formula formula. By default the variables are taken from environment(formula).}
 \usage{
 princompCustom(
   x,
@@ -24,22 +26,17 @@ princompCustom(
 
 \item{covmat}{a covariance matrix, or a covariance list as returned by cov.wt (and cov.mve or cov.mcd from package MASS). If supplied, this is used rather than the covariance matrix of x.}
 
-\item{subset}{an optional vector used to select rows (observations) of the data matrix x.}
+\item{subset}{an optional vector used to select rows (observations) of the data matrix x.
+param na.action a function which indicates what should happen when the data contain NAs. The default is set by the na.action setting of options, and is na.fail if that is unset. The ‘factory-fresh’ default is na.omit.}
 
-\item{fix_sign}{Should the signs of the loadings and scores be chosen so that the first element of each loading is non-negative?}
-
-\item{formula}{a formula with no response variable, referring only to numeric variables.}
-
-\item{data}{an optional data frame (or similar: see model.frame) containing the variables in the formula formula. By default the variables are taken from environment(formula).}
-
-\item{na.action}{a function which indicates what should happen when the data contain NAs. The default is set by the na.action setting of options, and is na.fail if that is unset. The ‘factory-fresh’ default is na.omit.}
-
-\item{object}{Object of class inheriting from "princomp".}
-
-\item{newdata}{An optional data frame or matrix in which to look for variables with which to predict. If omitted, the scores are used. If the original fit used a formula or a data frame or a matrix with column names, newdata must contain columns with the same names. Otherwise it must contain the same number of columns, to be used in the same order.}
+\item{fix_sign}{Should the signs of the loadings and scores be chosen so that the first element of each loading is non-negative?
+param object Object of class inheriting from "princomp".
+param newdata An optional data frame or matrix in which to look for variables with which to predict. If omitted, the scores are used. If the original fit used a formula or a data frame or a matrix with column names, newdata must contain columns with the same names. Otherwise it must contain the same number of columns, to be used in the same order.}
 }
 \description{
 Custom version of princomp
 The warning() at L53 substitutes the stop() in the original version of "princomp".
+param formula a formula with no response variable, referring only to numeric variables.
+param data an optional data frame (or similar: see model.frame) containing the variables in the formula formula. By default the variables are taken from environment(formula).
 }
 \keyword{internal}
