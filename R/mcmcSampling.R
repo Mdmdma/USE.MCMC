@@ -1,15 +1,19 @@
-mcmcSampling <- function(dataset = NULL, sampling.extend = list(c(0,1)), desityFunction = alwaysOne, proposalFunction = highDimGaussian(dim=length(sampling.extend)) , n.sample.points = 0, dimensions= list("") ){
-  # Check parameters to ensure correct input
-  if (!is.list(sampling.extend)) {
-    stop("'sampling.extend' must be a list.")
+mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian , n.sample.points = 0){
+  starting.index <- stats::runif(1,1,nrow(dataset))
+  current.point <- dataset[starting.index,]
+  dataset <- dataset[-starting.index,]
+  sampled.points <- dataset[0, ]
+  while (nrow(sampled.points) < n.sample.points) {
+    print(paste("sampling point number", nrow(sampled.points)))
+    proposed.point <- addHighDimGaussian(currentPoint = current.point, dim = dimensions)
+    if (acceptNextPoint(current.point, proposed.point, densityFunction)){
+      distances <- apply(dataset, 1, function(row) euclidianMetric(row, current.point, dimensions))
+      min.dist.index <- which.min(distances)
+      current.point <- dataset[min.dist.index,]
+      dataset <- dataset[-min.dist.index,]
+      sampled.points <- rbind(sampled.points, current.point)
+      print(nrow(dataset))
+    }
   }
-  if (!is.list(dimensions)) {
-    stop("'dimensions' must be a list.")
-  }
-  if (length(sampling.extend) != length(dimensions)) {
-    stop("'sampling.extend' and 'dimensions' must be lists of the same size.")
-  }
-
-
-
+  return(sampled.points)
 }

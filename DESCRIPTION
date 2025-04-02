@@ -14,8 +14,10 @@ Imports:
     ks,
     ggplot2,
     cowplot,
-    mvtnorm
-License: GPL (>= 2)
+    mvtnorm,
+    dplyr,
+    grDevices
+License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
 URL: https://danddr.github.io/USE/, https://github.com/danddr/USE
@@ -29,7 +31,6 @@ Suggests:
     tidyterra,
     viridis,
     virtualspecies,
-    dplyr,
     testthat (>= 3.0.0),
     geodata
 VignetteBuilder: knitr

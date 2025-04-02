@@ -6,3 +6,5 @@
 ^pkgdown$
 ^USE\.Rproj$
 ^LICENSE\.md$
+^doc$
+^Meta$

@@ -19,10 +19,4 @@ a function that generates samples from a higher dimensional gaussian
 \description{
 multivariate gaussian random number generator
 }
-\examples{
-rng <- highDimGaussian()
-rng()
-rng()
-rng()
-}
 \keyword{internal}
