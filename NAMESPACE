@@ -2,6 +2,7 @@
 
 export(SpatialProba)
 export(alwaysOne)
+export(mcmcSampling)
 export(optimRes)
 export(paSampling)
 export(princompCustom)
