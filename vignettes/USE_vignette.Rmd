@@ -32,7 +32,7 @@ library(ggplot2)
 
 
 ```{r,  eval=TRUE, message=FALSE, echo=TRUE, warning=FALSE, results = FALSE}
-dataDir <- "/home/mathis/Desktop/semesterarbeit10/data/demo"
+dataDir <- getwd()
 Worldclim <- geodata::worldclim_global(var = 'bio', res = 2.5, path = dataDir)
 names(Worldclim) <- paste0("bio", 1:length(names(Worldclim)))
 ```
