@@ -5,9 +5,7 @@
 #' @param ... Any input is possible, as it does not have any effect
 #'
 #' @returns 1, always
-#' @export
-#'
-#' @examples
+#' @keywords internal
 #' alwaysOne(stop("even this input is fine"))
 alwaysOne <- function(...){
   1

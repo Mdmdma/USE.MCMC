@@ -12,19 +12,25 @@
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian(dim = lengt(dimensions)), n.sample.points = 0){
   pb <- txtProgressBar(min = 0, max = n.sample.points, style = 3)
   starting.index <- stats::runif(1,1,nrow(dataset))
-  current.point <- dataset[starting.index,]
+  current.point <- dataset["25918",]
   dataset <- dataset[-starting.index,]
   sampled.points <- dataset[0, ]
+  points.rejected <- 0
   while (nrow(sampled.points) < n.sample.points) {
 
     proposed.point <- proposalFunction(current.point, dim = dimensions)
     if (acceptNextPoint(current.point, proposed.point, densityFunction)){
-      distances <- apply(dataset, 1, function(row) euclidianMetric(row, proposed.point, dimensions))
-      min.dist.index <- which.min(distances)
-      current.point <- dataset[min.dist.index,]
-      sampled.points <- rbind(sampled.points, current.point)
+      #distances <- apply(dataset, 1, function(row) euclidianMetric(row, proposed.point, dimensions))
+      #min.dist.index <- which.min(distances)
+      #current.point <- dataset[min.dist.index,]
+      #sampled.points <- rbind(sampled.points, current.point)
+      current.point <- proposed.point
       setTxtProgressBar(pb, nrow(sampled.points))
+      sampled.points <- rbind(sampled.points, proposed.point)
     }
+    else points.rejected <- points.rejected + 1
+    cat("\rPoints rejected:", points.rejected, "Points accepted:", nrow(sampled.points))
   }
+  cat("Points rejected: ", points.rejected)
   return(sampled.points)
 }

@@ -16,9 +16,11 @@ plot_points_with_lines <- function(df, cols, limits = NULL, title = "Connected D
   # Extract x and y coordinates
   x <- df[[cols[1]]]
   y <- df[[cols[2]]]
+  v <- (df[[cols[3]]]-min(df[[cols[3]]]))/(min(df[[cols[3]]])+max(df[[cols[3]]]))
+  print(v)
 
   # Generate colors for each point
-  point_colors <- grDevices::hsv(seq_along(x) / length(x), 1, 1, alpha = 0.5)
+  point_colors <- grDevices::hsv(seq_along(x) / length(x), 1, v, alpha = 0.2)
 
   # Determine axis limits
   if (!is.null(limits) && length(limits) == 2) {
@@ -42,6 +44,5 @@ plot_points_with_lines <- function(df, cols, limits = NULL, title = "Connected D
   points(x, y, pch = 16, col = point_colors)
 
   # Add labels
-  graphics::text(x, y, labels = seq_along(x), pos = 3, cex = 0.8)
+  #graphics::text(x, y, labels = seq_along(x), pos = 3, cex = 0.8)
 }
-

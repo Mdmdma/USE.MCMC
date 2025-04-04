@@ -2,7 +2,6 @@
 
 export(SpatialProba)
 export(addHighDimGaussian)
-export(alwaysOne)
 export(mcmcSampling)
 export(optimRes)
 export(paSampling)
