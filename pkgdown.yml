@@ -3,7 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   USE_vignette: USE_vignette.html
-last_built: 2025-04-04T09:22Z
+last_built: 2025-04-04T09:56Z
 urls:
   reference: https://mdmdma.github.io/USE.MCMC/reference
   article: https://mdmdma.github.io/USE.MCMC/articles
