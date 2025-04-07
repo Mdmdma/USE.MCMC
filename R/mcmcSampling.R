@@ -9,10 +9,10 @@
 #' @returns A sf dataframe containing the sampled points
 #' @export
 #'
-mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian(dim = lengt(dimensions)), n.sample.points = 0){
-  pb <- txtProgressBar(min = 0, max = n.sample.points, style = 3)
+mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0){
+  pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   starting.index <- stats::runif(1,1,nrow(dataset))
-  current.point <- dataset["25918",]
+  current.point <- dataset[starting.index,]
   dataset <- dataset[-starting.index,]
   sampled.points <- dataset[0, ]
   points.rejected <- 0
@@ -25,7 +25,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       #current.point <- dataset[min.dist.index,]
       #sampled.points <- rbind(sampled.points, current.point)
       current.point <- proposed.point
-      setTxtProgressBar(pb, nrow(sampled.points))
+      utils::setTxtProgressBar(pb, nrow(sampled.points))
       sampled.points <- rbind(sampled.points, proposed.point)
     }
     else points.rejected <- points.rejected + 1

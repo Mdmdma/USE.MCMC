@@ -8,7 +8,7 @@ mcmcSampling(
   dataset = NULL,
   dimensions = list(""),
   densityFunction = alwaysOne,
-  proposalFunction = addHighDimGaussian(dim = lengt(dimensions)),
+  proposalFunction = addHighDimGaussian(dim = length(dimensions)),
   n.sample.points = 0
 )
 }

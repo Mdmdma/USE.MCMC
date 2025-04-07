@@ -18,11 +18,12 @@ Imports:
     cowplot,
     mvtnorm,
     dplyr,
-    grDevices
+    grDevices,
+    mclust
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
-URL:  https://mdmdma.github.io/USE.MCMC/
+URL: https://mdmdma.github.io/USE.MCMC/
 BugReports: https://github.com/mdmdma/USE.MCMC/issues
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

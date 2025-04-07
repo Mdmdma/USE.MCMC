@@ -13,11 +13,11 @@ names(Worldclim) <- paste0("bio", 1:length(names(Worldclim)))
 # Load environmental data and crop to European extent
 # In the actual script you would use:
 # Worldclim <- geodata::worldclim_global(var='bio', res=10, path=getwd())
-# envData <- terra::crop(Worldclim, terra::ext(-12, 25, 36, 60))
+envData <- terra::crop(Worldclim, terra::ext(-12, 25, 36, 60))
 
 # In the vignette, they're using pre-loaded data:
-envData <- USE.MCMC::Worldclim_tmp
-envData <- terra::rast(envData, type="xyz")
+# envData <- USE.MCMC::Worldclim_tmp
+# envData <- terra::rast(envData, type="xy")
 
 # Select random variables
 # myRandNum <- sample(1:19, size=5, replace = FALSE)
