@@ -16,7 +16,7 @@ plot_points_with_lines <- function(df, cols, limits = NULL, title = "Connected D
   # Extract x and y coordinates
   x <- df[[cols[1]]]
   y <- df[[cols[2]]]
-  v <- (df[[cols[3]]]-min(df[[cols[3]]]))/(max(df[[cols[3]]])+min(df[[cols[3]]]))
+  v <- 1-(df[[cols[3]]]-min(df[[cols[3]]]))/(max(df[[cols[3]]])+min(df[[cols[3]]]))
 
   # Generate colors for each point
   point_colors <- grDevices::hsv(seq_along(x) / length(x), 1, v, alpha = 0.2)

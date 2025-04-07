@@ -46,7 +46,7 @@ environmental.densities <- mclust::predict.densityMclust(environmental.data.mode
 threshold <- stats::quantile(environmental.densities, 0.01)
 
 # sample species model
-virtual.precence.points <- getVirtualSpeciesPresencePoints(environemtalData = envData, n.samples = 100)
+virtual.precence.points <- getVirtualSpeciesPresencePoints(environemtalData = envData, n.samples = 1000)
 virtual.precence.points.pc <- terra::extract(rpc$PCs, virtual.precence.points, bind = TRUE) %>%
   sf::st_as_sf()
 virtual.precence.points.pc <- sf::st_drop_geometry(virtual.precence.points.pc[dimensions])
@@ -77,7 +77,7 @@ plot(envWithPc$PC1, envWithPc$PC2, main = paste("Covariance is diagonal ", covar
 plot(virtual.precence.points.pc$PC1, virtual.precence.points.pc$PC2, xlim = c(min(envWithPc$PC1), max(envWithPc$PC1)),
      ylim = c(min(envWithPc$PC2), max(envWithPc$PC2)) )
 par(mfrow = c(2, length(dimensions)))
-invisible(lapply(dimensions, function(col) hist(envWithPc[[col]], main=paste("Histogram of envWithPc", col))))
-invisible(lapply(dimensions, function(col) hist(sampled.points[[col]], main=paste("Histogram of envWithPc", col))))
+invisible(lapply(dimensions, function(col) hist(envWithPc[[col]], main=paste("Histogram of environment", col))))
+invisible(lapply(dimensions, function(col) hist(sampled.points[[col]], main=paste("Histogram of sampled points", col))))
 
 
