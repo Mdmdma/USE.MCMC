@@ -20,10 +20,6 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
 
     proposed.point <- proposalFunction(current.point, dim = dimensions)
     if (acceptNextPoint(current.point, proposed.point, densityFunction)){
-      #distances <- apply(dataset, 1, function(row) euclidianMetric(row, proposed.point, dimensions))
-      #min.dist.index <- which.min(distances)
-      #current.point <- dataset[min.dist.index,]
-      #sampled.points <- rbind(sampled.points, current.point)
       current.point <- proposed.point
       utils::setTxtProgressBar(pb, nrow(sampled.points))
       sampled.points <- rbind(sampled.points, proposed.point)
@@ -32,5 +28,6 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
     cat("\rPoints rejected:", points.rejected, "Points accepted:", nrow(sampled.points))
   }
   cat("Points rejected: ", points.rejected)
+  #sampled.points <- apply(sampled.points, 1, function(point) mapBackOnRealPoints(dataset, point, dimensions))
   return(sampled.points)
 }
