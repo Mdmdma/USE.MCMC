@@ -6,6 +6,5 @@ mclustDensityFunction <- function(environmentalModel = NULL, presenceModel = NUL
     if (density < threshold ) return(0)
     return(1 - mclust::predict.densityMclust(presenceModel, point)  * 5)
     }
-
   return(densityAtPointEstimator)
 }
