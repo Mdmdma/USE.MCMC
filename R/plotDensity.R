@@ -1,4 +1,4 @@
-plotDensity2dpro <- function(dataset, xlim = c(0,1), ylim = c(0,1),
+plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
                           densityFunction = NULL, resolution = 10,
                           colorPalette = "viridis") {
   # Create a grid matrix instead of nested loops
@@ -60,7 +60,8 @@ plotDensity2dpro <- function(dataset, xlim = c(0,1), ylim = c(0,1),
           add = TRUE, col = "black", lwd = 0.5, alpha = 0.3)
 
   # Return the grid data invisibly (useful for further analysis)
-  #points(dataset$PC1, dataset$PC2, pch = 20)
+  if (nrow(dataset)>1) points(dataset$PC1, dataset$PC2, pch = 20)
+  if (!is.null(species)) points(species$PC1, species$PC2, pch = 20, col = "red")
   invisible(list(grid = grid, matrix = density_matrix))
 }
 

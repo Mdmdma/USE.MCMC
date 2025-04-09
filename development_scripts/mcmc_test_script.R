@@ -97,11 +97,11 @@ invisible(lapply(dimensions, function(col) hist(envWithPcSf[[col]], main=paste("
 invisible(lapply(dimensions, function(col) hist(virtual.precence.points.pc[[col]], main=paste("Histogram of virtual presence", col))))
 invisible(lapply(dimensions, function(col) hist(real.sampled.points[[col]], main=paste("Histogram of sampled points", col))))
 par(mfrow = c(3, length(dimensions)))
-invisible(lapply(dimensions, function(col) plot(density(envWithPcSf[[col]]), main=paste("Histogram of environment", col))))
-invisible(lapply(dimensions, function(col) plot(density(virtual.precence.points.pc[[col]]), main=paste("Histogram of virtual presence", col))))
-invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Histogram of sampled points", col))))
+invisible(lapply(dimensions, function(col) plot(density(envWithPcSf[[col]]), main=paste("Density of environment", col))))
+invisible(lapply(dimensions, function(col) plot(density(virtual.precence.points.pc[[col]]), main=paste("Density of virtual presence", col))))
+invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Density of sampled points", col))))
 par(mfrow = c(1, 1))
 
-plotDensity2dpro(dataset =  real.sampled.points, xlim = c(min(envWithPcSf$PC1), max(envWithPcSf$PC1)), ylim =c(min(envWithPcSf$PC2), max(envWithPcSf$PC2)),
+plotDensity2dpro(dataset =  real.sampled.points, species = virtual.precence.points.pc, xlim = c(min(envWithPcSf$PC1), max(envWithPcSf$PC1)), ylim =c(min(envWithPcSf$PC2), max(envWithPcSf$PC2)),
                  densityFunction = densityFunction, resolution = 100)
 
