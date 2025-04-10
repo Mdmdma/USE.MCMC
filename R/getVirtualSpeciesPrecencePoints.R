@@ -1,3 +1,11 @@
+#' Function to streamline the generation and sampling of a virtual species
+#'
+#' @param env.data Raster containing environmental parameters
+#' @param n.samples Number of samples
+#'
+#' @returns List containing the sampled points as a dataframe as well as other nice things that can later be used to plot
+#' @export
+
 getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0){
   # Create virtual species
   random.sp <- virtualspecies::generateRandomSp(env.data,

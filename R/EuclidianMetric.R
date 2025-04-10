@@ -2,8 +2,8 @@
 #'
 #' \code{euclidianMetric} calculates the euclidean metric of specified columns of two points given as dataframes
 #'
-#' @param pointA First point
-#' @param pointB Second point
+#' @param point.a First point
+#' @param point.b Second point
 #' @param dim vector containing the names of the columns that should be included in the computation
 #'
 #' @returns euclidean metric of the two points

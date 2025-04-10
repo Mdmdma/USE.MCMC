@@ -1,3 +1,17 @@
+#' Function to plot the density of a density
+#'
+#'
+#' @param dataset dataframe containing points that can be added to the desity field. The parameter is needed as the code
+#' uses it as a template for points. If its size is greater than one the points are added to the plot
+#'
+#' @param species dataframe containing the species points to be added to the plot
+#' @param xlim Limits of the plot
+#' @param ylim Limits of the plot
+#' @param densityFunction Density to be plottet. The function should take a point as its argument and give back a float
+#' @param resolution number of gridcells in each direction
+#'
+#' @returns list containing the sampling grid as well as the density matrix
+#' @export
 plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
                           densityFunction = NULL, resolution = 10) {
   # Create a grid matrix instead of nested loops

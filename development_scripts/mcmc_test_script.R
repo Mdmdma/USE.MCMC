@@ -79,6 +79,7 @@ clusterExport(cl, c("mapBackOnRealPoints", "env.with.pc.fs", "dimensions", "max.
 
 # map back onto real points
 real.sampled.points.list <- parallel::parApply(cl, sampled.points, 1, function(point) mapBackOnRealPoints(env.with.pc.fs, point, dimensions, threshold = max.distance))
+stopCluster(cl)
 cat(sum(is.na(real.sampled.points.list)) ,"points have no real counterpart in the environment space, given a maximal distance of ", max.distance, "!")
 real.sampled.points.list.clean <- real.sampled.points.list[!is.na(real.sampled.points.list)]
 real.sampled.points <- do.call(rbind, real.sampled.points.list.clean)

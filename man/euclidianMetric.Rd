@@ -7,11 +7,11 @@
 euclidianMetric(point.a = NULL, point.b = NULL, dim = "")
 }
 \arguments{
+\item{point.a}{First point}
+
+\item{point.b}{Second point}
+
 \item{dim}{vector containing the names of the columns that should be included in the computation}
-
-\item{pointA}{First point}
-
-\item{pointB}{Second point}
 }
 \value{
 euclidean metric of the two points

@@ -13,12 +13,12 @@ addHighDimGaussian(
 \arguments{
 \item{dim}{integer that specifies the number of dimensions that should be altered}
 
-\item{mean_vec}{vector of the means of the Gaussian to be added}
+\item{mean.vec}{vector of the means of the Gaussian to be added}
 
-\item{cov_mat}{covariance matrix of the Gaussian to be added}
+\item{cov.mat}{covariance matrix of the Gaussian to be added}
 }
 \value{
-a function that takes a point given as a dataframe as input and returns it with Gaussian noise added to the specified dimensions
+function that takes a point given as a dataframe as input and returns it with Gaussian noise added to the specified dimensions
 }
 \description{
 Adds high dimensional Gaussian noise to specific parameters of a point given as a dataframe.
