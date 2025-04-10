@@ -18,7 +18,7 @@ addHighDimGaussian(
 \item{cov_mat}{covariance matrix of the Gaussian to be added}
 }
 \value{
-a function that takes a point given as a dataframe as input and returns it with gaussian noise added to the specified dimensions
+a function that takes a point given as a dataframe as input and returns it with Gaussian noise added to the specified dimensions
 }
 \description{
 Adds high dimensional Gaussian noise to specific parameters of a point given as a dataframe.

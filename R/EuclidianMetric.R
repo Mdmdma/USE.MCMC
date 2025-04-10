@@ -8,9 +8,9 @@
 #'
 #' @returns euclidean metric of the two points
 #' @keywords internal
-#'
+#' @importFrom dplyr %>%
 euclidianMetric <- function(pointA=NULL, pointB =NULL, dim = ""){
-  pointA <- sf::st_drop_geometry(pointA)
-  pointB <- sf::st_drop_geometry(pointB)
-  m <- Map(`-`, pointA[dim], pointB[dim]) %>% unlist() %>% abs() %>% sum()
+  point.A <- sf::st_drop_geometry(pointA)
+  point.B <- sf::st_drop_geometry(pointB)
+  m <- Map(`-`, point.A[dim], point.B[dim]) %>% unlist() %>% abs() %>% sum()
 }

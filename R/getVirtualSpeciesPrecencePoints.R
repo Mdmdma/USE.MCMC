@@ -1,6 +1,6 @@
-getVirtualSpeciesPresencePoints <- function(environemtalData = NULL, n.samples = 0){
+getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0){
   # Create virtual species
-  random.sp <- virtualspecies::generateRandomSp(environemtalData,
+  random.sp <- virtualspecies::generateRandomSp(env.data,
                                                 convert.to.PA = FALSE,
                                                 species.type = "additive",
                                                 realistic.sp = TRUE,
@@ -21,8 +21,8 @@ getVirtualSpeciesPresencePoints <- function(environemtalData = NULL, n.samples =
                                                        plot = TRUE)
 
   # Generate a presence-only data set
-  myPres <- presence.points$sample.points[c("x", "y")]
-  myPres <- sf::st_as_sf(myPres, coords=c("x", "y"), crs=4326)["geometry"]
-  myPres <- terra::vect(myPres)
+  presence.dataset <- presence.points$sample.points[c("x", "y")]
+  presence.dataset <- sf::st_as_sf(presence.dataset, coords=c("x", "y"), crs=4326)["geometry"]
+  presence.dataset <- terra::vect(presence.dataset)
 
 }

@@ -1,6 +1,5 @@
 plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
-                          densityFunction = NULL, resolution = 10,
-                          colorPalette = "viridis") {
+                          densityFunction = NULL, resolution = 10) {
   # Create a grid matrix instead of nested loops
   x_seq <- seq(xlim[1], xlim[2], length.out = resolution)
   y_seq <- seq(ylim[1], ylim[2], length.out = resolution)
@@ -33,35 +32,23 @@ plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,
 
   # Plot using image() which is much faster and smoother than points
   # Choose color palette
-  if (colorPalette == "viridis") {
-    if (!requireNamespace("viridisLite", quietly = TRUE)) {
-      colors <- heat.colors(100)
-    } else {
-      colors <- viridisLite::viridis(100)
-    }
-  } else if (colorPalette == "heat") {
-    colors <- heat.colors(100)
-  } else if (colorPalette == "topo") {
-    colors <- topo.colors(100)
-  } else {
-    # Default custom gradient
-    colors <- colorRampPalette(c("white", "yellow", "orange", "red"))(100)
-  }
+
+  colors <- grDevices::gray.colors(100)
 
   # Plot with image
-  image(x = x_seq, y = y_seq, z = density_matrix,
+  graphics::image(x = x_seq, y = y_seq, z = density_matrix,
         col = colors,
         xlab = "PC1", ylab = "PC2",
         main = "Density Plot",
         xlim = xlim, ylim = ylim)
 
   # Add contour lines for better visualization
-  contour(x = x_seq, y = y_seq, z = density_matrix,
+  graphics::contour(x = x_seq, y = y_seq, z = density_matrix,
           add = TRUE, col = "black", lwd = 0.5, alpha = 0.3)
 
   # Return the grid data invisibly (useful for further analysis)
-  if (nrow(dataset)>1) points(dataset$PC1, dataset$PC2, pch = 20)
-  if (!is.null(species)) points(species$PC1, species$PC2, pch = 20, col = "red")
+  if (nrow(dataset)>1) graphics::points(dataset$PC1, dataset$PC2, pch = 20)
+  if (!is.null(species)) graphics::points(species$PC1, species$PC2, pch = 20, col = "red")
   invisible(list(grid = grid, matrix = density_matrix))
 }
 

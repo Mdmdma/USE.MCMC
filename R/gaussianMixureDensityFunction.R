@@ -1,7 +1,8 @@
-gaussianMixtureDensityFunction <- function(environmentalData, dim = "", threshold = 0.01){
-  environmentalData <- sf::st_drop_geometry(environmentalData[dim])
+gaussianMixtureDensityFunction <- function(env.data, dim = "", threshold = 0.01){
+
+  env.data <- sf::st_drop_geometry(env.data[dim])
   print("Fitting environmental conditions")
-  environmental.data.model <- mclust::densityMclust(environmentalData, plot = FALSE)
+  environmental.data.model <- mclust::densityMclust(env.data, plot = FALSE)
   mclust::plot.densityMclust(environmental.data.model, what = "density")
   summary(environmental.data.model)
 
