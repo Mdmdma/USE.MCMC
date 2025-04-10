@@ -50,12 +50,12 @@ environmental.densities <- mclust::predict.densityMclust(environmental.data.mode
 environment.threshold <- stats::quantile(environmental.densities, 0.05)
 
 # sample species model
-virtual.presence.data <- getVirtualSpeciesPresencePoints(env.data = env.data.raster, n.samples = 100)
+virtual.presence.data <- getVirtualSpeciesPresencePoints(env.data = env.data.raster, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
 virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%
   sf::st_as_sf()
 
-species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc), plot = TRUE)
+species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]), plot = TRUE)
 summary(species.model)
 
 #density Function
@@ -68,7 +68,7 @@ proposalFunction <- addHighDimGaussian(cov_mat =covariance.proposal.function * d
 
 
 # sample points
-sampled.points <- mcmcSampling(dataset = env.with.pc.fs, dimensions = dimensions, n.sample.points = 100,
+sampled.points <- mcmcSampling(dataset = env.with.pc.fs, dimensions = dimensions, n.sample.points = 1000,
                                proposalFunction = proposalFunction, densityFunction = densityFunction)
 
 # setup environment to compute in parallel
@@ -105,5 +105,6 @@ par(mfrow = c(1, 1))
 plotDensity2dpro(dataset =  real.sampled.points, species = virtual.presence.points.pc, xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
                  densityFunction = densityFunction, resolution = 100)
 
-plotInGeographicalSpace(presence.map =  virtual.presence.data$original.distribution.raster,
+plotInGeographicalSpace1(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
                         presence.points = virtual.presence.points.pc, absence.points = real.sampled.points )
+
