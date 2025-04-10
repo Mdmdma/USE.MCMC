@@ -4,14 +4,14 @@
 \alias{euclidianMetric}
 \title{Euclidean metric on specified columns}
 \usage{
-euclidianMetric(pointA = NULL, pointB = NULL, dim = "")
+euclidianMetric(point.a = NULL, point.b = NULL, dim = "")
 }
 \arguments{
+\item{dim}{vector containing the names of the columns that should be included in the computation}
+
 \item{pointA}{First point}
 
 \item{pointB}{Second point}
-
-\item{dim}{vector containing the names of the columns that should be included in the computation}
 }
 \value{
 euclidean metric of the two points

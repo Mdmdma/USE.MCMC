@@ -6,8 +6,8 @@
 \usage{
 addHighDimGaussian(
   dim = 0,
-  mean_vec = matrix(0, ncol = dim),
-  cov_mat = diag(dim)
+  mean.vec = matrix(0, ncol = dim),
+  cov.mat = diag(dim)
 )
 }
 \arguments{

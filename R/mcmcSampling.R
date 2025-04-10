@@ -9,7 +9,8 @@
 #' @returns A sf dataframe containing the sampled points
 #' @export
 #'
-mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne, proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0){
+mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
+                         proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0){
   pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   starting.index <- stats::runif(1,1,nrow(dataset))
   current.point <- dataset[starting.index,]

@@ -10,9 +10,9 @@
 #' @returns a function that takes a point given as a dataframe as input and returns it with Gaussian noise added to the specified dimensions
 #' @export
 #'
-addHighDimGaussian <- function(dim = 0, mean_vec = matrix(0, ncol = dim), cov_mat = diag(dim)){
+addHighDimGaussian <- function(dim = 0, mean.vec = matrix(0, ncol = dim), cov.mat = diag(dim)){
   addedHighDimGaussian <- function(point, dim = ""){
-    random.vector <- mvtnorm::rmvnorm(1, mean = mean_vec, sigma = cov_mat)
+    random.vector <- mvtnorm::rmvnorm(1, mean = mean.vec, sigma = cov.mat)
     point[dim] <- sf::st_drop_geometry(point[dim]) + random.vector
     return(point)
   }
