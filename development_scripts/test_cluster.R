@@ -1,4 +1,4 @@
-i# Load required libraries
+# Load required libraries
 library(USE.MCMC)
 library(terra)
 library(virtualspecies)
