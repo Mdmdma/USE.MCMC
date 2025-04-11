@@ -62,13 +62,13 @@ summary(species.model)
 densityFunction <- mclustDensityFunction(env.model = environmental.data.model, presence.model = species.model,
                                          dim = dimensions, threshold = environment.threshold)
 
-# set sampling parameters
+# # set sampling parameters
 covariance.proposal.function <-0.5
 proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(length(dimensions)), dim = length(dimensions))
-
+#
 
 # sample points
-sampled.points <- mcmcSampling(dataset = env.with.pc.fs, dimensions = dimensions, n.sample.points = 100,
+sampled.points <- mcmcSampling(dataset = env.with.pc.fs, dimensions = dimensions, n.sample.points = 1000,
                                proposalFunction = proposalFunction, densityFunction = densityFunction)
 
 # setup environment to compute in parallel

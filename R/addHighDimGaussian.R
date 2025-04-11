@@ -11,8 +11,8 @@
 #' @export
 #'
 addHighDimGaussian <- function(dim = 0, mean.vec = matrix(0, ncol = dim), cov.mat = diag(dim)){
-  addedHighDimGaussian <- function(point, dim = ""){
-    random.vector <- mvtnorm::rmvnorm(1, mean = mean.vec, sigma = cov.mat)
+  addedHighDimGaussian <- function(point, covariance.adjuster = 1 , dim = ""){
+    random.vector <- mvtnorm::rmvnorm(1, mean = mean.vec, sigma = covariance.adjuster * cov.mat)
     point[dim] <- sf::st_drop_geometry(point[dim]) + random.vector
     return(point)
   }
