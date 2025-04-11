@@ -47,7 +47,7 @@ plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,
   # Plot using image() which is much faster and smoother than points
   # Choose color palette
 
-  colors <- grDevices::gray.colors(100)
+  colors <- viridis::viridis(100)
 
   # Plot with image
   graphics::image(x = x_seq, y = y_seq, z = density_matrix,
