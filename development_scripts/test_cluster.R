@@ -5,3 +5,5 @@ library(virtualspecies)
 library(sf)
 library(ggplot2)
 library(parallel)
+
+cat("loading of libraries works")
