@@ -33,6 +33,6 @@ getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0){
   presence.dataset <- sf::st_as_sf(presence.dataset, coords=c("x", "y"), crs=4326)["geometry"]
   presence.dataset <- terra::vect(presence.dataset)
   presence.data$sample.points <- presence.dataset
-
+  terra::plot(random.sp$suitab.raster, main = "Suitability score given by the model that produced the VS")
   return(presence.data)
 }
