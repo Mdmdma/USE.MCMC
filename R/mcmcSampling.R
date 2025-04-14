@@ -18,17 +18,20 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if(burnin) {
     covariance.correction <- 1
     points.rejected <- 0
-    while (points.rejected < 20 | points.rejected > 30) {
+    num.burnin.samples <- 400
+   while (points.rejected / num.burnin.samples < 0.2| points.rejected / num.burnin.samples > 0.3) {
       # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
       points.rejected <- 0
-      num.burnin.samples <- 200
       for (i in 1:num.burnin.samples) {
         proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
-        if (!acceptNextPoint(current.point, proposed.point, densityFunction)) points.rejected <- points.rejected + 1
+        if (acceptNextPoint(current.point, proposed.point, densityFunction)){
+          current.point <- proposed.point
+        }
+        else points.rejected <- points.rejected + 1
       }
-      if (points.rejected / num.burnin.samples < 0.2) covariance.correction <- covariance.correction * mvtnorm::rmvnorm(1, mean =1.3, sigma = 0.1)
-      if (points.rejected /num.burnin.samples > 0.3) covariance.correction <- covariance.correction * mvtnorm::rmvnorm(1, mean =0.7, sigma = 0.1)
-      cat("\rThe current covariance adjustment factor is ", covariance.correction)
+      if (points.rejected / num.burnin.samples < 0.2) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
+      if (points.rejected /num.burnin.samples > 0.3) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
+      cat("\rThe current rejection rate is", points.rejected /num.burnin.samples, ", the currend covariance adjustment factor is ", covariance.correction)
     }
     cat("\nThe final covariance correction is ", covariance.correction, "\n")
   }

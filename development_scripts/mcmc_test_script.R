@@ -63,7 +63,7 @@ densityFunction <- mclustDensityFunction(env.model = environmental.data.model, p
                                          dim = dimensions, threshold = environment.threshold)
 
 # # set sampling parameters
-covariance.proposal.function <-0.5
+covariance.proposal.function <-0.05
 proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(length(dimensions)), dim = length(dimensions))
 #
 
