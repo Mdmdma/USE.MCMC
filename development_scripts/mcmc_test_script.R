@@ -47,7 +47,7 @@ env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
 environmental.data.model <- mclust::densityMclust(env.data.cleaned, plot = TRUE)
 summary(environmental.data.model)
 environmental.densities <- mclust::predict.densityMclust(environmental.data.model, env.data.cleaned)
-environment.threshold <- stats::quantile(environmental.densities, 0.05)
+environment.threshold <- stats::quantile(environmental.densities, 0.01)
 
 # sample species model
 virtual.presence.data <- getVirtualSpeciesPresencePoints(env.data = env.data.raster, n.samples = 300)
@@ -103,7 +103,8 @@ invisible(lapply(dimensions, function(col) plot(density(virtual.presence.points.
 invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Density of sampled points", col))))
 par(mfrow = c(1, 1))
 
-plotDensity2dpro(dataset =  real.sampled.points, species = virtual.presence.points.pc, xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+plotDensity2dpro(dataset =  real.sampled.points, species = virtual.presence.points.pc, xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                 ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
                  densityFunction = densityFunction, resolution = 100)
 
 plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
