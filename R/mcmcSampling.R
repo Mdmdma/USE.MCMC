@@ -36,24 +36,30 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       if (points.rejected / num.burnin.samples < 0.2) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
       if (points.rejected /num.burnin.samples > 0.3) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
       cat("\rThe current rejection rate is", points.rejected /num.burnin.samples, ", the currend covariance adjustment factor is ", covariance.correction)
-      cat("\nThe final covariance correction is ", covariance.correction, "\n")
+
     }
   }
+  cat("\nThe final covariance correction is ", covariance.correction, "\n")
   sampled.points <- dataset[0, ]
   points.rejected <- 0
-  while (nrow(sampled.points) < n.sample.points) {
+  points.accepted <- 0
+  points_list <- vector("list", n.sample.points)
+  while (points.accepted < n.sample.points) {
 
     proposed.point <- proposalFunction(current.point,covariance.adjuster = covariance.correction, dim = dimensions)
     if (acceptNextPoint(current.point, proposed.point, densityFunction)){
       current.point <- proposed.point
-      utils::setTxtProgressBar(pb, nrow(sampled.points))
-      sampled.points <- rbind(sampled.points, proposed.point)
+      points.accepted <- points.accepted + 1
+      utils::setTxtProgressBar(pb, points.accepted)
+
+      points_list[[points.accepted]] <- proposed.point
     }
     else points.rejected <- points.rejected + 1
-    cat("\rPoints rejected:", points.rejected, "Points accepted:", nrow(sampled.points))
+    cat("\rPoints rejected:", points.rejected, "Points accepted:", points.accepted)
   }
-  cat("Points rejected: ", points.rejected)
+  cat("\nPoints rejected: ", points.rejected)
 
+  sampled.points <- do.call(rbind, points_list)
   #sampled.points <- apply(sampled.points, 1, function(point) mapBackOnRealPoints(dataset, point, dimensions))
   return(sampled.points)
 }
