@@ -11,9 +11,10 @@
 #'
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
                          proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0, burnin = TRUE){
-  pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
+
   starting.index <- stats::runif(1, 1, nrow(dataset))
   current.point <- dataset[starting.index, ]
+  current.point$density <- densityFunction(current.point)
   # burn in
   if(burnin) {
     cat("Burn in\n")
@@ -26,7 +27,8 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       points.rejected <- 0
       for (i in 1:num.burnin.samples) {
         proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
-        if (acceptNextPoint(current.point, proposed.point, densityFunction)){
+        proposed.point$density <- densityFunction(proposed.point)
+        if (acceptNextPoint(current.point, proposed.point)){
           current.point <- proposed.point
         }
         else points.rejected <- points.rejected + 1
@@ -35,7 +37,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       }
       if (points.rejected / num.burnin.samples < 0.2) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
       if (points.rejected /num.burnin.samples > 0.3) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
-      cat("\rThe current rejection rate is", points.rejected /num.burnin.samples, ", the currend covariance adjustment factor is ", covariance.correction)
+      cat("\rThe current rejection rate is", points.rejected /num.burnin.samples, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
 
     }
   }
@@ -44,17 +46,20 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   points.rejected <- 0
   points.accepted <- 0
   points_list <- vector("list", n.sample.points)
+  pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   while (points.accepted < n.sample.points) {
-
     proposed.point <- proposalFunction(current.point,covariance.adjuster = covariance.correction, dim = dimensions)
-    if (acceptNextPoint(current.point, proposed.point, densityFunction)){
+    proposed.point$density <- densityFunction(proposed.point)
+    if (acceptNextPoint(current.point, proposed.point)){
       current.point <- proposed.point
       points.accepted <- points.accepted + 1
       utils::setTxtProgressBar(pb, points.accepted)
 
       points_list[[points.accepted]] <- proposed.point
     }
-    else points.rejected <- points.rejected + 1
+    else {
+      points.rejected <- points.rejected + 1
+    }
     cat("\rPoints rejected:", points.rejected, "Points accepted:", points.accepted)
   }
   cat("\nPoints rejected: ", points.rejected)
