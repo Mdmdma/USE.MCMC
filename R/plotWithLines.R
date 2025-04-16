@@ -18,8 +18,10 @@ plotPointsWithLines <- function(df, cols, limits = NULL, title = "Connected Data
   y <- df[[cols[2]]]
   v = 1
   if (is.null(df[[cols[4]]])){
-    if (min(df[[cols[3]]]) != max(df[[cols[3]]])){
-      v <- 1-(df[[cols[3]]]-min(df[[cols[3]]]))/(max(df[[cols[3]]])-min(df[[cols[3]]]))
+    if (sum(is.na(df[[cols[3]]])) > 0 ){
+      if (min(df[[cols[3]]]) != max(df[[cols[3]]])){
+        v <- 1-(df[[cols[3]]]-min(df[[cols[3]]]))/(max(df[[cols[3]]])-min(df[[cols[3]]]))
+      }
     }
   }
 

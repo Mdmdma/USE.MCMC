@@ -6,7 +6,7 @@
 #' @returns List containing the sampled points as a dataframe as well as other nice things that can later be used to plot
 #' @export
 
-getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0){
+getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0, plot = FALSE){
   # Create virtual species
   random.sp <- virtualspecies::generateRandomSp(env.data,
                                                 convert.to.PA = FALSE,
@@ -26,13 +26,15 @@ getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0){
                                                        type = "presence only",
                                                        detection.probability = 1,
                                                        correct.by.suitability = TRUE,
-                                                       plot = TRUE)
+                                                       plot = plot)
 
   # Generate a presence-only data set
   presence.dataset <- presence.data$sample.points[c("x", "y")]
   presence.dataset <- sf::st_as_sf(presence.dataset, coords=c("x", "y"), crs=4326)["geometry"]
   presence.dataset <- terra::vect(presence.dataset)
   presence.data$sample.points <- presence.dataset
-  terra::plot(random.sp$suitab.raster, main = "Suitability score given by the model that produced the VS")
+  if (plot){
+    terra::plot(random.sp$suitab.raster, main = "Suitability score given by the model that produced the VS")
+  }
   return(presence.data)
 }

@@ -19,7 +19,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   # burn in
   if(burnin) {
     cat("Burn in\n")
-    covariance.correction <- 1.5
+    covariance.correction <- 1
     points.rejected <- 0
     num.burnin.samples <- 400
     pb.burnin <- utils::txtProgressBar(min = 0, max = num.burnin.samples, style = 3)
