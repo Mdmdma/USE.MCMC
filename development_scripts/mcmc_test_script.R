@@ -9,6 +9,7 @@ library(parallel)
 
 #Nedded for plotting
 par(mfrow = c(1, 1))
+plot <- TRUE
 
 # load data
 env.data.raster <- USE.MCMC::Worldclim_tmp %>%
@@ -37,14 +38,14 @@ env.with.pc.fs <- rpc$PCs %>%
 env.with.pc.fs <- env.with.pc.fs[runif(nrow(env.with.pc.fs)/10, 1, nrow(env.with.pc.fs)),]
 
 #specify the dimension that should be included in the following analysys
-dimensions <- c("PC1", "PC2") #, "PC3", "PC4","PC5"
+dimensions <- c("PC1", "PC2", "PC3") #, "PC3", "PC4","PC5"
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
 
 
 # environment model
-environmental.data.model <- mclust::densityMclust(env.data.cleaned, plot = TRUE)
+environmental.data.model <- mclust::densityMclust(env.data.cleaned, plot = plot)
 summary(environmental.data.model)
 environmental.densities <- mclust::predict.densityMclust(environmental.data.model, env.data.cleaned)
 environment.threshold <- stats::quantile(environmental.densities, 0.01)
@@ -55,21 +56,28 @@ virtual.presence.points <- virtual.presence.data$sample.points
 virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%
   sf::st_as_sf()
 
-species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]), plot = TRUE)
+species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
+                                      plot = plot)
 summary(species.model)
 
 #density Function
-densityFunction <- mclustDensityFunction(env.model = environmental.data.model, presence.model = species.model,
-                                         dim = dimensions, threshold = environment.threshold)
+densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
+                                         presence.model = species.model,
+                                         dim = dimensions,
+                                         threshold = environment.threshold)
 
 # # set sampling parameters
-covariance.proposal.function <-0.05
-proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(length(dimensions)), dim = length(dimensions))
+covariance.proposal.function <-0.075
+proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(length(dimensions)),
+                                       dim = length(dimensions))
 #
 
 # sample points
-sampled.points <- mcmcSampling(dataset = env.with.pc.fs, dimensions = dimensions, n.sample.points = 1000,
-                               proposalFunction = proposalFunction, densityFunction = densityFunction)
+sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
+                               dimensions = dimensions,
+                               n.sample.points = 10000,
+                               proposalFunction = proposalFunction,
+                               densityFunction = densityFunction)
 
 # setup environment to compute in parallel
 num_cores <- detectCores() - 1
@@ -84,29 +92,43 @@ cat(sum(is.na(real.sampled.points.list)) ,"points have no real counterpart in th
 real.sampled.points.list.clean <- real.sampled.points.list[!is.na(real.sampled.points.list)]
 real.sampled.points <- do.call(rbind, real.sampled.points.list.clean)
 #plot
-par(mfrow = c(2, 2))
-plotPointsWithLines(sampled.points, c("PC1", "PC2", "PC3"), title = paste("sampled points with coveariance", covariance.proposal.function),
-                       limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
-plotPointsWithLines(real.sampled.points, c("PC1", "PC2", "PC3"), title = paste("Covariance is diagonal ", covariance.proposal.function),
-                       limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
-plot(env.with.pc.fs$PC1, env.with.pc.fs$PC2, main = "Environment")
-plot(virtual.presence.points.pc$PC1, virtual.presence.points.pc$PC2, xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-     ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)), main = " Virtual prescence points" )
+if (plot){
+  par(mfrow = c(2, 2))
+  plotPointsWithLines(sampled.points, c("PC1", "PC2", "PC3"),
+                      title = paste("sampled points with coveariance", covariance.proposal.function),
+                      limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
+  plotPointsWithLines(real.sampled.points, c("PC1", "PC2", "PC3"),
+                      title = paste("Covariance is diagonal ", covariance.proposal.function),
+                      limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
+  plot(env.with.pc.fs$PC1, env.with.pc.fs$PC2, main = "Environment")
+  plot(virtual.presence.points.pc$PC1, virtual.presence.points.pc$PC2,
+       xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+       ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+       main = " Virtual prescence points" )
 
-par(mfrow = c(3, length(dimensions)))
-invisible(lapply(dimensions, function(col) hist(env.with.pc.fs[[col]], main=paste("Histogram of environment", col))))
-invisible(lapply(dimensions, function(col) hist(virtual.presence.points.pc[[col]], main=paste("Histogram of virtual presence", col))))
-invisible(lapply(dimensions, function(col) hist(real.sampled.points[[col]], main=paste("Histogram of sampled points", col))))
-par(mfrow = c(3, length(dimensions)))
-invisible(lapply(dimensions, function(col) plot(density(env.with.pc.fs[[col]]), main=paste("Density of environment", col))))
-invisible(lapply(dimensions, function(col) plot(density(virtual.presence.points.pc[[col]]), main=paste("Density of virtual presence", col))))
-invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Density of sampled points", col))))
-par(mfrow = c(1, 1))
+  par(mfrow = c(3, length(dimensions)))
+  invisible(lapply(dimensions, function(col) hist(env.with.pc.fs[[col]],
+                                                  main=paste("Histogram of environment", col))))
+  invisible(lapply(dimensions, function(col) hist(virtual.presence.points.pc[[col]],
+                                                  main=paste("Histogram of virtual presence", col))))
+  invisible(lapply(dimensions, function(col) hist(real.sampled.points[[col]],
+                                                  main=paste("Histogram of sampled points", col))))
+  par(mfrow = c(3, length(dimensions)))
+  invisible(lapply(dimensions, function(col) plot(density(env.with.pc.fs[[col]]),
+                                                  main=paste("Density of environment", col))))
+  invisible(lapply(dimensions, function(col) plot(density(virtual.presence.points.pc[[col]]),
+                                                  main=paste("Density of virtual presence", col))))
+  invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Density of sampled points", col))))
+  par(mfrow = c(1, 1))
 
-plotDensity2dpro(dataset =  real.sampled.points, species = virtual.presence.points.pc, xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-                 ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-                 densityFunction = densityFunction, resolution = 100)
+  plotDensity2dpro(dataset =  real.sampled.points,
+                   species = virtual.presence.points.pc,
+                   xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                   ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+                   densityFunction = densityFunction,
+                   resolution = 100)
 
-plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
-                        presence.points = virtual.presence.points.pc, absence.points = real.sampled.points )
-
+  plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
+                          presence.points = virtual.presence.points.pc,
+                          absence.points = real.sampled.points )
+}

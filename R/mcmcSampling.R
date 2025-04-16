@@ -14,11 +14,12 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
 
   starting.index <- stats::runif(1, 1, nrow(dataset))
   current.point <- dataset[starting.index, ]
+  current.point <- sf::st_drop_geometry(current.point)
   current.point$density <- densityFunction(current.point)
   # burn in
   if(burnin) {
     cat("Burn in\n")
-    covariance.correction <- 1
+    covariance.correction <- 1.5
     points.rejected <- 0
     num.burnin.samples <- 400
     pb.burnin <- utils::txtProgressBar(min = 0, max = num.burnin.samples, style = 3)
@@ -42,20 +43,26 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
     }
   }
   cat("\nThe final covariance correction is ", covariance.correction, "\n")
-  sampled.points <- dataset[0, ]
+  #sampled.points <- data.table::data.table(matrix(NA, nrow = n.sample.points, ncol = length(current.point)))
+  #setnames(sampled.points, names(current.point))
+  sampled.points <- data.frame(matrix(NA, nrow = n.sample.points, ncol = ncol(current.point)))
+  colnames(sampled.points) <- colnames(current.point)
   points.rejected <- 0
   points.accepted <- 0
-  points_list <- vector("list", n.sample.points)
+  # points_list <- vector("list", n.sample.points)
   pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   while (points.accepted < n.sample.points) {
-    proposed.point <- proposalFunction(current.point,covariance.adjuster = covariance.correction, dim = dimensions)
+    proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
     proposed.point$density <- densityFunction(proposed.point)
     if (acceptNextPoint(current.point, proposed.point)){
       current.point <- proposed.point
       points.accepted <- points.accepted + 1
       utils::setTxtProgressBar(pb, points.accepted)
-
-      points_list[[points.accepted]] <- proposed.point
+      sampled.points[points.accepted, ] <- current.point
+      #sampled.points[points.accepted, (names(current.point)) := current.point]
+      # data.table::set(sampled.points, i = points.accepted, j = j, value = current.point[[j]])
+      # sampled.points <- do.call(rbind(sampled.points, current.point))
+      # points_list[[points.accepted]] <- proposed.point
     }
     else {
       points.rejected <- points.rejected + 1
@@ -64,7 +71,8 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   }
   cat("\nPoints rejected: ", points.rejected)
 
-  sampled.points <- do.call(rbind, points_list)
+
   #sampled.points <- apply(sampled.points, 1, function(point) mapBackOnRealPoints(dataset, point, dimensions))
   return(sampled.points)
 }
+
