@@ -5,15 +5,22 @@ library(virtualspecies)
 library(sf)
 library(ggplot2)
 library(parallel)
+library(FNN)
 
 
-#Nedded for plotting
+#Needed for plotting
 par(mfrow = c(1, 1))
 plot <- TRUE
 
 # load data
-env.data.raster <- USE.MCMC::Worldclim_tmp %>%
-  terra::rast( type="xyz")
+#env.data.raster <- USE.MCMC::Worldclim_tmp %>%
+#  terra::rast( type="xyz")
+datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
+env.data.raster <- geodata::worldclim_global(var='bio', res=2.5, path=datadir)  %>%
+  terra::crop(terra::ext(-12, 25, 36, 60))
+  #terra::rast( type="xyz")
+
+env.data.raster <- geodata::worldclim_country(country = "ch", var = "bio", path=datadir, res=0.5)
 
 # convert to SF dataframe
 env.data.sf <- env.data.raster %>%
@@ -38,7 +45,7 @@ env.with.pc.fs <- rpc$PCs %>%
 env.with.pc.fs <- env.with.pc.fs[runif(nrow(env.with.pc.fs)/10, 1, nrow(env.with.pc.fs)),]
 
 #specify the dimension that should be included in the following analysys
-dimensions <- c("PC1", "PC2", "PC3") #, "PC3", "PC4","PC5"
+dimensions <- c("PC1", "PC2", "PC3", "PC4","PC5") #, "PC3", "PC4","PC5"
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
@@ -79,18 +86,18 @@ sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                proposalFunction = proposalFunction,
                                densityFunction = densityFunction)
 
-# setup environment to compute in parallel
-num_cores <- detectCores() - 1
-cl <- makeCluster(num_cores)
-max.distance <- 2
-clusterExport(cl, c("mapBackOnRealPoints", "env.with.pc.fs", "dimensions", "max.distance"))
+mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
+mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]
+mapped.sampled.points$density <- sampled.points$density
+mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 
-# map back onto real points
-real.sampled.points.list <- parallel::parApply(cl, sampled.points, 1, function(point) mapBackOnRealPoints(env.with.pc.fs, point, dimensions, threshold = max.distance))
-stopCluster(cl)
-cat(sum(is.na(real.sampled.points.list)) ,"points have no real counterpart in the environment space, given a maximal distance of ", max.distance, "!")
-real.sampled.points.list.clean <- real.sampled.points.list[!is.na(real.sampled.points.list)]
-real.sampled.points <- do.call(rbind, real.sampled.points.list.clean)
+distance.threshold <- stats::quantile(mapped.sampled.points$distance, 0.95)
+filtered.mapped.sampled.points <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
+
+
+n.samples <- 3000
+sample.indexes <- indices <- seq(1, nrow(filtered.mapped.sampled.points), length.out = n.samples)
+real.sampled.points <- filtered.mapped.sampled.points[indices, ]
 #plot
 if (plot){
   par(mfrow = c(2, 2))
@@ -106,19 +113,44 @@ if (plot){
        ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
        main = " Virtual prescence points" )
 
-  par(mfrow = c(3, length(dimensions)))
-  invisible(lapply(dimensions, function(col) hist(env.with.pc.fs[[col]],
-                                                  main=paste("Histogram of environment", col))))
-  invisible(lapply(dimensions, function(col) hist(virtual.presence.points.pc[[col]],
-                                                  main=paste("Histogram of virtual presence", col))))
-  invisible(lapply(dimensions, function(col) hist(real.sampled.points[[col]],
-                                                  main=paste("Histogram of sampled points", col))))
-  par(mfrow = c(3, length(dimensions)))
-  invisible(lapply(dimensions, function(col) plot(density(env.with.pc.fs[[col]]),
-                                                  main=paste("Density of environment", col))))
-  invisible(lapply(dimensions, function(col) plot(density(virtual.presence.points.pc[[col]]),
-                                                  main=paste("Density of virtual presence", col))))
-  invisible(lapply(dimensions, function(col) plot(density(real.sampled.points[[col]]), main=paste("Density of sampled points", col))))
+  par(mfrow = c(length(dimensions),1))
+  invisible(lapply(dimensions, function(col) {
+    # Create an empty plot with appropriate limits
+    x_range <- range(
+      c(density(env.with.pc.fs[[col]])$x,
+        density(virtual.presence.points.pc[[col]])$x,
+        density(real.sampled.points[[col]])$x)
+    )
+    y_range <- range(
+      c(density(env.with.pc.fs[[col]])$y,
+        density(virtual.presence.points.pc[[col]])$y,
+        density(real.sampled.points[[col]])$y)
+    )
+
+    # Plot the first density
+    plot(density(env.with.pc.fs[[col]]),
+         col = "green",
+         main = paste("Density Comparison for", col),
+         xlim = x_range,
+         ylim = y_range,
+         lwd = 2)
+
+    # Add the second density to the same plot
+    lines(density(virtual.presence.points.pc[[col]]),
+          col = "black",
+          lwd = 2)
+
+    # Add the third density to the same plot
+    lines(density(real.sampled.points[[col]]),
+          col = "red",
+          lwd = 2)
+
+    # Add a legend
+    legend("topleft",
+           legend = c("Environment", "Virtual Presence", "Sampled Points"),
+           col = c("green", "black", "red"),
+           lwd = 2)
+  }))
   par(mfrow = c(1, 1))
 
   plotDensity2dpro(dataset =  real.sampled.points,
@@ -132,3 +164,4 @@ if (plot){
                           presence.points = virtual.presence.points.pc,
                           absence.points = real.sampled.points )
 }
+

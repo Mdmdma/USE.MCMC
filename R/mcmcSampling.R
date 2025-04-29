@@ -5,19 +5,19 @@
 #' @param densityFunction Function that can take a point given as a sf dataframe as a input and returns the target density at that location.
 #' @param proposalFunction Function that can take a point given as a sf dataframe and a vector of strings specifying the row names that should be changed as a input and returns a new proposed point
 #' @param n.sample.points Number of points to be sampled
-#'
+#' @param burnIn Boolean sets if a burn in shoudl be done before the sampling
 #' @returns A sf dataframe containing the sampled points
 #' @export
 #'
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
-                         proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0, burnin = TRUE){
+                         proposalFunction = addHighDimGaussian(dim = length(dimensions)), n.sample.points = 0, burnIn = TRUE){
 
   starting.index <- stats::runif(1, 1, nrow(dataset))
   current.point <- dataset[starting.index, ]
   current.point <- sf::st_drop_geometry(current.point)
   current.point$density <- densityFunction(current.point)
   # burn in
-  if(burnin) {
+  if(burnIn) {
     cat("Burn in\n")
     covariance.correction <- 1
     points.rejected <- 0
