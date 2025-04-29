@@ -4,12 +4,14 @@
 \alias{getVirtualSpeciesPresencePoints}
 \title{Function to streamline the generation and sampling of a virtual species}
 \usage{
-getVirtualSpeciesPresencePoints(env.data = NULL, n.samples = 0)
+getVirtualSpeciesPresencePoints(env.data = NULL, n.samples = 0, plot = FALSE)
 }
 \arguments{
 \item{env.data}{Raster containing environmental parameters}
 
 \item{n.samples}{Number of samples}
+
+\item{plot}{Boolean sets if the function should provide plots of the sampled points and the species suitability.}
 }
 \value{
 List containing the sampled points as a dataframe as well as other nice things that can later be used to plot

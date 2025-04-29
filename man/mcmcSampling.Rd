@@ -9,7 +9,8 @@ mcmcSampling(
   dimensions = list(""),
   densityFunction = alwaysOne,
   proposalFunction = addHighDimGaussian(dim = length(dimensions)),
-  n.sample.points = 0
+  n.sample.points = 0,
+  burnIn = TRUE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ mcmcSampling(
 \item{proposalFunction}{Function that can take a point given as a sf dataframe and a vector of strings specifying the row names that should be changed as a input and returns a new proposed point}
 
 \item{n.sample.points}{Number of points to be sampled}
+
+\item{burnIn}{Boolean sets if a burn in shoudl be done before the sampling}
 }
 \value{
 A sf dataframe containing the sampled points

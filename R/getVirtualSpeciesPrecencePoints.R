@@ -2,7 +2,7 @@
 #'
 #' @param env.data Raster containing environmental parameters
 #' @param n.samples Number of samples
-#'
+#' @param plot Boolean sets if the function should provide plots of the sampled points and the species suitability.
 #' @returns List containing the sampled points as a dataframe as well as other nice things that can later be used to plot
 #' @export
 
