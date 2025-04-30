@@ -12,9 +12,11 @@
 #'
 #' @returns list containing the sampling grid as well as the density matrix
 #' @export
-plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
-                          densityFunction = NULL, resolution = 10) {
-  # Create a grid matrix instead of nested loops
+plotDensity <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
+                        densityFunction = NULL, resolution = 10) {
+  if(is.null(dataset)) stop("at least one line of data has to be supplied as a template for the density function")
+
+  # Create a grid matrix
   x_seq <- seq(xlim[1], xlim[2], length.out = resolution)
   y_seq <- seq(ylim[1], ylim[2], length.out = resolution)
   grid <- expand.grid(PC1 = x_seq, PC2 = y_seq)
@@ -27,7 +29,7 @@ plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,
   # Pre-allocate density values
   density_values <- numeric(nrow(grid))
 
-  # Calculate densities (vectorized if possible)
+  # Calculate densities
   if (is.function(densityFunction)) {
     density_values <- mapply(function(pc1, pc2) {
       template$PC1 <- pc1
@@ -41,28 +43,54 @@ plotDensity2dpro <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,
   # Add density to grid
   grid$density <- density_values
 
-  # Create a matrix for image plotting (much faster than points)
+  # Create a matrix for contour plotting
   density_matrix <- matrix(grid$density, nrow = length(x_seq), ncol = length(y_seq))
+  colnames(density_matrix) <- y_seq
+  rownames(density_matrix) <- x_seq
 
-  # Plot using image() which is much faster and smoother than points
-  # Choose color palette
+  # We'll just use the grid directly, no need to reshape with reshape2
 
-  colors <- viridis::viridis(100)
+  # Create base plot using the grid data directly
+  p <- ggplot2::ggplot(grid, ggplot2::aes(x = PC1, y = PC2, z = density))
 
-  # Plot with image
-  graphics::image(x = x_seq, y = y_seq, z = density_matrix,
-        col = colors,
-        xlab = "PC1", ylab = "PC2",
-        main = "Density Plot",
-        xlim = xlim, ylim = ylim)
+  # Add filled contours with viridis colors
+  p <- p + ggplot2::geom_tile(ggplot2::aes(fill = density))
+  p <- p + ggplot2::scale_fill_viridis_c()
 
-  # Add contour lines for better visualization
-  graphics::contour(x = x_seq, y = y_seq, z = density_matrix,
-          add = TRUE, col = "black", lwd = 0.5, alpha = 0.3)
+  # Add contour lines
+  p <- p + ggplot2::geom_contour(color = "black", alpha = 0.3, linewidth = 0.5)
+
+  # Add points from dataset if available
+  if (nrow(dataset) > 1) {
+    p <- p + ggplot2::geom_point(data = dataset,
+                                 ggplot2::aes(x = PC1, y = PC2, color = "Dataset"),
+                                 inherit.aes = FALSE)
+  }
+
+  # Add species points in red if provided
+  if (!is.null(species)) {
+    p <- p + ggplot2::geom_point(data = species,
+                                 ggplot2::aes(x = PC1, y = PC2, color = "Species"),
+                                 inherit.aes = FALSE)
+  }
+
+  # Add color scale for points
+  p <- p + ggplot2::scale_color_manual(name = "Points",
+                                       values = c("Dataset" = "black", "Species" = "red"))
+
+  # Set plot limits and labels
+  p <- p + ggplot2::xlim(xlim) +
+    ggplot2::ylim(ylim) +
+    ggplot2::labs(x = "PC1", y = "PC2", title = "Density Plot",
+                  fill = "Density")  # Label for the fill legend
+
+  # Add theme elements
+  p <- p + ggplot2::theme_minimal() +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
+
+  # Print the plot
+  print(p)
 
   # Return the grid data invisibly (useful for further analysis)
-  if (nrow(dataset)>1) graphics::points(dataset$PC1, dataset$PC2, pch = 20)
-  if (!is.null(species)) graphics::points(species$PC1, species$PC2, pch = 20, col = "red")
-  invisible(list(grid = grid, matrix = density_matrix))
+  invisible(list(grid = grid, matrix = density_matrix, plot = p))
 }
-
