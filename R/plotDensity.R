@@ -10,12 +10,14 @@
 #' @param densityFunction Density to be plottet. The function should take a point as its argument and give back a float
 #' @param resolution number of gridcells in each direction
 #'
-#' @returns list containing the sampling grid as well as the density matrix
+#' @returns the plot
 #' @export
-plotDensity <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
-                        densityFunction = NULL, resolution = 10) {
+plotDensity <- function(dataset,
+                        species = NULL, densityFunction = alwaysOne,
+                        xlim = c(0,1), ylim = c(0,1),
+                        resolution = 10) {
   if(is.null(dataset)) stop("at least one line of data has to be supplied as a template for the density function")
-
+  p <- ggplot2::ggplot()
   # Create a grid matrix
   x_seq <- seq(xlim[1], xlim[2], length.out = resolution)
   y_seq <- seq(ylim[1], ylim[2], length.out = resolution)
@@ -48,29 +50,24 @@ plotDensity <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
   colnames(density_matrix) <- y_seq
   rownames(density_matrix) <- x_seq
 
-  # We'll just use the grid directly, no need to reshape with reshape2
-
-  # Create base plot using the grid data directly
-  p <- ggplot2::ggplot(grid, ggplot2::aes(x = PC1, y = PC2, z = density))
-
-  # Add filled contours with viridis colors
-  p <- p + ggplot2::geom_tile(ggplot2::aes(fill = density))
+  # Add filled tiles with explicit data and aesthetics
+  p <- p + ggplot2::geom_tile(mapping = ggplot2::aes(x = PC1, y = PC2, fill = density), data = grid)
   p <- p + ggplot2::scale_fill_viridis_c()
 
-  # Add contour lines
-  p <- p + ggplot2::geom_contour(color = "black", alpha = 0.3, linewidth = 0.5)
+  # Add contour lines with explicit data and aesthetics
+  p <- p + ggplot2::geom_contour(mapping = ggplot2::aes(x = PC1, y = PC2, z = density), data = grid, color = "black", alpha = 0.3, linewidth = 0.5)
 
   # Add points from dataset if available
   if (nrow(dataset) > 1) {
     p <- p + ggplot2::geom_point(data = dataset,
-                                 ggplot2::aes(x = PC1, y = PC2, color = "Dataset"),
+                                 mapping = ggplot2::aes(x = PC1, y = PC2, color = "Dataset"),
                                  inherit.aes = FALSE)
   }
 
   # Add species points in red if provided
   if (!is.null(species)) {
     p <- p + ggplot2::geom_point(data = species,
-                                 ggplot2::aes(x = PC1, y = PC2, color = "Species"),
+                                 mapping = ggplot2::aes(x = PC1, y = PC2, color = "Species"),
                                  inherit.aes = FALSE)
   }
 
@@ -82,7 +79,7 @@ plotDensity <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
   p <- p + ggplot2::xlim(xlim) +
     ggplot2::ylim(ylim) +
     ggplot2::labs(x = "PC1", y = "PC2", title = "Density Plot",
-                  fill = "Density")  # Label for the fill legend
+                  fill = "Density") # Label for the fill legend
 
   # Add theme elements
   p <- p + ggplot2::theme_minimal() +
@@ -92,5 +89,5 @@ plotDensity <- function(dataset, species = NULL, xlim = c(0,1), ylim = c(0,1),
   print(p)
 
   # Return the grid data invisibly (useful for further analysis)
-  invisible(list(grid = grid, matrix = density_matrix, plot = p))
+  return(p)
 }
