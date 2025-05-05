@@ -12,17 +12,17 @@ library(FNN)
 par(mfrow = c(1, 1))
 plot <- TRUE
 
-# load data
-#env.data.raster <- USE.MCMC::Worldclim_tmp %>%
-#  terra::rast( type="xyz")
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
-env.data.raster <- geodata::worldclim_global(var='bio', res=2.5, path=datadir)  %>%
-  terra::crop(terra::ext(-12, 25, 36, 60))
+# load data
+env.data.raster <- USE.MCMC::Worldclim_tmp %>%
+  terra::rast( type="xyz")
+
+# env.data.raster <- geodata::worldclim_global(var='bio', res=10, path=datadir)  %>%
+#   terra::crop(terra::ext(-12, 25, 36, 60))
   #terra::rast( type="xyz")
-
-env.data.raster <- geodata::worldclim_country(country = "ch", var = "bio", path=datadir, res=0.5)
-
-# convert to SF dataframe
+#
+# env.data.raster <- geodata::worldclim_country(country = "ch", var = "bio", path=datadir, res=2.5)
+# # convert to SF dataframe
 env.data.sf <- env.data.raster %>%
   as.data.frame(xy = TRUE) %>%
   sf::st_as_sf(coords = c("x", "y"))
@@ -42,10 +42,10 @@ env.with.pc.fs <- rpc$PCs %>%
   st_join(env.data.sf)
 
 # subsample env space to speed up the process
-env.with.pc.fs <- env.with.pc.fs[runif(nrow(env.with.pc.fs)/10, 1, nrow(env.with.pc.fs)),]
+env.with.pc.fs <- env.with.pc.fs[runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow(env.with.pc.fs)),]
 
 #specify the dimension that should be included in the following analysys
-dimensions <- c("PC1", "PC2", "PC3", "PC4","PC5") #, "PC3", "PC4","PC5"
+dimensions <- c("PC1", "PC2") #, "PC3", "PC4","PC5"
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
@@ -75,7 +75,7 @@ densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
 
 # # set sampling parameters
 covariance.proposal.function <-0.075
-proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(length(dimensions)),
+proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * diag(rpc$pca$sdev[1:length(dimensions)]),
                                        dim = length(dimensions))
 #
 
@@ -84,7 +84,8 @@ sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                dimensions = dimensions,
                                n.sample.points = 10000,
                                proposalFunction = proposalFunction,
-                               densityFunction = densityFunction)
+                               densityFunction = densityFunction,
+                               burnIn = TRUE)
 
 mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
 mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]
@@ -95,24 +96,39 @@ distance.threshold <- stats::quantile(mapped.sampled.points$distance, 0.95)
 filtered.mapped.sampled.points <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
 
-n.samples <- 3000
-sample.indexes <- indices <- seq(1, nrow(filtered.mapped.sampled.points), length.out = n.samples)
+n.samples <- 500
+sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points), length.out = min(n.samples, nrow(filtered.mapped.sampled.points))))
 real.sampled.points <- filtered.mapped.sampled.points[indices, ]
+# TODO check where the coordinate system gets lost
+st_crs(real.sampled.points) <- 4326
 #plot
 if (plot){
-  par(mfrow = c(2, 2))
-  plotPointsWithLines(sampled.points, c("PC1", "PC2", "PC3"),
-                      title = paste("sampled points with coveariance", covariance.proposal.function),
-                      limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
-  plotPointsWithLines(real.sampled.points, c("PC1", "PC2", "PC3"),
-                      title = paste("Covariance is diagonal ", covariance.proposal.function),
-                      limits = list(c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)), c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2))))
-  plot(env.with.pc.fs$PC1, env.with.pc.fs$PC2, main = "Environment")
-  plot(virtual.presence.points.pc$PC1, virtual.presence.points.pc$PC2,
-       xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-       ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-       main = " Virtual prescence points" )
+  l1 <- plotPointsWithLines(sampled.points, c("PC1", "PC2", "PC3"),
+                      title = paste("Sampled points"),
+                      xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                      ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)))
+  l2 <- plotPointsWithLines(real.sampled.points, c("PC1", "PC2", "PC3"),
+                      title = paste("Mapped back on real points"),
+                      xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                      ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)))
 
+  env.scatterplot <- ggplot(env.with.pc.fs, aes(x = PC1, y = PC2)) +
+    geom_point() +
+    ggtitle("Environment") +
+    theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5))
+
+  species.scatterplot <- ggplot(virtual.presence.points.pc, aes(x = PC1, y = PC2)) +
+    geom_point() +
+    xlim(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)) +
+    ylim(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)) +
+    ggtitle("Virtual presence points") +
+    theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5))
+
+  cowplot::plot_grid(l1, l2, env.scatterplot, species.scatterplot, ncol = 2)
   par(mfrow = c(length(dimensions),1))
   invisible(lapply(dimensions, function(col) {
     # Create an empty plot with appropriate limits
@@ -153,12 +169,12 @@ if (plot){
   }))
   par(mfrow = c(1, 1))
 
-  plotDensity2dpro(dataset =  real.sampled.points,
-                   species = virtual.presence.points.pc,
-                   xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-                   ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-                   densityFunction = densityFunction,
-                   resolution = 100)
+  plotDensity(dataset =  real.sampled.points,
+              species = virtual.presence.points.pc,
+              xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+              ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+              densityFunction = densityFunction,
+              resolution = 100)
 
   plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
                           presence.points = virtual.presence.points.pc,
