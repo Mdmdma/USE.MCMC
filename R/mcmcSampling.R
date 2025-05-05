@@ -17,9 +17,9 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   current.point <- sf::st_drop_geometry(current.point)
   current.point$density <- densityFunction(current.point)
   # burn in
+  covariance.correction <- 1
   if(burnIn) {
     cat("Burn in\n")
-    covariance.correction <- 1
     points.rejected <- 0
     num.burnin.samples <- 400
     pb.burnin <- utils::txtProgressBar(min = 0, max = num.burnin.samples, style = 3)
@@ -42,6 +42,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
 
     }
   }
+  else cat("Burn in skipped")
   cat("\nThe final covariance correction is ", covariance.correction, "\n")
   #sampled.points <- data.table::data.table(matrix(NA, nrow = n.sample.points, ncol = length(current.point)))
   #setnames(sampled.points, names(current.point))
