@@ -1,8 +1,30 @@
-plotDensityLines <- function(dataset,
-                                xlim = c(0,1), ylim = c(0,1),
-                                title = "Connected Data Points",
-                                lines = FALSE, cols = NULL,
-                                density = FALSE, species = NULL, densityFunction = alwaysOne, resolution = 10) {
+#' plotDensityLines
+#' enables the plotting of density function as well as a trace of a chain made of points in a dataframe
+#' on this density surface. In addition the species that was used to generate the density model can be supplied
+#' to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
+#' instead of as a chain
+#'
+#'
+#' @param dataset Dataframe specifying the dataset to be plotted as a line or points respectively
+#' @param xlim x-limit of the plot
+#' @param ylim y-limit of the plot
+#' @param title title of the plot
+#' @param lines boolean that tells the function if the lines should be plotted. If false the dataset will be ploted as points
+#' @param cols specifies the columns of the dataframe that are used for the density computation. It has to match to the columns used to build the density model.
+#' @param density boolean that tells the function if the density should be plotted
+#' @param species dataframe containing the simulated species, it has to contain the column names of cols
+#' @param densityFunction a function that can take a dataframe with the columns given in cols and retruns the density at that point
+#' @param resolution int sets the resolution of the denisity grid
+#' @param minimal boolean if true removes titel, label, legend and axis
+#'
+#' @returns the greated plot
+#' @export
+#'
+plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
+                             title = "Connected Data Points",
+                             lines = FALSE, cols = NULL,
+                             density = FALSE, species = NULL, densityFunction = alwaysOne, resolution = 10,
+                             minimal = FALSE) {
   p <- ggplot2::ggplot()
 
   # plot density
@@ -119,16 +141,16 @@ plotDensityLines <- function(dataset,
     # Create the ggplot
     p <- p +
 
-      geom_path(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
+      ggplot2::geom_path(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
                                              y = .data[[cols[2]]],
                                              group = 1),
                                              color = hsv_colors_alpha,
                                              size = 1) +
-      geom_point(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
+      ggplot2::geom_point(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
                                               y = .data[[cols[2]]]),
                                               color = hsv_colors_alpha,
                                               size = 2) +
-      geom_point(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
+      ggplot2::geom_point(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
                                               y = .data[[cols[2]]],
                                               color = point_order_normalized),
                                               size = 0,
@@ -167,8 +189,14 @@ plotDensityLines <- function(dataset,
   p <- p + ggplot2::theme_minimal() +
            ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   # Print the plot
-  print(p)
-
+  if (minimal){
+    p <- p + ggplot2::theme(legend.position = "none",   # remove legend
+                         axis.title = ggplot2::element_blank(),   # remove axis titles
+                         axis.text = ggplot2::element_blank(),    # remove axis tick labels
+                         axis.ticks = ggplot2::element_blank()
+    ) +
+      ggplot2::labs(title = NULL, x = NULL, y = NULL)
+  }
 
   return(p)
 }

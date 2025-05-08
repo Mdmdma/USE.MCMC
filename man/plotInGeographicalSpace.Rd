@@ -7,7 +7,8 @@
 plotInGeographicalSpace(
   presence.distribution.raster = NULL,
   presence.points = NULL,
-  absence.points = NULL
+  absence.points = NULL,
+  minimal = FALSE
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ plotInGeographicalSpace(
 \item{presence.points}{Dataframe or list containing a geometry cloumn that contains points to be plotted}
 
 \item{absence.points}{Dataframe or list containing a geometry cloumn that contains points to be plotted}
+
+\item{minimal}{Boolean if TRUE removes the labels legend and title}
 }
 \value{
 NULL, as the function just plots
