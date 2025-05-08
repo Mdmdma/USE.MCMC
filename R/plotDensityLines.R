@@ -34,7 +34,8 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     # Create a grid matrix
     x_seq <- seq(xlim[1], xlim[2], length.out = resolution)
     y_seq <- seq(ylim[1], ylim[2], length.out = resolution)
-    grid <- expand.grid(PC1 = x_seq, PC2 = y_seq)
+    grid <- expand.grid(x = x_seq, y = y_seq)
+    colnames(grid) <- c("PC1", "PC2")
 
     # Create a template from sample.point with correct columns
     sample.point <- dataset[1,]

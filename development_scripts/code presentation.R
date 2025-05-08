@@ -98,8 +98,8 @@ output_file <- "xmy_raster_plot.png"
 
 # Open PNG device with specific dimensions
 # Width and height in pixels (adjust as needed)
-width_px <- 200
-height_px <- 140
+width_px <- 700
+height_px <- 700
 png(filename = output_file, width = width_px, height = height_px)
 
 # --- Create the plot using ggplot2 and tidyterra ---

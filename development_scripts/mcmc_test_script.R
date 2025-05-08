@@ -103,14 +103,19 @@ real.sampled.points <- filtered.mapped.sampled.points[indices, ]
 st_crs(real.sampled.points) <- 4326
 #plot
 if (plot){
-  l1 <- plotPointsWithLines(sampled.points, c("PC1", "PC2", "PC3"),
-                      title = paste("Sampled points"),
-                      xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-                      ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)))
-  l2 <- plotPointsWithLines(real.sampled.points, c("PC1", "PC2", "PC3"),
-                      title = paste("Mapped back on real points"),
-                      xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-                      ylim = c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)))
+  l1 <- plotDensityLines(dataset = sampled.points,
+                         lines = TRUE, cols = c("PC1", "PC2", "PC3"),
+                         density = FALSE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
+                         xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                         ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+                         title = NULL)
+
+  l2 <- plotDensityLines(dataset = real.sampled.points,
+                         lines = TRUE, cols = c("PC1", "PC2", "PC3"),
+                         density = FALSE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
+                         xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                         ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+                         title = NULL)
 
   env.scatterplot <- ggplot(env.with.pc.fs, aes(x = PC1, y = PC2)) +
     geom_point() +
@@ -169,12 +174,12 @@ if (plot){
   }))
   par(mfrow = c(1, 1))
 
-  plotDensity(dataset =  real.sampled.points,
-              species = virtual.presence.points.pc,
-              xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
-              ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-              densityFunction = densityFunction,
-              resolution = 100)
+  plotDensityLines(dataset = real.sampled.points,
+                   lines = FALSE, cols = c("PC1", "PC2", "PC3"),
+                   density = TRUE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
+                   xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
+                   ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
+                   title = NULL)
 
   plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
                           presence.points = virtual.presence.points.pc,
