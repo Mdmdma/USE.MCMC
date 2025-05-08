@@ -2,7 +2,7 @@
 #' enables the plotting of density function as well as a trace of a chain made of points in a dataframe
 #' on this density surface. In addition the species that was used to generate the density model can be supplied
 #' to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-#' instead of as a chain
+#' instead of as a chain. This function has some issues with the check of devtools
 #'
 #'
 #' @param dataset Dataframe specifying the dataset to be plotted as a line or points respectively
@@ -20,6 +20,7 @@
 #' @returns the greated plot
 #' @export
 #'
+# TODO Fix issues with devtools check
 plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                              title = "Connected Data Points",
                              lines = FALSE, cols = NULL,
