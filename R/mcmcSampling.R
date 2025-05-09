@@ -21,9 +21,9 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if(burnIn) {
     cat("Burn in\n")
     points.rejected <- 0
-    num.burnin.samples <- 400
+    num.burnin.samples <- 1000
     pb.burnin <- utils::txtProgressBar(min = 0, max = num.burnin.samples, style = 3)
-   while (points.rejected / num.burnin.samples < 0.2| points.rejected / num.burnin.samples > 0.3) {
+   while (points.rejected / num.burnin.samples < 0.21| points.rejected / num.burnin.samples > 0.25) {
       # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
       points.rejected <- 0
       for (i in 1:num.burnin.samples) {
@@ -36,8 +36,8 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
         utils::setTxtProgressBar(pb.burnin, i)
         cat("\rCurrent rejection ratio: ", points.rejected / i)
       }
-      if (points.rejected / num.burnin.samples < 0.2) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
-      if (points.rejected /num.burnin.samples > 0.3) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
+      if (points.rejected / num.burnin.samples < 0.21) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
+      if (points.rejected /num.burnin.samples > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
       cat("\rThe current rejection rate is", points.rejected /num.burnin.samples, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
 
     }
