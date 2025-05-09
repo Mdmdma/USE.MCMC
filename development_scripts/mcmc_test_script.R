@@ -10,7 +10,7 @@ library(FNN)
 
 #Needed for plotting
 par(mfrow = c(1, 1))
-plot <- TRUE
+plot <- FALSE
 
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
 # load data
