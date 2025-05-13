@@ -11,7 +11,7 @@ library(coda)
 
 #Needed for plotting
 par(mfrow = c(1, 1))
-plot <- TRUE
+plot <- FALSE
 
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
 # load data
@@ -43,19 +43,19 @@ env.with.pc.fs <- rpc$PCs %>%
   st_join(env.data.sf)
 
 # subsample env space to speed up the process
-env.with.pc.fs <- env.with.pc.fs[runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow(env.with.pc.fs)),]
-
+env.with.pc.fs.subsampled <- env.with.pc.fs[runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow(env.with.pc.fs)),]
 #specify the dimension that should be included in the following analysys
 dimensions <- c("PC1", "PC2") #, "PC3", "PC4","PC5"
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
+env.data.cleaned.subsampled <- sf::st_drop_geometry(env.with.pc.fs.subsampled[dimensions])
 
 
 # environment model
-environmental.data.model <- mclust::densityMclust(env.data.cleaned, plot = plot)
+environmental.data.model <- mclust::densityMclust( env.data.cleaned.subsampled, plot = plot)
 summary(environmental.data.model)
-environmental.densities <- mclust::predict.densityMclust(environmental.data.model, env.data.cleaned)
+environmental.densities <- mclust::predict.densityMclust(environmental.data.model,  env.data.cleaned.subsampled)
 environment.threshold <- stats::quantile(environmental.densities, 0.01)
 
 # sample species model
@@ -81,15 +81,16 @@ proposalFunction <- addHighDimGaussian(cov.mat =covariance.proposal.function * d
 #
 
 # sample points
-n_cores <- detectCores() - 1
+n_cores <- 20
 num.chains <- 4
+chain.list <- list()
 chain.list <- mclapply(1:num.chains, function(i) {
-  sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
+  sampled.points <- mcmcSampling(dataset = env.with.pc.fs.subsampled,
                                 dimensions = dimensions,
                                 n.sample.points = 50000,
                                 proposalFunction = proposalFunction,
                                 densityFunction = densityFunction,
-                                burnIn = FALSE)
+                                burnIn = TRUE)
   mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
   mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]
   mapped.sampled.points$density <- sampled.points$density
@@ -107,6 +108,10 @@ chain.list <- mclapply(1:num.chains, function(i) {
 }, mc.cores = min(num.chains, n_cores))
 
 coda.chain.lists <- coda::mcmc.list(chain.list)
+save(coda.chain.lists, file = paste0("~/data/chains/c",
+                                    length(coda.chain.lists),
+                                    "_", length(dimensions),
+                                    "d.RData"))
 
 # METRICS
 plot(coda.chain.lists)

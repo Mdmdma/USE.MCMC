@@ -10,7 +10,7 @@ library(FNN)
 
 #Needed for plotting
 par(mfrow = c(1, 1))
-plot <- FALSE
+plot <- TRUE
 
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
 # load data
@@ -98,7 +98,7 @@ filtered.mapped.sampled.points <- mapped.sampled.points[mapped.sampled.points$di
 
 n.samples <- 500
 sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points), length.out = min(n.samples, nrow(filtered.mapped.sampled.points))))
-real.sampled.points <- filtered.mapped.sampled.points[indices, ]
+real.sampled.points <- filtered.mapped.sampled.points[sample.indexes, ]
 # TODO check where the coordinate system gets lost
 st_crs(real.sampled.points) <- 4326
 #plot
@@ -108,14 +108,14 @@ if (plot){
                          density = FALSE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
                          xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
                          ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-                         title = NULL)
+                         title = "Points of the chain")
 
   l2 <- plotDensityLines(dataset = real.sampled.points,
                          lines = TRUE, cols = c("PC1", "PC2", "PC3"),
                          density = FALSE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
                          xlim = c(min(env.with.pc.fs$PC1), max(env.with.pc.fs$PC1)),
                          ylim =c(min(env.with.pc.fs$PC2), max(env.with.pc.fs$PC2)),
-                         title = NULL)
+                         title = "Chosen points")
 
   env.scatterplot <- ggplot(env.with.pc.fs, aes(x = PC1, y = PC2)) +
     geom_point() +
@@ -134,7 +134,7 @@ if (plot){
       plot.title = ggplot2::element_text(hjust = 0.5))
 
   cowplot::plot_grid(l1, l2, env.scatterplot, species.scatterplot, ncol = 2)
-  par(mfrow = c(length(dimensions),1))
+  #cresate density plots that compare environment, species and sample
   invisible(lapply(dimensions, function(col) {
     # Create an empty plot with appropriate limits
     x_range <- range(
@@ -172,8 +172,6 @@ if (plot){
            col = c("green", "black", "red"),
            lwd = 2)
   }))
-  par(mfrow = c(1, 1))
-
   plotDensityLines(dataset = real.sampled.points,
                    lines = FALSE, cols = c("PC1", "PC2", "PC3"),
                    density = TRUE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
