@@ -1,9 +1,10 @@
 #' Helper to create a Density function that uses mclust Gaussian mixtures
 #'
 #' @param env.model mclust gaussian mixture that uses points
-#' @param presence.model mclust gaussian mixture that uses points
+#' @param species.model mclust gaussian mixture that uses points
 #' @param dim string vector specifing the names of the dimensions
 #' @param threshold sets the curoff density from the environment
+#' @param species.cutoff.threshold set the scaling factor with which the species model gets scaled before subtraction.
 #'
 #' @returns Function that can calculates the density at a point
 #' @export
