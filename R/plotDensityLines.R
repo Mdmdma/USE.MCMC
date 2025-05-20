@@ -23,7 +23,8 @@
 # TODO Fix issues with devtools check
 plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                              title = "Connected Data Points",
-                             lines = FALSE, cols = NULL,
+                             cols = NULL,
+                             lines = FALSE,
                              density = FALSE, species = NULL, densityFunction = alwaysOne, resolution = 10,
                              minimal = FALSE) {
   p <- ggplot2::ggplot()
@@ -36,7 +37,7 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     x_seq <- seq(xlim[1], xlim[2], length.out = resolution)
     y_seq <- seq(ylim[1], ylim[2], length.out = resolution)
     grid <- expand.grid(x = x_seq, y = y_seq)
-    colnames(grid) <- c("PC1", "PC2")
+    colnames(grid) <- cols[1:2]
 
     # Create a template from sample.point with correct columns
     sample.point <- dataset[1,]
@@ -48,11 +49,11 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
 
     # Calculate densities
     if (is.function(densityFunction)) {
-      density_values <- mapply(function(pc1, pc2) {
-        template$PC1 <- pc1
-        template$PC2 <- pc2
+      density_values <- parallel::mcmapply(function(pc1, pc2) {
+        template[[cols[1]]] <- pc1
+        template[[cols[2]]] <- pc2
         densityFunction(template)
-      }, grid$PC1, grid$PC2)
+      }, grid[[cols[1]]], grid[[cols[2]]], mc.cores = parallel::detectCores() - 1)
     } else {
       stop("A density function must be provided")
     }
@@ -66,24 +67,38 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     rownames(density_matrix) <- x_seq
 
     # Add filled tiles with explicit data and aesthetics
-    p <- p + ggplot2::geom_tile(mapping = ggplot2::aes(x = PC1, y = PC2, fill = density), data = grid)
+    p <- p + ggplot2::geom_tile(mapping = ggplot2::aes(x = .data[[cols[1]]],
+                                                       y = .data[[cols[2]]],
+                                                       fill = density),
+                                data = grid)
+
     p <- p + ggplot2::scale_fill_viridis_c(name = "Density")
 
     # Add contour lines with explicit data and aesthetics
-    p <- p + ggplot2::geom_contour(mapping = ggplot2::aes(x = PC1, y = PC2, z = density), data = grid, color = "black", alpha = 0.3, linewidth = 0.5)
+    p <- p + ggplot2::geom_contour(mapping = ggplot2::aes(x = .data[[cols[1]]],
+                                                          y = .data[[cols[2]]],
+                                                          z = density),
+                                   data = grid,
+                                   color = "black",
+                                   alpha = 0.3,
+                                   linewidth = 0.5)
 
     if (!lines){
       # Add points from dataset if available
       if (nrow(dataset) > 1) {
         p <- p + ggplot2::geom_point(data = dataset,
-                                     mapping = ggplot2::aes(x = PC1, y = PC2, color = "Samples"),
+                                     mapping = ggplot2::aes(x = .data[[cols[1]]],
+                                                            y = .data[[cols[2]]],
+                                                            color = "Samples"),
                                      inherit.aes = FALSE)
       }
 
       # Add species points in red if provided
       if (!is.null(species)) {
         p <- p + ggplot2::geom_point(data = species,
-                                     mapping = ggplot2::aes(x = PC1, y = PC2, color = "Species"),
+                                     mapping = ggplot2::aes(x = .data[[cols[1]]],
+                                                            y = .data[[cols[2]]],
+                                                            color = "Species"),
                                      inherit.aes = FALSE)
       }
 
@@ -183,7 +198,7 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
    # Set plot limits and labels
   p <- p + ggplot2::xlim(xlim) +
            ggplot2::ylim(ylim) +
-           ggplot2::labs(x = "PC1", y = "PC2",
+           ggplot2::labs(x = cols[1], y = cols[2],
                          title = title,
                          fill = "Density")
 

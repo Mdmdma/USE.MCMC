@@ -6,15 +6,15 @@
 enables the plotting of density function as well as a trace of a chain made of points in a dataframe
 on this density surface. In addition the species that was used to generate the density model can be supplied
 to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-instead of as a chain}
+instead of as a chain. This function has some issues with the check of devtools}
 \usage{
 plotDensityLines(
   dataset,
   xlim = c(0, 1),
   ylim = c(0, 1),
   title = "Connected Data Points",
-  lines = FALSE,
   cols = NULL,
+  lines = FALSE,
   density = FALSE,
   species = NULL,
   densityFunction = alwaysOne,
@@ -31,9 +31,9 @@ plotDensityLines(
 
 \item{title}{title of the plot}
 
-\item{lines}{boolean that tells the function if the lines should be plotted. If false the dataset will be ploted as points}
-
 \item{cols}{specifies the columns of the dataframe that are used for the density computation. It has to match to the columns used to build the density model.}
+
+\item{lines}{boolean that tells the function if the lines should be plotted. If false the dataset will be ploted as points}
 
 \item{density}{boolean that tells the function if the density should be plotted}
 
@@ -53,5 +53,5 @@ plotDensityLines
 enables the plotting of density function as well as a trace of a chain made of points in a dataframe
 on this density surface. In addition the species that was used to generate the density model can be supplied
 to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-instead of as a chain
+instead of as a chain. This function has some issues with the check of devtools
 }
