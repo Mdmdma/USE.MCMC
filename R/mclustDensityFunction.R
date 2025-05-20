@@ -8,13 +8,13 @@
 #' @returns Function that can calculates the density at a point
 #' @export
 #'
-mclustDensityFunction <- function(env.model = NULL, presence.model = NULL, dim = "", threshold = 0.01){
+mclustDensityFunction <- function(env.model = NULL, species.model = NULL, dim = "", threshold = 0.01, species.cutoff.threshold = 0.1){
 
   densityAtPointEstimator <- function(point){
     point <- as.matrix(sf::st_drop_geometry(point[dim]))
     density <- mclust::predict.densityMclust(env.model, point)
     if (density < threshold ) return(threshold / 1000)
-    return(max(threshold / 1000, 1 - mclust::predict.densityMclust(presence.model, point)  * 10)) # this approach is dubeaous
+    return(max(threshold / 1000, 1 - mclust::predict.densityMclust(species.model, point)  / species.cutoff.threshold)) # this approach is dubeaous
     }
   return(densityAtPointEstimator)
 }

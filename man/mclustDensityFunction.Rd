@@ -6,19 +6,20 @@
 \usage{
 mclustDensityFunction(
   env.model = NULL,
-  presence.model = NULL,
+  species.model = NULL,
   dim = "",
-  threshold = 0.01
+  threshold = 0.01,
+  species.cutoff.threshold = 0.1
 )
 }
 \arguments{
 \item{env.model}{mclust gaussian mixture that uses points}
 
-\item{presence.model}{mclust gaussian mixture that uses points}
-
 \item{dim}{string vector specifing the names of the dimensions}
 
 \item{threshold}{sets the curoff density from the environment}
+
+\item{presence.model}{mclust gaussian mixture that uses points}
 }
 \value{
 Function that can calculates the density at a point
