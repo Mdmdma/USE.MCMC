@@ -15,11 +15,13 @@ mclustDensityFunction(
 \arguments{
 \item{env.model}{mclust gaussian mixture that uses points}
 
+\item{species.model}{mclust gaussian mixture that uses points}
+
 \item{dim}{string vector specifing the names of the dimensions}
 
 \item{threshold}{sets the curoff density from the environment}
 
-\item{presence.model}{mclust gaussian mixture that uses points}
+\item{species.cutoff.threshold}{set the scaling factor with which the species model gets scaled before subtraction.}
 }
 \value{
 Function that can calculates the density at a point

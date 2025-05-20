@@ -17,10 +17,11 @@
 #' @param resolution int sets the resolution of the denisity grid
 #' @param minimal boolean if true removes titel, label, legend and axis
 #'
+#' @importFrom rlang .data
 #' @returns the greated plot
 #' @export
 #'
-# TODO Fix issues with devtools check
+
 plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                              title = "Connected Data Points",
                              cols = NULL,
@@ -117,8 +118,8 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
 
     # Create a copy of dataframe with row numbers for color gradient
     plot_df <- dataset
-    plot_df$point_order <- 1:nrow(dataset)
-    plot_df$point_order_normalized <- plot_df$point_order / nrow(dataset)
+    plot_df$point.order <- 1:nrow(dataset)
+    plot_df$point.order_normalized <- plot_df$point.order / nrow(dataset)
 
     # Initialize transparency value
     v <- 1
@@ -138,9 +139,9 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     hsv_colors_alpha <- character(nrow(plot_df))
     for(i in 1:nrow(plot_df)) {
       if(is.numeric(v) && length(v) > 1) {
-        hsv_colors_alpha[i] <- grDevices::hsv(plot_df$point_order_normalized[i], 1, v[i], alpha = alpha)
+        hsv_colors_alpha[i] <- grDevices::hsv(plot_df$point.order_normalized[i], 1, v[i], alpha = alpha)
       } else {
-        hsv_colors_alpha[i] <- grDevices::hsv(plot_df$point_order_normalized[i], 1, 1, alpha = alpha)
+        hsv_colors_alpha[i] <- grDevices::hsv(plot_df$point.order_normalized[i], 1, 1, alpha = alpha)
       }
     }
 
@@ -169,7 +170,7 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                                               size = 2) +
       ggplot2::geom_point(data = plot_df, ggplot2::aes(x = .data[[cols[1]]],
                                               y = .data[[cols[2]]],
-                                              color = point_order_normalized),
+                                              color = .data[["point.order_normalized"]]),
                                               size = 0,
                                               alpha = 0) +
       # Add color scale for the legend
