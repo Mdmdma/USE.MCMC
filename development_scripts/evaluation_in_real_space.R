@@ -1,3 +1,5 @@
+
+
 # Load required libraries
 library(USE.MCMC)
 library(terra)
@@ -11,6 +13,7 @@ library(FNN)
 #Needed for plotting
 par(mfrow = c(1, 1))
 plot <- TRUE
+
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
 # load data
 env.data.raster <- USE.MCMC::Worldclim_tmp %>%
@@ -18,7 +21,7 @@ env.data.raster <- USE.MCMC::Worldclim_tmp %>%
 
 # env.data.raster <- geodata::worldclim_global(var='bio', res=10, path=datadir)  %>%
 #   terra::crop(terra::ext(-12, 25, 36, 60))
-  #terra::rast( type="xyz")
+#terra::rast( type="xyz")
 #
 # env.data.raster <- geodata::worldclim_country(country = "ch", var = "bio", path=datadir, res=2.5)
 # # convert to SF dataframe
@@ -33,8 +36,6 @@ set.seed(42)
 # Generate the environmental space using PCA
 rpc <- rastPCA(env.data.raster,  stand = TRUE)
 
-
-
 # Attaching the data in the PCA coordinates
 env.with.pc.fs <- rpc$PCs %>%
   as.data.frame(xy = TRUE) %>%
@@ -46,8 +47,8 @@ env.with.pc.fs <- rpc$PCs %>%
 env.with.pc.fs <- env.with.pc.fs[runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow(env.with.pc.fs)),]
 
 #specify the dimension that should be included in the following analysys
-dimensions <- c("PC1", "PC2") #, "PC3", "PC4","PC5"
 dimensions <- c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15")
+
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
@@ -62,13 +63,24 @@ environment.threshold <- stats::quantile(environmental.densities, 0.01)
 # sample species model
 virtual.presence.data <- getVirtualSpeciesPresencePoints(env.data = env.data.raster, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
-env.data.raster <- c(env.data.raster, rpc$PCs) #TODO Better names for the raster would be nice. For the creation of the species we need a raster containing the data only ones. just choosing the relevalt columns is not straight foreward, as our dimensions is rarely the original data
-
 virtual.presence.points.pc <- terra::extract(env.data.raster, virtual.presence.points, bind = TRUE) %>%
   sf::st_as_sf()
 species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
                                       plot = plot)
 summary(species.model)
+
+#density Function
+densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
+                                         species.model = species.model,
+                                         dim = dimensions,
+                                         threshold = environment.threshold)
+
+# # set sampling parameters
+covariance.scaling <-0.075
+covariance.matrix <- stats::cov(sf::st_drop_geometry(virtual.presence.points.pc)[dimensions])
+proposalFunction <- addHighDimGaussian(cov.mat =covariance.scaling * covariance.matrix,
+                                       dim = length(dimensions))
+
 species.densities <- species.model$density
 species.cutoff.threshold <- stats::quantile(species.densities, 0.9)
 
@@ -79,12 +91,6 @@ densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
                                          threshold = environment.threshold,
                                          species.cutoff.threshold = species.cutoff.threshold)
 
-
-# # set sampling parameters
-covariance.scaling <-0.075
-covariance.matrix <- stats::cov(sf::st_drop_geometry(env.with.pc.fs)[dimensions])
-proposalFunction <- addHighDimGaussian(cov.mat =covariance.scaling * covariance.matrix,
-                                       dim = length(dimensions))
 # sample points
 sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                dimensions = dimensions,
