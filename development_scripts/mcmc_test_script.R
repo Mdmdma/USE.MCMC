@@ -47,7 +47,7 @@ env.with.pc.fs <- env.with.pc.fs[runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow
 
 #specify the dimension that should be included in the following analysys
 dimensions <- c("PC1", "PC2") #, "PC3", "PC4","PC5"
-dimensions <- c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15")
+#dimensions <- c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15")
 
 # clean data
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
@@ -91,7 +91,8 @@ sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                n.sample.points = 10000,
                                proposalFunction = proposalFunction,
                                densityFunction = densityFunction,
-                               burnIn = TRUE)
+                               burnIn = TRUE,
+                               verbose = FALSE)
 
 mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
 mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]
@@ -185,7 +186,7 @@ if (plot){
                    density = TRUE, densityFunction = densityFunction, resolution = 100, species = virtual.presence.points.pc,
                    xlim = c(min(env.with.pc.fs[[dimensions[1]]]), max(env.with.pc.fs[[dimensions[1]]])),
                    ylim =c(min(env.with.pc.fs[[dimensions[2]]]), max(env.with.pc.fs[[dimensions[2]]])),
-                   title = NULL)
+                   title = "Density plot")
 
   plotInGeographicalSpace(presence.distribution.raster =  virtual.presence.data$original.distribution.raster,
                           presence.points = virtual.presence.points.pc,
