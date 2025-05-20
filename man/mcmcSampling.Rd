@@ -10,7 +10,8 @@ mcmcSampling(
   densityFunction = alwaysOne,
   proposalFunction = addHighDimGaussian(dim = length(dimensions)),
   n.sample.points = 0,
-  burnIn = TRUE
+  burnIn = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ mcmcSampling(
 
 \item{n.sample.points}{Number of points to be sampled}
 
-\item{burnIn}{Boolean sets if a burn in shoudl be done before the sampling}
+\item{burnIn}{Boolean sets if a burn in shoud be done before the sampling}
+
+\item{verbose}{Boolean to toggle progress updates}
 }
 \value{
 A sf dataframe containing the sampled points
