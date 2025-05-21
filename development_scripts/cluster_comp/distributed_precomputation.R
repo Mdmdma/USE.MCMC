@@ -9,22 +9,24 @@ library(FNN)
 library(coda)
 
 result.list <- list()
-savedir <- "~data/chains/"
+savedir <- "~/data/chains/"
 filename <- "precomputed_chains_50k_env"
 datadir <- "/home/mathis/Desktop/semesterarbeit10/"
-result.list[["num.chains"]] <- num.chains <- 2
+result.list[["num.chains"]] <- num.chains <- 10
 result.list[["dimensions.list"]] <- dimensions.list <- list(c("PC1", "PC2"),
                                                             c("PC1", "PC2", "PC3"),
-                                                            c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15"))
-                                                            # c("PC1", "PC2", "PC3", "PC4"),
-                                                            # c("PC1", "PC2", "PC3", "PC4","PC5"))
-n.samples.per.chain <- 50
+                                                            c("PC1", "PC2", "PC3", "PC4"),
+                                                            c("PC1", "PC2", "PC3", "PC4","PC5"))
+
+result.list[["dimensions.list"]] <- dimensions.list <- list(c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15"))
+
+n.samples.per.chain <- 50000
 result.list[["burnIn"]] <- burnIn <- TRUE
 result.list[["seednumber"]] <- seednumber <- 42
 
 
 
-core.distribution <- c(1,1) #max number to be used in each of the two loops
+core.distribution <- c(4,4) #max number to be used in each of the two loops
 
 #Needed to stop plotting
 plot <- FALSE
