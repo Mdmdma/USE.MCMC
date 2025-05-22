@@ -65,12 +65,13 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   while (points.accepted < n.sample.points) {
     proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
     proposed.point$density <- densityFunction(proposed.point)
+    points.accepted <- points.accepted + 1
     if (acceptNextPoint(current.point, proposed.point)){
       current.point <- proposed.point
-      points.accepted <- points.accepted + 1
       sampled.points[points.accepted, ] <- current.point
     }
     else {
+      sampled.points[points.accepted, ] <- current.point
       points.rejected <- points.rejected + 1
     }
     if (verbose){
