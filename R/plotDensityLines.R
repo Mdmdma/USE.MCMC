@@ -21,7 +21,7 @@
 #' @returns the greated plot
 #' @export
 #'
-
+#
 plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                              title = "Connected Data Points",
                              cols = NULL,

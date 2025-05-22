@@ -6,7 +6,7 @@ library(sf)
 library(ggplot2)
 library(parallel)
 library(FNN)
-
+library(coda)
 
 #Needed for plotting
 par(mfrow = c(1, 1))
