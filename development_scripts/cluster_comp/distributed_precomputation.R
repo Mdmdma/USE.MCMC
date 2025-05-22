@@ -16,6 +16,8 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
+# print(opt$seed)
+# print(opt$pca)
 
 
 result.list <- list()
@@ -38,7 +40,7 @@ result.list[["burnIn"]] <- burnIn <- TRUE
 result.list[["seednumber"]] <- seednumber <- opt$seed
 
 file.prefix <- "precomputed_chains_n"
-filename <- paste0(file.prefix, n.samples.per.chain, "_c", num.chains, "_pca", opt$pca, )
+filename <- paste0(file.prefix, n.samples.per.chain, "_c", num.chains, "_pca", as.character(opt$pca))
 
 core.distribution <- c(4,4) #max number to be used in each of the two loops
 
