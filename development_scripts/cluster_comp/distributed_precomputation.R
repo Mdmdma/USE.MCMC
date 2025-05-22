@@ -7,24 +7,38 @@ library(ggplot2)
 library(parallel)
 library(FNN)
 library(coda)
+library(optparse)
+
+option_list <- list(
+  make_option(c("-s", "--seed"), type = "integer", help = "seed number", default = 42),
+  make_option(c("--pca"), type = "logical", help = "if false plot in the original environment", default = TRUE)
+)
+
+opt <- parse_args(OptionParser(option_list = option_list))
+
+
 
 result.list <- list()
 savedir <- "~/data/chains/"
-filename <- "precomputed_chains_50k_env"
 datadir <- "/home/mathis/Desktop/semesterarbeit10/"
 result.list[["num.chains"]] <- num.chains <- 10
-result.list[["dimensions.list"]] <- dimensions.list <- list(c("PC1", "PC2"),
-                                                            c("PC1", "PC2", "PC3"),
-                                                            c("PC1", "PC2", "PC3", "PC4"),
-                                                            c("PC1", "PC2", "PC3", "PC4","PC5"))
 
-result.list[["dimensions.list"]] <- dimensions.list <- list(c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15"))
+if (opt$pca) {
+  result.list[["dimensions.list"]] <- dimensions.list <- list(c("PC1", "PC2"),
+                                                              c("PC1", "PC2", "PC3"),
+                                                              c("PC1", "PC2", "PC3", "PC4"),
+                                                              c("PC1", "PC2", "PC3", "PC4","PC5"))
+} else {
+  result.list[["dimensions.list"]] <- dimensions.list <- list(c("wc2.1_10m_bio_3", "wc2.1_10m_bio_4", "wc2.1_10m_bio_9", "wc2.1_10m_bio_14", "wc2.1_10m_bio_15"))
+}
+
 
 n.samples.per.chain <- 50000
 result.list[["burnIn"]] <- burnIn <- TRUE
-result.list[["seednumber"]] <- seednumber <- 42
+result.list[["seednumber"]] <- seednumber <- opt$seed
 
-
+file.prefix <- "precomputed_chains_n"
+filename <- paste0(file.prefix, n.samples.per.chain, "_c", num.chains, "_pca", opt$pca, )
 
 core.distribution <- c(4,4) #max number to be used in each of the two loops
 
