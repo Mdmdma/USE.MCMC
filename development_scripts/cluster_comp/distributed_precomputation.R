@@ -37,7 +37,7 @@ if (opt$pca) {
 
 n.samples.per.chain <- 50000
 result.list[["burnIn"]] <- burnIn <- TRUE
-result.list[["seednumber"]] <- seednumber <- opt$seed
+result.list[["seed.number"]] <- seed.number <- opt$seed
 
 file.prefix <- "precomputed_chains_n"
 filename <- paste0(file.prefix, n.samples.per.chain, "_c", num.chains, "_pca", as.character(opt$pca))
@@ -56,7 +56,7 @@ env.data.sf <- env.data.raster %>%
   sf::st_as_sf(coords = c("x", "y"))
 
 # fixing the
-set.seed(seednumber)
+set.seed(seed.number)
 
 # Generate the environmental space using PCA
 rpc <- rastPCA(env.data.raster,  stand = TRUE)
