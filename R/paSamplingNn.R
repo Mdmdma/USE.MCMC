@@ -27,8 +27,8 @@
 paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = 10,
                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
                         verbose = FALSE, dimensions = c("PC1", "PC2"),
-                        precomputed.pca = NULL) {
-
+                        precomputed.pca = NULL,
+                        n.samples = NULL) {
   if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
                                                       "SpatRaster")) {
     stop("Environmental data provided in an unconvenient form")
@@ -68,9 +68,13 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
     rpc <- rastPCA(env.rast, stand = TRUE)
   }
 
-  env.with.pc <- rpc$PCs[[dimensions]]  %>%
+  env.data<- env.data.raster %>%
+    as.data.frame(xy = TRUE)
+
+  env.with.pc <- rpc$PCs  %>%
     as.data.frame(env.with.pc, xy = TRUE) %>%
-    na.omit()
+    na.omit() %>%
+    cbind(env.data.sf)
 
   env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions)
 
@@ -134,14 +138,24 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   chull <- sf::st_convex_hull(chull)
   point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
   outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
+
+  # Reorganize the columns of the sf object so that the output is more convenient to use
   sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
   colnames(sampled.points) <- c("PC1", "PC2")
-  sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence[c("x", "y")]), sampled.points)
+  sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
   # select only unique points
-
-  sampled.points.unique <- sampled.points[!duplicated(sampled.points$PC1), ]
+  sampled.points.unique <- sampled.points[!duplicated(sampled.points[[dimensions[1]]]), ] %>%
+    sf::st_as_sf(coords = c("x", "y"))
   message(paste("There were ", nrow(sampled.points) - nrow(sampled.points.unique),
-                "points that were sampled twice. This indicates oversampling at the border regions."))
+                "points that were sampled twice. This indicates undersampling of low density regions.
+  This occures as the probability of beeing closesed to the same points twice is lower in high denisty regions."))
+
+  if (!is.null(n.samples)){
+    sample.indexes <- floor(seq(1, nrow(sampled.points.unique),
+                                length.out = min(n.samples, nrow(sampled.points.unique))))
+    selected.sampled.points <- sampled.points.unique[sample.indexes, ]
+    return(selected.sampled.points)
+  }
 
   return(sampled.points.unique)
   # ggplot(outside.of.the.region.with.presence, aes(x = PC1, y = PC2, color = distance)) +

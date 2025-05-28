@@ -45,7 +45,7 @@ maxResNn<- function(env.data.raster, dimensions = c("PC1", "PC2") , low.end.of.i
   return(max.num.of.cells)
 
   # interesting insights into distance related metrics
-  par(mfrow = c(1,2))
-  plot(sorted.distances)
-  hist(sorted.distances)
+  graphics::par(mfrow = c(1,2))
+  graphics::plot(sorted.distances)
+  graphics::hist(sorted.distances)
 }

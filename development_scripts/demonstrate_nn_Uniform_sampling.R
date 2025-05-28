@@ -7,9 +7,10 @@ library(parallel)
 library(FNN)
 library(coda)
 
-seed.number = 51
-dimensions <- c("PC1", "PC2")
+seed.number = 43
+dimensions <- c("PC1", "PC2", "PC3")
 set.seed(seed.number)
+n.sample.points = 300
 
 # load data
 data.dir <- "/home/mathis/Desktop/semesterarbeit10/data"
@@ -62,9 +63,18 @@ print(paste("The resolution of the grid should be lower than ",maxResNn(env.data
                n.neighbors = 10,
                low.end.of.inclueded.points = 100, high.end.of.included.points = 4, PCA = TRUE)))
 
-sampled.points.uniform <- paSamplingNn(env.rast = env.data.raster, pres = virtual.presence.points, PCA = rpc)
+sampled.points.uniform <- paSampling(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 10)
+sampled.points.uniform.p <- sf::st_coordinates(sampled.points.uniform) %>% as.data.frame()
+colnames(sampled.points.uniform.p) <- c("PC1", "PC2")
+
+sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 15, n.tr = 2, n.samples = n.sample.points)
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
-                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001)
+                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
+                                      num.chains = 2,
+                                      num.cores = 2,
+                                      chain.length = 1000,
+                                      dimensions = dimensions,
+                                      n.samples = n.sample.points)
 
 
 
@@ -76,19 +86,19 @@ if(TRUE) {
   # theme_minimal()
 
   par(mfrow = c(1,2))
-  plots <- invisible(lapply(dimensions, function(col) {
+  plots <- invisible(lapply(dimensions[1:2], function(col) {
     # Create an empty plot with appropriate limits
 
     x_range <- range(
       c(density(env.with.pc.fs[[col]])$x,
         density(virtual.presence.points.pc[[col]])$x,
-        density(sampled.points.uniform[[col]])$x,
+        density(sampled.points.uniform.nn[[col]])$x,
         density(sampled.points.mcmc[[col]])$x)
     )
     y_range <- range(
       c(density(env.with.pc.fs[[col]])$y,
         density(virtual.presence.points.pc[[col]])$y,
-        density(sampled.points.uniform[[col]])$y,
+        density(sampled.points.uniform.nn[[col]])$y,
         density(sampled.points.mcmc[[col]])$y)
     )
 
@@ -106,8 +116,12 @@ if(TRUE) {
           lwd = 2)
 
     # Add the denisty for the uniformly sampled points
-    lines(density(sampled.points.uniform[[col]]),
+    lines(density(sampled.points.uniform.p[[col]]),
           col = "orange",
+          lwd = 2)
+
+    lines(density(sampled.points.uniform.nn[[col]]),
+          col = "blue",
           lwd = 2)
 
     # Add the denisty for the mcmc sampled points
@@ -117,8 +131,8 @@ if(TRUE) {
 
     # Add a legend
     legend("topleft",
-           legend = c("Environment", "Virtual Presence", "Sampled Points uniform", "Sampled Points mcmc"),
-           col = c("green", "black", "orange", "red"),
+           legend = c("Environment", "Virtual Presence", "Sampled Points uniform", "Sampled Points uniform nn", "Sampled Points mcmc"),
+           col = c("green", "black", "orange", "blue", "red"),
            lwd = 2)
   }))
 }
