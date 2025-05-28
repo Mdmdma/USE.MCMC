@@ -18,6 +18,8 @@
 #' @param prev (double) prevalence value to be specified instead of n.tr and n.ts
 #' @param plot_proc (logical) plot progress of the sampling, default FALSE
 #' @param verbose (logical) Print verbose
+#' @param dimensions (string vector) specify the pc componets to analize. Has to have lenth 2
+#' @param precomputed.pca If in an other step the pca has already been calculated it can be but in here to speed up computation
 #' @importFrom stats na.omit quantile
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
 #' @export
@@ -25,7 +27,7 @@
 paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = 10,
                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
                         verbose = FALSE, dimensions = c("PC1", "PC2"),
-                        PCA = NULL) {
+                        precomputed.pca = NULL) {
 
   if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
                                                       "SpatRaster")) {
@@ -60,8 +62,8 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
 
   message("Computing PCA and presences kernel density estimation in the bivariate space")
 
-  if (!is.null(PCA)){
-    rpc <- PCA
+  if (!is.null(precomputed.pca)){
+    rpc <- precomputed.pca
   } else {
     rpc <- rastPCA(env.rast, stand = TRUE)
   }
@@ -70,8 +72,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
     as.data.frame(env.with.pc, xy = TRUE) %>%
     na.omit()
 
-  env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions) %>%
-    st_join(env.data.sf)
+  env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions)
 
   # compute the grid cells
   grid <- sf::st_make_grid(env.with.pc.fs, n = c(grid.res)) %>%
@@ -97,7 +98,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   mapped.sampled.points <- env.with.pc[mapped.sampled.point.data$nn.index,]
   mapped.sampled.points$distance <- mapped.sampled.point.data$nn.dist
 
-  distance.threshold <- sqrt(step.x^2 + step.y^2) / 2
+  distance.threshold <- max(step.y, step.x) / 2
   mapped.sampled.points.filtered <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
   # Remove points that are located in the region that is associated with the target species
@@ -138,16 +139,14 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence[c("x", "y")]), sampled.points)
   # select only unique points
 
-  sampled.points.unique <- sampled.points[ave(sampled.points$PC1, sampled.points$PC1, FUN = length) == 1, ]
+  sampled.points.unique <- sampled.points[!duplicated(sampled.points$PC1), ]
   message(paste("There were ", nrow(sampled.points) - nrow(sampled.points.unique),
                 "points that were sampled twice. This indicates oversampling at the border regions."))
 
   return(sampled.points.unique)
-
-
-  ggplot(outside.of.the.region.with.presence, aes(x = PC1, y = PC2, color = distance)) +
-    geom_point() +
-#    geom_point(data = occ.df) +
-    scale_color_viridis_c() +  # Optional: prettier color scale
-    theme_minimal()
+  # ggplot(outside.of.the.region.with.presence, aes(x = PC1, y = PC2, color = distance)) +
+  #   geom_point() +
+  #   geom_point(data = occ.df) +
+  #   scale_color_viridis_c() +  # Optional: prettier color scale
+  #   theme_minimal()
 }
