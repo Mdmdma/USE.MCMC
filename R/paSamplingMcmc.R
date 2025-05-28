@@ -30,7 +30,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           precomputed.pca = NULL,
                           seed.number = 42,
                           n.neighbors.for.statistics = 2, low.end.of.inclueded.points = 100, high.end.of.included.points = 5,
-                          environmental.cutof.percentile = 0.005,
+                          environmental.cutof.percentile = 0.001,
                           species.cutoff.threshold = 0.95,
                           plot_proc = FALSE,
                           num.chains = 1, num.cores = 1) {
