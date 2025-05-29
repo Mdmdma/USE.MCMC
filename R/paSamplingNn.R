@@ -147,8 +147,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   sampled.points.unique <- sampled.points[!duplicated(sampled.points[[dimensions[1]]]), ] %>%
     sf::st_as_sf(coords = c("x", "y"))
   message(paste("There were ", nrow(sampled.points) - nrow(sampled.points.unique),
-                "points that were sampled twice. This indicates undersampling of low density regions.
-  This occures as the probability of beeing closesed to the same points twice is lower in high denisty regions."))
+                "points that were sampled twice. This indicates undersampling of low density regions.\nThis occures as the probability of beeing closesed to the same points twice is lower in high denisty regions."))
 
   if (!is.null(n.samples)){
     sample.indexes <- floor(seq(1, nrow(sampled.points.unique),

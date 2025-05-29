@@ -20,9 +20,11 @@ paSamplingMcmc(
   n.neighbors.for.statistics = 2,
   low.end.of.inclueded.points = 100,
   high.end.of.included.points = 5,
-  environmental.cutof.percentile = 0.005,
+  environmental.cutof.percentile = 0.001,
   species.cutoff.threshold = 0.95,
-  plot_proc = FALSE
+  plot_proc = FALSE,
+  num.chains = 1,
+  num.cores = 1
 )
 }
 \arguments{
@@ -55,9 +57,13 @@ paSamplingMcmc(
 \item{species.cutoff.threshold}{sets the percentile of the species presence GMM that is included in the space that can be visited by the chain}
 
 \item{plot_proc}{If true the function returns plots the progress}
+
+\item{num.chains}{Number of chains from which samples should be picked}
+
+\item{num.cores}{Number of cores available for parallelization of the multi-chain computation}
 }
 \value{
-dataframe containg the sampled points
+dataframe containing the sampled points
 }
 \description{
 paSamplingMcmc

@@ -57,7 +57,8 @@ env.data.sf <- env.data.raster %>%
 
 # Generate the environmental space using PCA
 rpc <- rastPCA(env.data.raster,  stand = TRUE)
-raster.with.pc <- c(env.data.raster, rpc$PCs)
+# Create a raster with the environmental variables as well as pcs
+env.data.raster.with.pc <- c(env.data.raster, rpc$PCs)
 
 # Attaching the data in the PCA coordinates
 env.with.pc.fs <- rpc$PCs %>%
@@ -69,9 +70,9 @@ env.with.pc.fs <- rpc$PCs %>%
 We sample a virtual species analog to the method from the USE vignette.
 ```{r create.vs, message=FALSE}
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
-  env.data = env.data.raster, n.samples = 300)
+  env.data = env.data.raster.with.pc, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
-virtual.presence.points.pc <- terra::extract(raster.with.pc,
+virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
                                              virtual.presence.points, bind = TRUE) %>%
   sf::st_as_sf()
 ```
@@ -110,53 +111,113 @@ sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
 We can now analyse the distribution of PC scores of the points sampled by different methods. 
 ```{r visualize, fig.width=7, fig.height=8, echo=FALSE}
 # Create a layout with 3 rows: 2 for plots, 1 for legend
-layout(matrix(c(1, 2, 3), nrow = 3, byrow = TRUE), 
-       heights = c(2,2,1))  # Make legend row shorter
+if(TRUE) {
+  # Create a layout with 3 rows: 2 for plots, 1 for legend
+  plotting.dimensions <- c("PC1", "PC2", "PC3")
+  layout(matrix(c(1:(length(plotting.dimensions) + 1)), nrow = length(plotting.dimensions) + 1, byrow = TRUE),
+         heights = c(rep(3, length(plotting.dimensions)) ,1))  # Make legend row shorter
 
-par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
+  par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
 
-plots <- invisible(lapply(c("PC1", "PC2", "PC3"), function(col) {
-  # Your existing plot code without the legend
-  x_range <- range(
-    c(density(env.with.pc.fs[[col]])$x,
-      density(virtual.presence.points.pc[[col]])$x,
-      density(sampled.points.uniform.nn[[col]])$x,
-      density(sampled.points.mcmc[[col]])$x)
-  )
-  y_range <- range(
-    c(density(env.with.pc.fs[[col]])$y,
-      density(virtual.presence.points.pc[[col]])$y,
-      density(sampled.points.uniform.nn[[col]])$y,
-      density(sampled.points.mcmc[[col]])$y)
-  )
-  
-  plot(density(env.with.pc.fs[[col]]),
-       col = "green",
-       main = paste("Density Comparison for", col),
-       xlim = x_range,
-       ylim = y_range,
-       lwd = 2)
-  
-  lines(density(virtual.presence.points.pc[[col]]), col = "black", lwd = 2)
-  lines(density(sampled.points.uniform.paper[[col]]), col = "orange", lwd = 2)
-  lines(density(sampled.points.uniform.nn[[col]]), col = "blue", lwd = 2)
-  lines(density(sampled.points.mcmc[[col]]), col = "red", lwd = 2)
-}))
+  plots <- invisible(lapply(plotting.dimensions, function(col) {
+    x_range <- range(
+      c(density(env.with.pc.fs[[col]])$x,
+        density(sampled.points.uniform.nn[[col]])$x,
+        density(sampled.points.mcmc[[col]])$x)
+    )
+    y_range <- range(
+      c(density(env.with.pc.fs[[col]])$y,
+        density(sampled.points.uniform.nn[[col]])$y,
+        density(sampled.points.mcmc[[col]])$y)
+    )
 
-# Create an empty plot for the legend
-par(mar = c(0, 0, 0, 0))  # Remove margins
-plot.new()
-legend("center",
-       legend = c("Environment", "Virtual Presence", "Sampled Points uniform", 
-                  "Sampled Points uniform nn", "Sampled Points mcmc"),
-       col = c("green", "black", "orange", "blue", "red"),
-       lwd = 2,
-       horiz = FALSE,  # Vertical legend (rows)
-       bty = "n",      # No box around legend
-       cex = 1.5)      # incease text size
+    plot(density(env.with.pc.fs[[col]]),
+         col = "green",
+         main = paste("Density Comparison for", col),
+         xlim = x_range,
+         ylim = y_range,
+         lwd = 2)
+
+    lines(density(virtual.presence.points.pc[[col]]), col = "black", lwd = 2)
+    lines(density(sampled.points.uniform.paper[[col]]), col = "orange", lwd = 2)
+    lines(density(sampled.points.uniform.nn[[col]]), col = "blue", lwd = 2)
+    lines(density(sampled.points.mcmc[[col]]), col = "red", lwd = 2)
+  }))
+
+  # Create an empty plot for the legend
+  par(mar = c(0, 0, 0, 0))  # Remove margins
+  plot.new()
+  legend("center",
+         legend = c("Environment", "Virtual Presence", "Sampled Points uniform",
+                    "Sampled Points uniform nn", "Sampled Points mcmc"),
+         col = c("green", "black", "orange", "blue", "red"),
+         lwd = 2,
+         horiz = FALSE,  # Vertical legend (rows)
+         bty = "n",      # No box around legend
+         cex = 1.5)      # incease text size
+}
 ```
+In difference to the approaches on which the MCMC approach is based it works in higher dimension.
+Lets explore the changes we have to to to sample in more dimensions.
+```{r}
+sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
+                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
+                                      num.chains = 2,
+                                      num.cores = 2,
+                                      chain.length = 10000,
+                                      n.samples = n.sample.points,
+                                      verbose = TRUE,
+                                      dimensions = c("PC1", "PC2", "PC3"))
+```
+The interpret ability of the results now gets more complicated. The expected distribution of uniform sampling of one variable is dependent on the range of the other dimensions at diffenent values. 
+```{r visualize, fig.width=7, fig.height=11, echo=FALSE}
+# Create a layout with 3 rows: 2 for plots, 1 for legend
+if(TRUE) {
+  # Create a layout with 3 rows: 2 for plots, 1 for legend
+  plotting.dimensions <- c("PC1", "PC2", "PC3")
+  layout(matrix(c(1:(length(plotting.dimensions) + 1)), nrow = length(plotting.dimensions) + 1, byrow = TRUE),
+         heights = c(rep(2, length(plotting.dimensions)) ,1))  # Make legend row shorter
 
+  par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
 
+  plots <- invisible(lapply(plotting.dimensions, function(col) {
+    x_range <- range(
+      c(density(env.with.pc.fs[[col]])$x,
+        density(sampled.points.uniform.nn[[col]])$x,
+        density(sampled.points.mcmc.higher.dim[[col]])$x)
+    )
+    y_range <- range(
+      c(density(env.with.pc.fs[[col]])$y,
+        density(sampled.points.uniform.nn[[col]])$y,
+        density(sampled.points.mcmc.higher.dim[[col]])$y)
+    )
+
+    plot(density(env.with.pc.fs[[col]]),
+         col = "green",
+         main = paste("Density Comparison for", col),
+         xlim = x_range,
+         ylim = y_range,
+         lwd = 2)
+
+    lines(density(virtual.presence.points.pc[[col]]), col = "black", lwd = 2)
+    lines(density(sampled.points.uniform.paper[[col]]), col = "orange", lwd = 2)
+    lines(density(sampled.points.uniform.nn[[col]]), col = "blue", lwd = 2)
+    lines(density(sampled.points.mcmc.higher.dim[[col]]), col = "red", lwd = 2)
+  }))
+
+  # Create an empty plot for the legend
+  par(mar = c(0, 0, 0, 0))  # Remove margins
+  plot.new()
+  legend("center",
+         legend = c("Environment", "Virtual Presence", "Sampled Points uniform",
+                    "Sampled Points uniform nn", "Sampled Points mcmc"),
+         col = c("green", "black", "orange", "blue", "red"),
+         lwd = 2,
+         horiz = FALSE,  # Vertical legend (rows)
+         bty = "n",      # No box around legend
+         cex = 1.5)      # incease text size
+}
+```
 
 
 

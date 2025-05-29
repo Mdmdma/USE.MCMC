@@ -17,7 +17,8 @@ paSamplingNn(
   plot_proc = FALSE,
   verbose = FALSE,
   dimensions = c("PC1", "PC2"),
-  precomputed.pca = NULL
+  precomputed.pca = NULL,
+  n.samples = NULL
 )
 }
 \arguments{

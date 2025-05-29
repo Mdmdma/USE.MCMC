@@ -61,13 +61,15 @@ print(paste("The resolution of the grid should be lower than ",maxResNn(env.data
                low.end.of.inclueded.points = 100, high.end.of.included.points = 4, PCA = TRUE)))
 
 sampled.points.uniform.p <- paSampling(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 10)
-
 sampled.points.uniform.p.location <- sf::st_drop_geometry(sampled.points.uniform.p) %>%
   dplyr::select(c("x", "y")) %>%
   sf::st_as_sf(coords = c("x", "y"))
 sampled.points.uniform.paper <- terra::extract(env.data.raster.with.pc, sampled.points.uniform.p.location)
 
-sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 15, n.tr = 2, n.samples = n.sample.points)
+sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
+                                          pres = virtual.presence.points,
+                                          grid.res = 15, n.tr = 2,
+                                          n.samples = n.sample.points)
 
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
@@ -89,16 +91,13 @@ if(TRUE) {
   par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
 
   plots <- invisible(lapply(plotting.dimensions, function(col) {
-    # Your existing plot code without the legend
     x_range <- range(
       c(density(env.with.pc.fs[[col]])$x,
-        density(virtual.presence.points.pc[[col]])$x,
         density(sampled.points.uniform.nn[[col]])$x,
         density(sampled.points.mcmc[[col]])$x)
     )
     y_range <- range(
       c(density(env.with.pc.fs[[col]])$y,
-        density(virtual.presence.points.pc[[col]])$y,
         density(sampled.points.uniform.nn[[col]])$y,
         density(sampled.points.mcmc[[col]])$y)
     )
