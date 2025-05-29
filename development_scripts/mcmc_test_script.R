@@ -9,7 +9,7 @@ library(FNN)
 library(coda)
 
 #Needed for plotting
-par(mfrow = c(1, 1))
+
 plot <- TRUE
 datadir <- "/home/mathis/Desktop/semesterarbeit10/data"
 # load data
@@ -17,7 +17,7 @@ env.data.raster <- USE.MCMC::Worldclim_tmp %>%
   terra::rast( type="xyz")
 
 # env.data.raster <- geodata::worldclim_global(var='bio', res=10, path=datadir)  %>%
-#   terra::crop(terra::ext(-12, 25, 36, 60))
+#   terra::crop(terra::ext(-12, 25, 36, 60)) %>%
   #terra::rast( type="xyz")
 #
 # env.data.raster <- geodata::worldclim_country(country = "ch", var = "bio", path=datadir, res=2.5)
@@ -92,7 +92,7 @@ sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                proposalFunction = proposalFunction,
                                densityFunction = densityFunction,
                                burnIn = TRUE,
-                               verbose = FALSE)
+                               verbose = TRUE)
 
 mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
 mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]

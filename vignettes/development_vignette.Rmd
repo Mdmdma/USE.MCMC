@@ -1,0 +1,164 @@
+---
+title: "Development Vignette"
+autor: "Mathis Erler"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Development Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+This markdown shows the current state of the MCMC extension of the USE package.
+
+In a first step we load the needed packages.
+```{r setup, message=FALSE}
+devtools::install_github("mdmdma/USE.MCMC")
+library(USE.MCMC)
+library(terra)
+library(virtualspecies)
+library(sf)
+library(ggplot2)
+library(parallel)
+library(FNN)
+```
+As a first step we fix a seed to get reproducible results.
+```{r fix.seed}
+seed.number = 43
+set.seed(seed.number)
+```
+
+In a next step we can load data. For conveniance the worldclim dataset of the USE package can be used. It contains 5 variables at a resolution of 10 arcminutes.
+```{r data}
+env.data.raster <- USE.MCMC::Worldclim_tmp %>%
+  terra::rast( type="xyz")
+```
+If available other compibations of variables can be used
+```{r data.if.available, eval=FALSE}
+data.dir <- "/home/mathis/Desktop/semesterarbeit10/data"
+
+number.of.dimensions <- 5
+env.data.raster.all.dim <- geodata::worldclim_global(var='bio', res=10, path=data.dir)  %>%
+  terra::crop(terra::ext(-12, 25, 36, 60))
+
+selected.layers <- sample(terra::nlyr(env.data.raster.all.dim), number.of.dimensions)
+env.data.raster <- env.data.raster.all.dim[[selected.layers]]
+```
+The data is further prepared to be later used to plot the distribution of the environment.
+```{r prepare.data}
+env.data.sf <- env.data.raster %>%
+  as.data.frame(xy = TRUE) %>%
+  sf::st_as_sf(coords = c("x", "y"))
+
+# Generate the environmental space using PCA
+rpc <- rastPCA(env.data.raster,  stand = TRUE)
+raster.with.pc <- c(env.data.raster, rpc$PCs)
+
+# Attaching the data in the PCA coordinates
+env.with.pc.fs <- rpc$PCs %>%
+  as.data.frame(xy = TRUE) %>%
+  na.omit() %>%
+  sf::st_as_sf(coords = c("x", "y")) %>%
+  st_join(env.data.sf)
+```
+We sample a virtual species analog to the method from the USE vignette.
+```{r create.vs, message=FALSE}
+virtual.presence.data <- getVirtualSpeciesPresencePoints(
+  env.data = env.data.raster, n.samples = 300)
+virtual.presence.points <- virtual.presence.data$sample.points
+virtual.presence.points.pc <- terra::extract(raster.with.pc,
+                                             virtual.presence.points, bind = TRUE) %>%
+  sf::st_as_sf()
+```
+Now that the data and species are prepared, we can sample pseudo absences. Here we will compare multiple methods.
+
+First we sample using the method presented in the paper. 
+```{r uniform.paper}
+sampled.points.uniform.p <- paSampling(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 10)
+sampled.points.uniform.p.location <- sf::st_drop_geometry(sampled.points.uniform.p) %>%
+  dplyr::select(c("x", "y")) %>%
+  sf::st_as_sf(coords = c("x", "y"))
+sampled.points.uniform.paper <- terra::extract(env.data.raster.with.pc, sampled.points.uniform.p.location)
+```
+The sampled points were rearanged so that the data can be easier compared. 
+
+As a second comparison I implemented an other grid based uniform sampling approach, see \code{\link{paSamplingNn}} for details. It is similar to the MCMC approach that locations in the PCA space are sampled and then remapped to points in the environmental space using nearest neighbor search. It conceptually forms a bridge to the MCMC approach.
+Using the parameter \code{n.sample.points} we can select the number of sampled points.  
+```{r uniform.nn}
+n.sample.points = 300
+sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
+                                          pres = virtual.presence.points,
+                                          grid.res = 15, n.tr = 2,
+                                          n.samples = n.sample.points)
+
+```
+Analog to the methods shown before we can use the MCMC approach to sample pseudo absences. It works with the same minimal parameters \code{env.rast} and \code{pres}, but can be supplied with additional parameters to controls its behavior.
+```{r uniform.mcmc}
+sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
+                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
+                                      num.chains = 2,
+                                      num.cores = 2,
+                                      chain.length = 10000,
+                                      n.samples = n.sample.points,
+                                      verbose = TRUE)
+```
+We can now analyse the distribution of PC scores of the points sampled by different methods. 
+```{r visualize, fig.width=7, fig.height=8, echo=FALSE}
+# Create a layout with 3 rows: 2 for plots, 1 for legend
+layout(matrix(c(1, 2, 3), nrow = 3, byrow = TRUE), 
+       heights = c(2,2,1))  # Make legend row shorter
+
+par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
+
+plots <- invisible(lapply(c("PC1", "PC2", "PC3"), function(col) {
+  # Your existing plot code without the legend
+  x_range <- range(
+    c(density(env.with.pc.fs[[col]])$x,
+      density(virtual.presence.points.pc[[col]])$x,
+      density(sampled.points.uniform.nn[[col]])$x,
+      density(sampled.points.mcmc[[col]])$x)
+  )
+  y_range <- range(
+    c(density(env.with.pc.fs[[col]])$y,
+      density(virtual.presence.points.pc[[col]])$y,
+      density(sampled.points.uniform.nn[[col]])$y,
+      density(sampled.points.mcmc[[col]])$y)
+  )
+  
+  plot(density(env.with.pc.fs[[col]]),
+       col = "green",
+       main = paste("Density Comparison for", col),
+       xlim = x_range,
+       ylim = y_range,
+       lwd = 2)
+  
+  lines(density(virtual.presence.points.pc[[col]]), col = "black", lwd = 2)
+  lines(density(sampled.points.uniform.paper[[col]]), col = "orange", lwd = 2)
+  lines(density(sampled.points.uniform.nn[[col]]), col = "blue", lwd = 2)
+  lines(density(sampled.points.mcmc[[col]]), col = "red", lwd = 2)
+}))
+
+# Create an empty plot for the legend
+par(mar = c(0, 0, 0, 0))  # Remove margins
+plot.new()
+legend("center",
+       legend = c("Environment", "Virtual Presence", "Sampled Points uniform", 
+                  "Sampled Points uniform nn", "Sampled Points mcmc"),
+       col = c("green", "black", "orange", "blue", "red"),
+       lwd = 2,
+       horiz = FALSE,  # Vertical legend (rows)
+       bty = "n",      # No box around legend
+       cex = 1.5)      # incease text size
+```
+
+
+
+
+
+
+
