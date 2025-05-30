@@ -64,6 +64,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   env.data.cleaned.subsampled <- sf::st_drop_geometry(env.with.pc.fs.subsampled[dimensions])
 
   # environment model
+  if (verbose) cat("Fit environmental model")
   environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled,
                                                     plot = plot_proc,
                                                     verbose = verbose )
@@ -78,6 +79,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   env.data.raster.with.pc <- c(env.data.raster, rpc$PCs)
   virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc, virtual.presence.points, bind = TRUE) %>%
     sf::st_as_sf()
+  if (verbose) cat("Fit environmental model")
   species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
                                         plot = plot_proc,
                                         verbose = verbose)
