@@ -18,7 +18,7 @@ This markdown shows the current state of the MCMC extension of the USE package.
 
 In a first step we load the needed packages.
 ```{r setup, message=FALSE}
-devtools::install_github("mdmdma/USE.MCMC")
+#devtools::install_github("mdmdma/USE.MCMC")
 library(USE.MCMC)
 library(terra)
 library(virtualspecies)
