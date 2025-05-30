@@ -1,9 +1,10 @@
 pandoc: 3.1.11
-pkgdown: 2.1.1
+pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
+  development_vignette: development_vignette.html
   USE_vignette: USE_vignette.html
-last_built: 2025-04-04T09:56Z
+last_built: 2025-05-30T10:53Z
 urls:
   reference: https://mdmdma.github.io/USE.MCMC/reference
   article: https://mdmdma.github.io/USE.MCMC/articles

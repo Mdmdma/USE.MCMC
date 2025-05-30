@@ -18,7 +18,8 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
+    <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -43,7 +44,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">acceptNextPoint</span><span class="op">(</span><span class="va">current.point</span>, <span class="va">proposed.point</span>, <span class="va">densityFunction</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">acceptNextPoint</span><span class="op">(</span><span class="va">current.point</span>, <span class="va">proposed.point</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -51,15 +52,11 @@
 
 
 <dl><dt id="arg-current-point">current.point<a class="anchor" aria-label="anchor" href="#arg-current-point"></a></dt>
-<dd><p>Current state of the markov chain, given as a sf dataframe.</p></dd>
+<dd><p>Current state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.</p></dd>
 
 
 <dt id="arg-proposed-point">proposed.point<a class="anchor" aria-label="anchor" href="#arg-proposed-point"></a></dt>
-<dd><p>Proposed next state of the markov chain, given as a sf dataframe.</p></dd>
-
-
-<dt id="arg-densityfunction">densityFunction<a class="anchor" aria-label="anchor" href="#arg-densityfunction"></a></dt>
-<dd><p>Function that can take a point given as a sf dataframe as a input and returns the target density at that location.</p></dd>
+<dd><p>Proposed next state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -76,7 +73,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
