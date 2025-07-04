@@ -1,0 +1,670 @@
+---
+title: "Insights-on-nearest-neighbor-search"
+autor: "Mathis Erler"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Insights-on-nearest-neighbor-search}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+This vignette gives some insights on the concept of nearest neighbor search in the context of uniform sampling.
+
+```{r, setup, message=FALSE}
+library(USE.MCMC)
+library(ggplot2)
+library(rnaturalearth)
+library(FNN)
+library(sf)
+library(dplyr)
+library(cowplot)
+library(virtualspecies)
+```
+
+
+The foundation of the approach is the assumption that we can map a point in various dimensions to real points in our environment using distance as the metric that tells us which point matches best.
+
+In the geographical space this concept is very intuitive. The closest city to a given test point is the one with the least distance.
+
+```{r, geographical-space-example, fig.height=5, fig.width=7, echo=FALSE}
+countries_sf <- ne_countries(scale = "medium", returnclass = "sf")
+italy <- countries_sf[countries_sf$admin == "Italy", ]
+italy <- italy$geometry
+
+
+city.points <- data.frame(
+  name = c("Rome", "Milan", "Venice", "Naples", "Turin", "Palermo"),
+  lon = c(12.4964, 9.1900, 12.3155, 14.2681, 7.6869, 13.3615),
+  lat = c(41.9028, 45.4642, 45.4408, 40.8518, 45.0703, 38.1157)
+)
+city.points.sf <-  sf::st_as_sf(city.points,
+                                coords = c("lon", "lat"),
+                                crs = 4326)
+
+test.point <- data.frame(
+  name = c("Test point"),
+  lon = c(12.6),
+  lat = c(43.7)
+)
+test.point.sf <- sf::st_as_sf(test.point, 
+                              coords = c("lon", "lat"),
+                              crs = 4326)
+
+p.real.space <- ggplot() + 
+  geom_sf(data = italy, fill = "lightgray", color = "black") + 
+  geom_sf(data = city.points.sf, color = "lightgreen", size = 2) + 
+  geom_sf(data = test.point.sf, color = "red", size = 2) + 
+  geom_text(data = city.points.sf, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.2, size = 3) +
+  geom_text(data = test.point.sf, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.2, size = 3) +
+  theme_minimal() +
+  labs(title = "Map of Italy with 7 Cities", x = NULL, y = NULL)
+
+
+# Function to create lines and calculate distances
+create.lines.with.distances <- function(cities.sf, test.point.sf) {
+  
+  # Create lines from each city to test point
+  lines.list <- list()
+  distances <- numeric(nrow(cities.sf))
+  
+  for(i in 1:nrow(cities.sf)) {
+    # Create line geometry
+    line.coords <- rbind(
+      st_coordinates(cities.sf[i,]),
+      st_coordinates(test.point.sf)
+    )
+    
+    # Create line sf object
+    line.geom <- st_linestring(line.coords)
+    lines.list[[i]] <- line.geom
+    
+    # Calculate distance (in meters, then convert to km)
+    distances[i] <- as.numeric(st_distance(cities.sf[i,], test.point.sf)) / 1000
+  }
+  
+  # Combine lines into sf dataframe
+  lines.sf <- st_sf(
+    city = cities.sf$name,
+    distance.km = round(distances, 1),
+    geometry = st_sfc(lines.list, crs = st_crs(cities.sf))
+  )
+  
+  return(lines.sf)
+}
+
+
+
+# Create lines with distances
+lines.sf <- create.lines.with.distances(city.points.sf, test.point.sf)
+
+city.points.sf$distance <- round(lines.sf$distance.km)
+
+# Create the plot
+p.real.space.lines <- ggplot() +
+  geom_sf(data = italy, fill = "lightgray", color = "black") + 
+  # Add lines with color based on distance
+  geom_sf(data = lines.sf, aes(color = distance.km), size = 1.2) +
+  
+  # Add cities as points
+  geom_sf(data = city.points.sf, size = 2, color = "lightgreen", alpha = 0.7) +
+  
+  # Add test point
+  geom_sf(data = test.point.sf, size = 1, color = "red") +
+  
+  # Add city labels
+  geom_text(data = city.points.sf, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.2, size = 3) +
+  geom_text(data = test.point.sf, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.2, size = 3) +
+  
+  geom_sf_text(data = city.points.sf, 
+               aes(label = paste0(distance, " km")),
+               size = 2.5, color = "black",
+               nudge_y = 0.5) +
+  
+  # Styling
+  scale_color_viridis_c(name = "Distance (km)", option = "plasma") +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "Distance from Cities to the Test Point",
+    x = NULL, y = NULL
+  ) 
+
+combined.plot.real.space <- suppressWarnings(
+  cowplot::plot_grid(p.real.space, p.real.space.lines, ncol = 2))
+plot(combined.plot.real.space)
+```
+
+In this case Venice is closest to the test point. If we want to get a real point from our test point using geographical distance as out metric we would therefore choose Venice. 
+
+We can now do the same thing in the environmental space. To start lets build an example with just two dimensions. As an example we can look at bioclimatical variables 14 and 15. Bioclim 14 denotes the precipitation of the driest month, bioclim 15 the Precipitation Seasonality. 
+
+```{r env-example, fig.height=10, fig.width=7, echo=FALSE}
+
+env.data.raster <- USE.MCMC::Worldclim_tmp %>%
+  terra::rast( type="xyz") %>%
+  round(2)
+
+env.data.raster$wc2.1_10m_bio_4 <- env.data.raster$wc2.1_10m_bio_4 / 100
+
+city.points.sf.environment <- terra::extract(env.data.raster, 
+                                             city.points.sf, bind = TRUE) %>% 
+  sf::st_as_sf() %>%
+  sf::st_drop_geometry() %>%
+  sf::st_as_sf(coords = c("wc2.1_10m_bio_14", "wc2.1_10m_bio_15"))
+test.point.sf.environment <- terra::extract(env.data.raster,
+                                            test.point.sf, bind = TRUE) %>% 
+  sf::st_as_sf() %>%
+  sf::st_drop_geometry() %>%
+  sf::st_as_sf(coords = c("wc2.1_10m_bio_3", "wc2.1_10m_bio_14"))
+
+p.environmental.space <- ggplot() +
+  geom_sf(data = city.points.sf.environment, color = "lightgreen", size = 2) + 
+  geom_sf(data = test.point.sf.environment, color = "red", size = 2) +
+  geom_text(data = city.points.sf.environment,
+            aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 2, size = 3) +
+  geom_text(data = test.point.sf.environment,
+            aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 2, size = 3) +
+  theme_minimal() +
+  labs(title = "Italian cities in the environmental space") + 
+  xlim(0, 60) +
+  ylim(15,60) +
+  xlab("bioclim 14, precipitation of the driest month (mm)") +
+  ylab ("bioclim 15, precipitation seasonality (mm)")
+
+# Create lines with distances
+lines.sf.env <- create.lines.with.distances(city.points.sf.environment,
+                                            test.point.sf.environment)
+
+lines.sf.env$distance.mm <- sf::st_length(lines.sf.env)
+
+city.points.sf.environment$distance.env <- floor(lines.sf.env$distance.mm)
+
+distances <- FNN::get.knnx(test.point[c("lon", "lat")],
+                           city.points[c("lon", "lat")], k = 1)
+
+# Create the plot
+p.environmental.space.lines <- ggplot() +
+  geom_sf(data = lines.sf.env, aes(color = distance.mm), size = 1.2) +
+  
+  # Add cities as points
+  geom_sf(data = city.points.sf.environment, size = 2,
+          color = "lightgreen", 
+          alpha = 0.7) +
+  
+  # Add test point
+  geom_sf(data = test.point.sf.environment, size = 1, color = "red") +
+  
+  # Add city labels
+  geom_text(data = city.points.sf.environment,
+            aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 1.5, size = 3) +
+  geom_text(data = test.point.sf.environment, aes(label = name,
+                                                  geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 1.5, size = 3) +
+  
+  geom_sf_text(data = city.points.sf.environment, 
+               aes(label = paste0(distance.env, " mm")),
+               size = 3, color = "black",
+               nudge_y = -2) +
+  
+  # Styling
+  scale_color_viridis_c(name = "\"Distance\" mm", option = "plasma") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Distance between cities in the environmental space") + 
+  xlim(0, 60) +
+  ylim(15,60) +
+  xlab("bioclim 14, precipitation of the driest month (mm)") +
+  ylab ("bioclim 15, precipitation seasonality (mm)")
+  
+
+# Display the plot
+combined.plot.environmental.space <- cowplot::plot_grid(
+  p.environmental.space, p.environmental.space.lines, ncol = 1)
+plot(combined.plot.environmental.space)
+```
+
+Now Naples is the closest location. In this case the term distance is still somewhat sound, as both axis have the units mm. It starts to fall apart when axis to not share the same units, as is unclear how the scales of the data compare. In this fabricated case, dimensions of similar scale were chosen, but this is not necessarily the case. As an example bioclim 4 has values ranging between 200 and 900 in Europe. How these variables are scaled to get meaningful results is not clear. One way to evade this issue is to perform a PCA. In this case the different scales of the axis are explained by the respective variability that can be explained with the axis. The unit of the "distance" loses its interpretability, as it will be a mix between temperature and precipitation. Non the less we can find environmentally similar points by selecting the point with the shortest distance to our test points. 
+
+Lets look at a example of our test points when performing a principle component analysis on five bioclim variables(3, 4, 9, 14, 15).
+
+```{r pca-example, fig.height=10, fig.width=7}
+set.seed(42)
+rpc <- rastPCA(env.data.raster,  stand = TRUE)
+
+```
+
+```{r plot-pca-example , fig.height=10, fig.width=7, echo=FALSE}
+
+city.points.sf.pca <- terra::extract(rpc$PCs, city.points.sf, bind = TRUE) %>% 
+  sf::st_as_sf() %>%
+  sf::st_drop_geometry() %>%
+  sf::st_as_sf(coords = c("PC1", "PC2"))
+
+test.point.sf.pca<- terra::extract(rpc$PCs, test.point.sf, bind = TRUE) %>% 
+  sf::st_as_sf() %>%
+  sf::st_drop_geometry() %>%
+  sf::st_as_sf(coords = c("PC2", "PC2"))
+
+p.environmental.space <- ggplot() +
+  geom_sf(data = city.points.sf.pca, color = "lightgreen", size = 2) + 
+  geom_sf(data = test.point.sf.pca, color = "red", size = 2) +
+  geom_text(data = city.points.sf.pca, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.1, size = 3) +
+  geom_text(data = test.point.sf.pca, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.1, size = 3) +
+  theme_minimal() +
+  labs(title = "Italian cities in the pc space") + 
+  # xlim(0, 60) +
+  # ylim(15,60) +
+  xlab("PC1") +
+  ylab ("PC2")
+
+# Create lines with distances
+lines.sf.env <- create.lines.with.distances(city.points.sf.pca, 
+                                            test.point.sf.pca)
+
+lines.sf.env$distance.mm <- sf::st_length(lines.sf.env)
+
+city.points.sf.pca$distance.pca <- round(lines.sf.env$distance.mm,2)
+
+# Create the plot
+p.environmental.space.lines <- ggplot() +
+  geom_sf(data = lines.sf.env, aes(color = distance.mm), size = 1.2) +
+  
+  # Add cities as points
+  geom_sf(data = city.points.sf.pca,
+          size = 2, color = "lightgreen",
+          alpha = 0.7) +
+  
+  # Add test point
+  geom_sf(data = test.point.sf.pca, size = 1, color = "red") +
+  
+  # Add city labels
+  geom_text(data = city.points.sf.pca, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.1, size = 3) +
+  geom_text(data = test.point.sf.pca, aes(label = name, geometry = geometry),
+            stat = "sf_coordinates", nudge_y = 0.1, size = 3) +
+  
+  geom_sf_text(data = city.points.sf.pca, 
+               aes(label = distance.pca),
+               size = 3, color = "black",
+               nudge_y = -0.1) +
+  
+  # Styling
+  scale_color_viridis_c(name = "\"Distance\"", option = "plasma") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Distance between cities in the environmental space") + 
+  xlab("PC1") +
+  ylab ("PC2")
+  
+
+# Display the plot
+combined.plot.environmental.space <- cowplot::plot_grid(
+  p.environmental.space, p.environmental.space.lines, ncol = 1)
+plot(combined.plot.environmental.space)
+
+```
+
+Looking at the first two principal components we see that the test point is climate wise closest to Turin, while still being far. In addition we see that the distance to Naples, Milan and Venice is not much higher. The distance gives us a indication on how similar the best match is. In this case it would probably be sound to say that no good match was found. As our environmental space only contained 7 points this is no surprise. Luckily for us there are more then seven measurement stations in Europe and satellites can provide high resolution data for areas without measurement devices on the ground. At a resolution of 2.5 arc minutes there are over 18'000 data points in western Europe. 
+
+```{r handle-data, warnings=FALSE}
+dimensions <- c("PC1", "PC2")
+env.data.sf <- env.data.raster %>%
+  as.data.frame(xy = TRUE) %>%
+  sf::st_as_sf(coords = c("x", "y"))
+
+env.data<- env.data.raster %>%
+  as.data.frame(xy = TRUE)
+
+env.with.pc <- rpc$PCs  %>%
+  as.data.frame(env.with.pc, xy = TRUE) %>%
+  na.omit() %>%
+  cbind(env.data.sf)
+
+env.with.pc.sf <- sf::st_as_sf(env.with.pc, coords = dimensions)
+
+```
+
+```{r env-in-pc-plot, fig.height=5, fig.width=7, echo=FALSE}
+p.env.space.pc <- ggplot(env.with.pc.sf) + 
+  geom_sf(size=0.1) +
+  theme_minimal() + 
+  labs(title = "The environment in principle components") + 
+  xlab("PC1") + ylab("PC2")
+
+print(p.env.space.pc)
+```
+Now lets explore how we can use the nearest neighbor mapping can help us to uniformly sample points out of this environmental space.
+
+If we would randomly pick points out of the set of points in the environment we would recreate the distribution of points in the environment and not get a flat, uniform, distribution. 
+
+The main principle of the proposed method is that we create a grid of uniformly spaced points, map them back to real points in the environment and then use statistics of the distances to exclude points that had their origin in a region that was too far away from the real points. This works with the assumption that the environment is made up by connected points. 
+
+The function [`paSamplingNn()`][USE.MCMC::paSamplingNn] performs this sampling given the environmental space. Lets look under its hood to understand how it works. 
+
+In a first step we need to provide the parameters we want to control. 
+
+```{r parameters}
+grid.res <- 15
+num.samples.per.cell <- 3
+dimensions <- c("PC1", "PC2")
+```
+
+We now compute a uniformly spaced grid that covers the whole environmental range. 
+
+```{r grid}
+# compute the grid cells
+grid <- sf::st_make_grid(env.with.pc.sf, n = c(grid.res)) %>%
+  sf::st_centroid() %>%
+  sf::st_coordinates() %>%
+  as.data.frame()
+names(grid) = dimensions
+```
+```{r plot-grid, fig.height=5, fig.width=7, echo=FALSE}
+p.grid <- ggplot(grid) + 
+  geom_point(aes(x=PC1, y=PC2)) + 
+  labs(title = "Regularly spaced grid")
+print(p.grid)
+```
+
+As we may want multiple points sampled from the same grid cell, we repeat the grid the respective number of times.
+
+```{r repeat-grid}
+grid.repeated <- do.call(rbind, replicate(num.samples.per.cell, grid, simplify = FALSE))
+```
+
+So far this would does not work, these repeated points would all map to the same nearest neighbor in the environment. In addition to that the grid adds a bias to the sampled points.
+
+To eliminate this issue we add uniform noise in the range of the grid spacing to the points. Thereby we loose the grid bias, and sample from random location in each grid cell, while on larger scales still conserving uniform sampling. In addition to that we can now sample multiple points from the same grid cell, as the noise is different for each point. 
+
+```{r add-noise-to-grid}
+step.scaling = 2
+step.x <- (grid[1,2] - grid[1,1]) / step.scaling
+step.y <- (grid[2,1] - grid[1,1]) / step.scaling
+
+noise.x <- stats::runif(nrow(grid.repeated), -step.x, step.x)
+noise.y <- stats::runif(nrow(grid.repeated), -step.y, step.y)
+noise <- data.frame(noise.y, noise.x)
+grid.noisy <- grid.repeated + noise
+```
+```{r add-noise-to-grid-plot, fig.height=5, fig.width=7, echo=FALSE}
+p.grid.noisy <- ggplot(grid.noisy) + 
+  geom_point(aes(x=PC1, y=PC2)) + 
+  labs(title = "Regularly spaced grid with noise added")
+print(p.grid.noisy)
+
+```
+
+Now we come to the main concept of this approach. So far the points on the grid are not present in the real dataset. For each point in the repeated noisy grid we search the closest neighbor in the real environmental space. This is implement with the FNN package. By using a KD-tree, it can handle large data sets in higher dimensions quickly. 
+
+```{r remapp-points}
+mapped.sampled.point.data <- FNN::get.knnx(env.with.pc[dimensions], 
+                                           grid.noisy, k = 1)
+mapped.sampled.points <- env.with.pc[mapped.sampled.point.data$nn.index,]
+mapped.sampled.points$distance <- mapped.sampled.point.data$nn.dist
+```
+```{r remapp-points-plot, fig.height=5, fig.width=7, echo=FALSE}
+p.grid.noisy <- ggplot(mapped.sampled.points) + 
+  geom_point(aes(x=PC1, y=PC2, color=distance), alpha=0.5) + 
+  labs(title = "Remapped points")
+print(p.grid.noisy)
+```
+
+Now we have points distributed nearly uniformely in the environment. The issue remaining is that we oversampled the border regions, as even cells that did not contain any points where remapped to the closest point, even if that point was in a different grid cell. We now have different options on how to set the distance threshold at which we denote points to have originated too far away. 
+
+One option is to use the cell size as the limiting factor. By setting the distance threshold to be halve the cell size, we can eliminate points that where sampled in empty cells. This approach depends on having chosen the cell size well. We can look at the limits.
+
+If we set the grid size to one, we only have one cell. The distance threshold would be very large, we would not remove any points and oversample the border regions. 
+
+On the other hand if the cell size is too small, the threshold will be very small. In the areas with low point densities there will be a lot of points where the distance to the next point is too large. On first look this is no issue, as these points stem from "empty" grid sells. The issue emerges in areas with a high point density. Here there will be no empty cells. Thus at the low limit these areas will be oversampled. 
+
+```{r, naive-distance-threshold, eval = FALSE}
+distance.threshold <- max(step.y, step.x) / 2
+mapped.sampled.points.filtered <- mapped.sampled.points[
+  mapped.sampled.points$distance < distance.threshold, ]
+```
+
+
+Luckly we have additional information. The original dataset itself gives us some indication what kind of distances are normal. By searching the closest few, but at least more then number of points per gridcell, neighbors, we can compute a histogramm of the distance between points in the original data
+
+```{r advanced-threshold, message=FALSE}
+nearest.neighbors.distance<- FNN::knn.dist(env.with.pc[dimensions],
+                                           k=num.samples.per.cell) %>%
+  as.vector()
+```
+```{r plot-distance-histogram, fig.height=5, fig.width=7, echo=FALSE, message=FALSE}
+p.neighbor.distance.histogramm <- suppressMessages(
+  ggplot(as.data.frame(nearest.neighbors.distance)) +
+  ggplot2::geom_histogram(aes(x=nearest.neighbors.distance)) +
+  theme_minimal() + 
+  labs(title = "Histogram of the distances to the next neighbors") +
+  xlab(paste("Distance to the next", num.samples.per.cell, "neighbors"))
+  )
+
+print(p.neighbor.distance.histogramm)
+```
+```{r plot-distance-histogram-cut, fig.height=3, fig.width=7, echo=FALSE, message=FALSE}
+p.neighbor.distance.histogramm <- suppressMessages(
+  ggplot(as.data.frame(nearest.neighbors.distance)) +
+  ggplot2::geom_histogram(aes(x=nearest.neighbors.distance)) +
+  theme_minimal() + 
+  labs(title = "Histogram of the distances to the next neighbors") +
+  xlab(paste("Distance to the next", num.samples.per.cell, "neighbors"))
+  ) + 
+  coord_cartesian(ylim = c(0, 200))
+
+print(p.neighbor.distance.histogramm)
+```
+We see that the distance histogram is dominated by the low distances originating in regions with high densities. If we look at the top end on the other hand, we get information on the spacing of areas with a low point density. We probably do not want to take the maximal distance as our threshold, as the dataset could contain outlayers. We can sort the the vector containing the distances and take a value with some safty threshold from the extreme values. 
+
+```{r find-advanced-threshold}
+sorted.nearest.neighbor.distances <- sort(nearest.neighbors.distance, 
+                                          decreasing=TRUE)
+distance.threshold <- sorted.nearest.neighbor.distances[2] / 2
+
+mapped.sampled.points.filtered <- mapped.sampled.points[
+  mapped.sampled.points$distance < distance.threshold, ]
+```
+```{r mapped-points-plots, echo=FALSE, fig.height=7, fig.width=7}
+p.mapped.sampled.points.filtered <- ggplot(mapped.sampled.points.filtered) + 
+  geom_point(aes(x=PC1, y=PC2, color=distance), alpha=0.5) + 
+  labs(title = "Filtered remapped points")
+
+mapped.sampled.points.filtered.excluded <- mapped.sampled.points[mapped.sampled.points$distance > distance.threshold, ]
+
+p.mapped.sampled.points.filtered.excluded <- ggplot(mapped.sampled.points.filtered.excluded) + 
+  geom_point(aes(x=PC1, y=PC2, color=distance), alpha=0.5) + 
+  labs(title = "Points that where excluded")
+cowplot::plot_grid(p.mapped.sampled.points.filtered, p.mapped.sampled.points.filtered.excluded, ncol = 1)
+```
+
+It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated the the distance threshold. Especially at the borders of the environment the probability to map twice to the same point its high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. THis leads to some oversampling. It is not trivial how to eliminate this issue. 
+
+```{r remove-dublicates}
+mapped.sampled.points.filtered.unique <- mapped.sampled.points.filtered[
+  !duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
+```
+
+
+```{r removed-dublicates-plot, echo=FALSE, fig.height=3, fig.width=7}
+#sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[mapped.sampled.points.filtered[[1]]]), ]
+sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
+removed.points <- mapped.sampled.points.filtered[duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
+p.removed.points <- ggplot(removed.points) + 
+  geom_point(aes(x=PC1, y=PC2)) +
+  labs(title = "Duplicated points that where removed")
+print(p.removed.points)
+```
+We can see that the chosen threshold is reasonable, as it reduces the oversampling in border regions well without removing points in areas that we think to be part of the environment.
+
+This threshold method can also be used to estimate a upper bound to the useful grid resolution. A function that provides this functionality is given by [`maxresNn()`][USE.MCMC::maxResNn]. 
+
+In difference to the original [`paSampling()`][USE.MCMC::paSampling] method this approach should still converge to uniform sampling for too low grid resolutions. The issue here is that it can not be the guaranteed that the distribution is flat for small sample sizes. The deviations from uniform sampling are not expected to be at the same position as the high point density areas of the underlying distribution
+
+From here we can use the same approach as in the original method to exclude points that have properties that coincide with the presence species.
+
+We can generate a sample species:
+```{r generate-vs, echo=FALSE}
+virtual.presence.data <- getVirtualSpeciesPresencePoints(
+  env.data = env.data.raster, n.samples = 300)
+virtual.presence.points <- virtual.presence.data$sample.points
+```
+
+
+```{r exclude-presence-area, }
+occ.vec <- virtual.presence.points
+thres = 0.7
+id_rast <- terra::rast(vals= 1:terra::ncell(env.data.raster),
+                       names ="myID",
+                       extent = terra::ext(env.data.raster),
+                       nrows = terra::nrow(env.data.raster),
+                       ncols = terra::ncol(env.data.raster),
+                       crs = terra::crs(env.data.raster)
+)
+abio.st <- terra::as.data.frame(c(id_rast, env.data.raster))
+dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[c("PC1", "PC2")]]), xy = TRUE)
+PC12occ <- terra::extract(id_rast,  occ.vec, cells = FALSE,
+                          df = FALSE, ID=FALSE)[,1]
+PC12ex <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
+
+H <- ks::Hpi(x = PC12ex[, c("PC1", "PC2")])
+
+estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, c("PC1", "PC2")],
+                                     eval.points = PC12ex[PC12ex$PA ==1,
+                                                          c("PC1", "PC2")],
+                                     h = H)$estimate,
+                       PC12ex[PC12ex$PA == 1, c("PC1", "PC2", "myID", "PA")])
+
+quantP <- quantile(estimate[, "KDE"], thres)
+estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
+point.data <- merge(x = PC12ex, 
+                    y = estimate[estimate$PA == 1,c("myID","percP")],
+                  by = "myID", all.x = TRUE)
+point.data$percP <- ifelse(is.na(point.data$percP), "pabs",point.data$percP)
+chull <- sf::st_as_sf(subset(point.data, point.data$percP=="in", 
+                             select=c( "PC1","PC2" )),
+                      coords=c( "PC1","PC2" ))
+chull <- sf::st_union(chull)
+chull <- sf::st_convex_hull(chull)
+point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered.unique,
+                              coords=c( "PC1","PC2" ))
+outside.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf,
+                               chull, sparse = FALSE), ]
+
+# Reorganize the columns of the sf object so that the output is more convenient
+sampled.points.absence <- sf::st_coordinates(outside.the.region.with.presence)
+colnames(sampled.points.absence) <- c("PC1", "PC2")
+sampled.points.without.points.not.assosiated.with.the.species <- cbind(
+  sf::st_drop_geometry(outside.the.region.with.presence),
+  sampled.points.absence)
+
+
+```
+```{r, echo=FALSE, fig.height=4, fig.width=7}
+inside.the.region.with.presence <- point.data.sf[sf::st_within(point.data.sf, 
+                                                               chull,
+                                                               sparse = FALSE),]
+
+sampled.points.presece <- sf::st_coordinates(inside.the.region.with.presence)
+colnames(sampled.points.presece) <- c("PC1", "PC2")
+sampled.points.without.points.assosiated.with.the.species <- cbind(
+  sf::st_drop_geometry(inside.the.region.with.presence), 
+  sampled.points.presece)
+
+sampled.points.without.points.not.assosiated.with.the.species$type = "absence"
+sampled.points.without.points.assosiated.with.the.species$type = "presence"
+
+sampled.points.complete <- rbind(
+  sampled.points.without.points.not.assosiated.with.the.species,
+  sampled.points.without.points.assosiated.with.the.species)
+
+
+
+
+p.points.with.complex.hull.removed <- ggplot(sampled.points.complete) + 
+  geom_point(aes(x=PC1, y=PC2, color=type)) +
+  labs(title="Sampled points")
+print(p.points.with.complex.hull.removed)
+
+
+```
+
+We can also plot the plots in the real geographical space.
+
+```{r}
+sampled.points.sf.geo <- sf::st_drop_geometry(sampled.points.complete[c("x", "y", "type")]) %>%
+  sf::st_as_sf(coords=c("x", "y"))
+
+p.points.in.geographical.space <- ggplot(sampled.points.sf.geo) + 
+  geom_sf(data=env.data.sf, color="lightgreen") +
+  geom_sf(aes(color=type)) + 
+  labs(title="Sampled points in geographical space")
+
+print(p.points.in.geographical.space)
+```
+
+We can see that the points that where uniformely sampled in the environmental space are not evenly spaced any more. 
+
+
+```{r}
+pc1.layer = rpc$PCs$PC1
+mat <- as.matrix(pc1.layer, wide = TRUE)
+slope <- terrain(pc1.layer, "slope")
+plot(slope)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

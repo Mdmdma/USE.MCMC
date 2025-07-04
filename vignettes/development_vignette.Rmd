@@ -29,7 +29,7 @@ library(FNN)
 ```
 As a first step we fix a seed to get reproducible results.
 ```{r fix.seed}
-seed.number = 43
+seed.number = 42
 set.seed(seed.number)
 ```
 
@@ -102,14 +102,16 @@ Analog to the methods shown before we can use the MCMC approach to sample pseudo
 ```{r uniform.mcmc, message=FALSE}
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
-                                      num.chains = 2,
-                                      num.cores = 2,
+                                      num.chains = 4,
+                                      num.cores = 4,
                                       chain.length = 10000,
                                       n.samples = n.sample.points,
                                       verbose = TRUE)
 ```
-We can now analyse the distribution of PC scores of the points sampled by different methods. 
-```{r visualize, fig.width=7, fig.height=8, echo=FALSE}
+We can now analyse the distribution of PC scores of the points sampled by different methods.
+
+Non of the algorithms try to sample the third dimension uniformly. We can see that the MCMC approach evades the presence stronger than the other approaches, especcialy visible in the second dimension. Importantly we see that on the high end it does not manage to sample points, even tough the species is not present any more. 
+```{r visualize, fig.width=7, fig.height=11, echo=FALSE}
 # Create a layout with 3 rows: 2 for plots, 1 for legend
 if(TRUE) {
   # Create a layout with 3 rows: 2 for plots, 1 for legend
@@ -157,19 +159,20 @@ if(TRUE) {
          cex = 1.5)      # incease text size
 }
 ```
-In difference to the approaches on which the MCMC approach is based it works in higher dimension.
+In difference to the approaches on which the MCMC approach is based it works in higher dimensions.
+
 Lets explore the changes we have to to to sample in more dimensions.
 ```{r, uniform.mcmc.higher.dim, message=FALSE}
 sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
-                                      num.chains = 2,
-                                      num.cores = 2,
+                                      num.chains = 4,
+                                      num.cores = 4,
                                       chain.length = 10000,
                                       n.samples = n.sample.points,
                                       verbose = TRUE,
                                       dimensions = c("PC1", "PC2", "PC3"))
 ```
-The interpret ability of the results now gets more complicated. The expected distribution of uniform sampling of one variable is dependent on the range of the other dimensions at diffenent values. 
+The interpret ability of the results now gets more complicated. We see that the uniform approach now samples the third dimension notably wider, but shows less uniform behavior in the first two dimensions. If this represents the actual environmental space or is an issue with the code itself is unclear, as the density in one dimension depends on the range of possible values in the other dimensions at a given value of the target dimension. It would be a good idea to get insight into this in 3 dimensions to get a idea. This should be 
 ```{r visualize.higher.dim, fig.width=7, fig.height=11, echo=FALSE}
 # Create a layout with 3 rows: 2 for plots, 1 for legend
 if(TRUE) {
@@ -218,6 +221,7 @@ if(TRUE) {
          cex = 1.5)      # incease text size
 }
 ```
+
 
 
 

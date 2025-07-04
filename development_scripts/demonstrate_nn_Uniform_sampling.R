@@ -73,8 +73,8 @@ sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
 
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
-                                      num.chains = 6,
-                                      num.cores = 6,
+                                      num.chains = 1,
+                                      num.cores = 1,
                                       chain.length = 10000,
                                       dimensions = dimensions,
                                       n.samples = n.sample.points)
@@ -127,4 +127,65 @@ if(TRUE) {
          bty = "n",      # No box around legend
          cex = 1.5)      # incease text size
 }
+
+
+ # x <- analyseAreaInHigherDim(sf::st_drop_geometry(env.with.pc.fs))
+
+library(ggplot2)
+library(gridExtra)
+library(cowplot)  # For get_legend() function
+
+plotting.dimensions <- c("PC1", "PC2", "PC3", "PC4", "PC5")
+line.with <- 0.8
+
+# Create individual plots for each PC dimension
+individual_plots <- lapply(plotting.dimensions, function(col) {
+  ggplot() +
+    geom_density(aes(x = env.with.pc.fs[[col]]), color = "green", size = line.with) +
+    geom_density(aes(x = virtual.presence.points.pc[[col]]), color = "black", size = line.with) +
+    geom_density(aes(x = sampled.points.uniform.paper[[col]]), color = "orange", size = line.with) +
+    geom_density(aes(x = sampled.points.uniform.nn[[col]]), color = "blue", size = line.with) +
+    geom_density(aes(x = sampled.points.mcmc[[col]]), color = "red", size = line.with) +
+    labs(
+      title = paste("Density Comparison for", col),
+      x = "Value",
+      y = "Density"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 12, face = "bold"),
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 11),
+      legend.position = "none"
+    )
+})
+
+# Create shared legend
+legend <- get_legend(
+  plot <- ggplot() +
+    geom_density(aes(x = c(1,2,3), color = "Environment"), size = line.with) +
+    geom_density(aes(x = c(1,2,3), color = "Virtual Presence"), size = line.with) +
+    geom_density(aes(x = c(1,2,3), color = "Sampled Points Uniform"), size = line.with) +
+    geom_density(aes(x = c(1,2,3), color = "Sampled Points Uniform NN"), size = line.with) +
+    geom_density(aes(x = c(1,2,3), color = "Sampled Points MCMC"), size = line.with) +
+    scale_color_manual(
+      name = "",
+      values = c("Environment" = "green",
+                 "Virtual Presence" = "black",
+                 "Sampled Points Uniform" = "orange",
+                 "Sampled Points Uniform NN" = "blue",
+                 "Sampled Points MCMC" = "red")
+    ) +
+    theme(legend.position = "bottom",
+          legend.text = element_text(size = 12),
+          legend.title = element_blank())
+)
+
+# Arrange plots in grid with legend at bottom
+grid.arrange(
+  arrangeGrob(grobs = individual_plots, ncol = 2),
+  legend,
+  heights = c(0.85, 0.15)
+)
+
 
