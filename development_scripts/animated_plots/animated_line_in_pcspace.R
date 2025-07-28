@@ -4,7 +4,7 @@ library(coda)
 
 animateChain <- function(chain) {
   p <- ggplot(chain, aes(x = PC1, y = PC2, color = PC3)) +
-    geom_line() +
+    geom_path() +
     labs(title = 'Chain runntime',
          subtitle = 'Point number: {frame_time}')
 

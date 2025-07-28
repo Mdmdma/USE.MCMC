@@ -248,6 +248,7 @@ Lets look at a example of our test points when performing a principle component 
 ```{r pca-example, fig.height=10, fig.width=7}
 set.seed(42)
 rpc <- rastPCA(env.data.raster,  stand = TRUE)
+env.data.raster.with.pc <- c(rpc$PCs , env.data.raster)
 
 ```
 
@@ -389,7 +390,9 @@ print(p.grid)
 As we may want multiple points sampled from the same grid cell, we repeat the grid the respective number of times.
 
 ```{r repeat-grid}
-grid.repeated <- do.call(rbind, replicate(num.samples.per.cell, grid, simplify = FALSE))
+grid.repeated <- do.call(rbind, replicate(num.samples.per.cell,
+                                          grid,
+                                          simplify = FALSE))
 ```
 
 So far this would does not work, these repeated points would all map to the same nearest neighbor in the environment. In addition to that the grid adds a bias to the sampled points.
@@ -497,14 +500,12 @@ p.mapped.sampled.points.filtered.excluded <- ggplot(mapped.sampled.points.filter
 cowplot::plot_grid(p.mapped.sampled.points.filtered, p.mapped.sampled.points.filtered.excluded, ncol = 1)
 ```
 
-It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated the the distance threshold. Especially at the borders of the environment the probability to map twice to the same point its high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. THis leads to some oversampling. It is not trivial how to eliminate this issue. 
+It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated the the distance threshold. Especially at the borders of the environment the probability to map twice to the same point its high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. This leads to some oversampling. It is not trivial how to eliminate this issue. 
 
 ```{r remove-dublicates}
 mapped.sampled.points.filtered.unique <- mapped.sampled.points.filtered[
   !duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
 ```
-
-
 ```{r removed-dublicates-plot, echo=FALSE, fig.height=3, fig.width=7}
 #sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[mapped.sampled.points.filtered[[1]]]), ]
 sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
@@ -523,14 +524,14 @@ In difference to the original [`paSampling()`][USE.MCMC::paSampling] method this
 From here we can use the same approach as in the original method to exclude points that have properties that coincide with the presence species.
 
 We can generate a sample species:
-```{r generate-vs, echo=FALSE}
+```{r generate-vs, message=FALSE}
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
   env.data = env.data.raster, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
 ```
 
 
-```{r exclude-presence-area, }
+```{r exclude-presence-area}
 occ.vec <- virtual.presence.points
 thres = 0.7
 id_rast <- terra::rast(vals= 1:terra::ncell(env.data.raster),
@@ -579,19 +580,29 @@ sampled.points.without.points.not.assosiated.with.the.species <- cbind(
 
 
 ```
-```{r, echo=FALSE, fig.height=4, fig.width=7}
+
+```{r}
+virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
+                                             virtual.presence.points,
+                                             bind = TRUE) %>%
+  sf::st_as_sf()
+virtual.presence.points.pc$type <- "Presence"
+virtual.presence.points.pc <- sf::st_set_crs(virtual.presence.points.pc, "")
+```
+
+```{r plot-sampled-point-with-pres-differenciated, echo=FALSE, fig.height=4, fig.width=7}
 inside.the.region.with.presence <- point.data.sf[sf::st_within(point.data.sf, 
                                                                chull,
                                                                sparse = FALSE),]
 
-sampled.points.presece <- sf::st_coordinates(inside.the.region.with.presence)
-colnames(sampled.points.presece) <- c("PC1", "PC2")
+sampled.points.presence <- sf::st_coordinates(inside.the.region.with.presence)
+colnames(sampled.points.presence) <- c("PC1", "PC2")
 sampled.points.without.points.assosiated.with.the.species <- cbind(
   sf::st_drop_geometry(inside.the.region.with.presence), 
-  sampled.points.presece)
+  sampled.points.presence)
 
-sampled.points.without.points.not.assosiated.with.the.species$type = "absence"
-sampled.points.without.points.assosiated.with.the.species$type = "presence"
+sampled.points.without.points.not.assosiated.with.the.species$type = "Pseudo-absence"
+sampled.points.without.points.assosiated.with.the.species$type = "Excluded"
 
 sampled.points.complete <- rbind(
   sampled.points.without.points.not.assosiated.with.the.species,
@@ -602,7 +613,11 @@ sampled.points.complete <- rbind(
 
 p.points.with.complex.hull.removed <- ggplot(sampled.points.complete) + 
   geom_point(aes(x=PC1, y=PC2, color=type)) +
-  labs(title="Sampled points")
+  geom_point(data=virtual.presence.points.pc, aes(x=PC1, y=PC2, color=type), size=0.5) + 
+  labs(title="Sampled points") +
+  scale_color_manual(values = c("Presence" = "red", "Pseudo-absence" = "black", "Excluded" = "blue"),
+                     breaks = c("Presence", "Pseudo-absence"),
+                     name = "Point type") 
 print(p.points.with.complex.hull.removed)
 
 
@@ -610,61 +625,20 @@ print(p.points.with.complex.hull.removed)
 
 We can also plot the plots in the real geographical space.
 
-```{r}
+```{r plot-in-geographical-space, echo=FALSE, fig.height=4, fig.width=7}
 sampled.points.sf.geo <- sf::st_drop_geometry(sampled.points.complete[c("x", "y", "type")]) %>%
   sf::st_as_sf(coords=c("x", "y"))
 
 p.points.in.geographical.space <- ggplot(sampled.points.sf.geo) + 
-  geom_sf(data=env.data.sf, color="lightgreen") +
-  geom_sf(aes(color=type)) + 
-  labs(title="Sampled points in geographical space")
+  geom_sf(data=env.data.sf, color="lightgreen", size=0.05) +
+  geom_sf(aes(color=type)) +
+  geom_sf(data = virtual.presence.points.pc, aes(color=type)) +
+  labs(title="Sampled points in geographical space") +
+  scale_color_manual(values = c("Presence" = "red", "Pseudo-absence" = "black", "Excluded" = "blue"),
+                     breaks = c("Presence", "Pseudo-absence", "Excluded"),
+                     name = "Point type") 
 
 print(p.points.in.geographical.space)
 ```
 
-We can see that the points that where uniformely sampled in the environmental space are not evenly spaced any more. 
-
-
-```{r}
-pc1.layer = rpc$PCs$PC1
-mat <- as.matrix(pc1.layer, wide = TRUE)
-slope <- terrain(pc1.layer, "slope")
-plot(slope)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+We can see that the points that where uniformly sampled in the environmental space are not evenly spaced any more. Areas with large environmental gradients get sampled more often. 

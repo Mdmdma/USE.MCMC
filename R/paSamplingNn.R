@@ -18,8 +18,9 @@
 #' @param prev (double) prevalence value to be specified instead of n.tr and n.ts
 #' @param plot_proc (logical) plot progress of the sampling, default FALSE
 #' @param verbose (logical) Print verbose
-#' @param dimensions (string vector) specify the pc componets to analize. Has to have lenth 2
+#' @param dimensions (string vector) specify the pc components to analyse. Has to have length 2
 #' @param precomputed.pca If in an other step the pca has already been calculated it can be but in here to speed up computation
+#' @param data.based.distance.threshold If true uses the dataset to evaluate realistic distances to the repapped points
 #' @importFrom stats na.omit quantile
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
 #' @export
@@ -28,39 +29,41 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
                         verbose = FALSE, dimensions = c("PC1", "PC2"),
                         precomputed.pca = NULL,
-                        n.samples = NULL) {
+                        n.samples = NULL,
+                        data.based.distance.threshold = TRUE) {
   if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
                                                       "SpatRaster")) {
     stop("Environmental data provided in an unconvenient form")
   }
   if (is.null(pres)) {
-    stop("Species occurrences must be provided by the user")
-  }
-  if (!inherits(pres, "SpatialPoints") && !inherits(pres, "SpatialPointsDataFrame") &&
-      !inherits(pres, "SpatVector") && !inherits(pres, "sf")) {
-    stop("Occurrences must be provided as spatial object")
-  }
-  if (is.null(grid.res)) {
-    stop("A grid resolution must be provided as length-one integer")
-  }
-  if (is.null(prev)) {
-    estPrev <- round(nrow(pres)/(n.tr * (grid.res^2)), 2)
-    message(paste("Estimated prevalence of", estPrev))
+    message("No species has been supplied. This leads to standard uniform sampling.")
   } else {
-    n.tr <- (nrow(pres)/prev)/(grid.res^2)
-    n.ts <- (nrow(pres)/prev)/(grid.res^2)
-    message(paste("User-defined prevalence of", prev))
-  }
-  if (inherits(env.rast, "BasicRaster")) {
-    env.rast <- terra::rast(env.rast)
-  }
-  if (!inherits(pres, "SpatVector")) {
-    occ.vec <- terra::vect(pres)
-  } else {
-    occ.vec <- pres
-  }
+    if (!inherits(pres, "SpatialPoints") && !inherits(pres, "SpatialPointsDataFrame") &&
+        !inherits(pres, "SpatVector") && !inherits(pres, "sf")) {
+      stop("Occurrences must be provided as spatial object")
+    }
 
-  message("Computing PCA and presences kernel density estimation in the bivariate space")
+    if (is.null(grid.res)) {
+      stop("A grid resolution must be provided as length-one integer")
+    }
+    if (is.null(prev)) {
+      estPrev <- round(nrow(pres)/(n.tr * (grid.res^2)), 2)
+      message(paste("Estimated prevalence of", estPrev))
+    } else {
+      n.tr <- (nrow(pres)/prev)/(grid.res^2)
+      n.ts <- (nrow(pres)/prev)/(grid.res^2)
+      message(paste("User-defined prevalence of", prev))
+    }
+    if (inherits(env.rast, "BasicRaster")) {
+      env.rast <- terra::rast(env.rast)
+    }
+    if (!inherits(pres, "SpatVector")) {
+      occ.vec <- terra::vect(pres)
+    } else {
+      occ.vec <- pres
+    }
+
+  }
 
   if (!is.null(precomputed.pca)){
     rpc <- precomputed.pca
@@ -102,52 +105,60 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   mapped.sampled.points <- env.with.pc[mapped.sampled.point.data$nn.index,]
   mapped.sampled.points$distance <- mapped.sampled.point.data$nn.dist
 
+  if (data.based.distance.threshold) {
+    distance.threshold <- optimalDistanceThresholdNn(env.data = env.with.pc,
+                                                     dimensions = dimensions)
+  }
+
   distance.threshold <- max(step.y, step.x) / 2
   mapped.sampled.points.filtered <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
   # Remove points that are located in the region that is associated with the target species
   # Analog to the paper the convex hull is computed, but the we just remove the points that layed in this area, instead of
   # excluding them from the possible dataset. This is done as it could happen that the maximal grid resolution could change excluding this area.
+  if (!is.null(pres)) {
+    id_rast <- terra::rast(vals= 1:terra::ncell(env.rast),
+                           names ="myID",
+                           extent = terra::ext(env.rast),
+                           nrows = terra::nrow(env.rast),
+                           ncols = terra::ncol(env.rast),
+                           crs = terra::crs(env.rast)
+    )
+    abio.st <- terra::as.data.frame(c(id_rast, env.rast))
+    dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[c("PC1", "PC2")]]), xy = TRUE)
+    PC12occ <- terra::extract(id_rast,  occ.vec, cells = FALSE, df = FALSE, ID=FALSE)[,1]
+    PC12ex <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
+    if (is.null(H)) {
+      H <- ks::Hpi(x = PC12ex[, c("PC1", "PC2")])
+    }
 
-  id_rast <- terra::rast(vals= 1:terra::ncell(env.rast),
-                         names ="myID",
-                         extent = terra::ext(env.rast),
-                         nrows = terra::nrow(env.rast),
-                         ncols = terra::ncol(env.rast),
-                         crs = terra::crs(env.rast)
-  )
-  abio.st <- terra::as.data.frame(c(id_rast, env.rast))
-  dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[c("PC1", "PC2")]]), xy = TRUE)
-  PC12occ <- terra::extract(id_rast,  occ.vec, cells = FALSE, df = FALSE, ID=FALSE)[,1]
-  PC12ex <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
-  if (is.null(H)) {
-    H <- ks::Hpi(x = PC12ex[, c("PC1", "PC2")])
+    estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, c("PC1", "PC2")],
+                                         eval.points = PC12ex[PC12ex$PA ==1, c("PC1", "PC2")], h = H)$estimate,
+                           PC12ex[PC12ex$PA == 1, c("PC1", "PC2", "myID", "PA")])
+
+    quantP <- quantile(estimate[, "KDE"], thres)
+    estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
+    point.data <- merge(x = PC12ex, y = estimate[estimate$PA == 1,c("myID","percP")],
+                      by = "myID", all.x = TRUE)
+    point.data$percP <- ifelse(is.na(point.data$percP), "pabs",point.data$percP)
+    chull <- sf::st_as_sf(subset(point.data, point.data$percP=="in", select=c( "PC1","PC2" )), coords=c( "PC1","PC2" ))
+    chull <- sf::st_union(chull)
+    chull <- sf::st_convex_hull(chull)
+    point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
+    outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
+    sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
+    colnames(sampled.points) <- c("PC1", "PC2")
+    sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+  } else {
+    sampled.points <- mapped.sampled.points.filtered
   }
-
-  estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, c("PC1", "PC2")],
-                                       eval.points = PC12ex[PC12ex$PA ==1, c("PC1", "PC2")], h = H)$estimate,
-                         PC12ex[PC12ex$PA == 1, c("PC1", "PC2", "myID", "PA")])
-
-  quantP <- quantile(estimate[, "KDE"], thres)
-  estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
-  point.data <- merge(x = PC12ex, y = estimate[estimate$PA == 1,c("myID","percP")],
-                    by = "myID", all.x = TRUE)
-  point.data$percP <- ifelse(is.na(point.data$percP), "pabs",point.data$percP)
-  chull <- sf::st_as_sf(subset(point.data, point.data$percP=="in", select=c( "PC1","PC2" )), coords=c( "PC1","PC2" ))
-  chull <- sf::st_union(chull)
-  chull <- sf::st_convex_hull(chull)
-  point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
-  outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
-
   # Reorganize the columns of the sf object so that the output is more convenient to use
-  sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
-  colnames(sampled.points) <- c("PC1", "PC2")
-  sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+
   # select only unique points
   sampled.points.unique <- sampled.points[!duplicated(sampled.points[[dimensions[1]]]), ] %>%
     sf::st_as_sf(coords = c("x", "y"))
-  message(paste("There were ", nrow(sampled.points) - nrow(sampled.points.unique),
-                "points that were sampled twice. This indicates undersampling of low density regions.\nThis occures as the probability of beeing closesed to the same points twice is lower in high denisty regions."))
+  message(paste("\nThere were ", nrow(sampled.points) - nrow(sampled.points.unique),
+                "points that were sampled twice. This indicates undersampling of low density regions or oversampling of the border region.\nThis occures as the probability of beeing close to the same points twice is lower in high denisty regions."))
 
   if (!is.null(n.samples)){
     sample.indexes <- floor(seq(1, nrow(sampled.points.unique),

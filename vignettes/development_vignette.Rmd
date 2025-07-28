@@ -43,10 +43,13 @@ If available other compibations of variables can be used
 data.dir <- "/home/mathis/Desktop/semesterarbeit10/data"
 
 number.of.dimensions <- 5
-env.data.raster.all.dim <- geodata::worldclim_global(var='bio', res=10, path=data.dir)  %>%
+env.data.raster.all.dim <- geodata::worldclim_global(var='bio',
+                                                     res=10,
+                                                     path=data.dir)  %>%
   terra::crop(terra::ext(-12, 25, 36, 60))
 
-selected.layers <- sample(terra::nlyr(env.data.raster.all.dim), number.of.dimensions)
+selected.layers <- sample(terra::nlyr(env.data.raster.all.dim),
+                          number.of.dimensions)
 env.data.raster <- env.data.raster.all.dim[[selected.layers]]
 ```
 The data is further prepared to be later used to plot the distribution of the environment.
@@ -73,20 +76,26 @@ virtual.presence.data <- getVirtualSpeciesPresencePoints(
   env.data = env.data.raster.with.pc, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
 virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
-                                             virtual.presence.points, bind = TRUE) %>%
+                                             virtual.presence.points,
+                                             bind = TRUE) %>%
   sf::st_as_sf()
 ```
 Now that the data and species are prepared, we can sample pseudo absences. Here we will compare multiple methods.
 
 First we sample using the method presented in the paper. 
 ```{r uniform.paper}
-sampled.points.uniform.p <- paSampling(env.rast = env.data.raster, pres = virtual.presence.points, grid.res = 10)
-sampled.points.uniform.p.location <- sf::st_drop_geometry(sampled.points.uniform.p) %>%
+sampled.points.uniform.p <- paSampling(env.rast = env.data.raster,
+                                       pres = virtual.presence.points, 
+                                       grid.res = 10)
+sampled.points.uniform.p.location <- sf::st_drop_geometry(
+  sampled.points.uniform.p) %>%
   dplyr::select(c("x", "y")) %>%
   sf::st_as_sf(coords = c("x", "y"))
-sampled.points.uniform.paper <- terra::extract(env.data.raster.with.pc, sampled.points.uniform.p.location)
+sampled.points.uniform.paper <- terra::extract(
+  env.data.raster.with.pc, 
+  sampled.points.uniform.p.location)
 ```
-The sampled points were rearanged so that the data can be easier compared. 
+The sampled points were rearranged so that the data can be easier compared. 
 
 As a second comparison I implemented an other grid based uniform sampling approach, see \code{\link{paSamplingNn}} for details. It is similar to the MCMC approach that locations in the PCA space are sampled and then remapped to points in the environmental space using nearest neighbor search. It conceptually forms a bridge to the MCMC approach.
 Using the parameter \code{n.sample.points} we can select the number of sampled points.  
@@ -101,7 +110,9 @@ sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
 Analog to the methods shown before we can use the MCMC approach to sample pseudo absences. It works with the same minimal parameters \code{env.rast} and \code{pres}, but can be supplied with additional parameters to controls its behavior. If verbose is set to true and multiple chains are selected, the output is not usefull.
 ```{r uniform.mcmc, message=FALSE}
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
-                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
+                                      pres = virtual.presence.points,
+                                      precomputed.pca = rpc,
+                                      environmental.cutof.percentile = 0.001,
                                       num.chains = 4,
                                       num.cores = 4,
                                       chain.length = 10000,
@@ -116,8 +127,10 @@ Non of the algorithms try to sample the third dimension uniformly. We can see th
 if(TRUE) {
   # Create a layout with 3 rows: 2 for plots, 1 for legend
   plotting.dimensions <- c("PC1", "PC2", "PC3")
-  layout(matrix(c(1:(length(plotting.dimensions) + 1)), nrow = length(plotting.dimensions) + 1, byrow = TRUE),
-         heights = c(rep(3, length(plotting.dimensions)) ,1))  # Make legend row shorter
+  layout(matrix(c(1:(length(plotting.dimensions) + 1)),
+                nrow = length(plotting.dimensions) + 1,
+                byrow = TRUE),
+         heights = c(rep(3, length(plotting.dimensions)) ,1))
 
   par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
 
@@ -163,14 +176,17 @@ In difference to the approaches on which the MCMC approach is based it works in 
 
 Lets explore the changes we have to to to sample in more dimensions.
 ```{r, uniform.mcmc.higher.dim, message=FALSE}
-sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
-                                      pres = virtual.presence.points, precomputed.pca = rpc, environmental.cutof.percentile = 0.001,
-                                      num.chains = 4,
-                                      num.cores = 4,
-                                      chain.length = 10000,
-                                      n.samples = n.sample.points,
-                                      verbose = TRUE,
-                                      dimensions = c("PC1", "PC2", "PC3"))
+sampled.points.mcmc.higher.dim <- paSamplingMcmc(
+  env.data.raster = env.data.raster,
+  pres = virtual.presence.points, 
+  precomputed.pca = rpc, 
+  environmental.cutof.percentile = 0.001,
+  num.chains = 4,
+  num.cores = 4,
+  chain.length = 10000,
+  n.samples = n.sample.points,
+  verbose = TRUE,
+  dimensions = c("PC1", "PC2", "PC3"))
 ```
 The interpret ability of the results now gets more complicated. We see that the uniform approach now samples the third dimension notably wider, but shows less uniform behavior in the first two dimensions. If this represents the actual environmental space or is an issue with the code itself is unclear, as the density in one dimension depends on the range of possible values in the other dimensions at a given value of the target dimension. It would be a good idea to get insight into this in 3 dimensions to get a idea. This should be 
 ```{r visualize.higher.dim, fig.width=7, fig.height=11, echo=FALSE}
@@ -178,8 +194,9 @@ The interpret ability of the results now gets more complicated. We see that the 
 if(TRUE) {
   # Create a layout with 3 rows: 2 for plots, 1 for legend
   plotting.dimensions <- c("PC1", "PC2", "PC3")
-  layout(matrix(c(1:(length(plotting.dimensions) + 1)), nrow = length(plotting.dimensions) + 1, byrow = TRUE),
-         heights = c(rep(2, length(plotting.dimensions)) ,1))  # Make legend row shorter
+  layout(matrix(c(1:(length(plotting.dimensions) + 1)),
+         nrow = length(plotting.dimensions) + 1, byrow = TRUE),
+         heights = c(rep(2, length(plotting.dimensions)) ,1))
 
   par(mar = c(4, 4, 5, 2))  # bottom, left, top, right
 

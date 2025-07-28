@@ -2,6 +2,7 @@
 
 export(SpatialProba)
 export(addHighDimGaussian)
+export(alwaysOne)
 export(getVirtualSpeciesPresencePoints)
 export(mapBackOnRealPoints)
 export(maxResNn)

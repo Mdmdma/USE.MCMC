@@ -50,21 +50,21 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   }
 
   # Attaching the data in the PCA coordinates
-  env.with.pc.fs <- rpc$PCs %>%
+  env.with.pc.sf <- rpc$PCs %>%
     as.data.frame(xy = TRUE) %>%
     na.omit() %>%
     sf::st_as_sf(coords = c("x", "y")) %>%
     sf::st_join(env.data.sf)
 
   # subsample env space to speed up the process
-  env.with.pc.fs.subsampled <- env.with.pc.fs[stats::runif(min(nrow(env.with.pc.fs), 2000) , 1, nrow(env.with.pc.fs)),]
+  env.with.pc.sf.subsampled <- env.with.pc.sf[stats::runif(min(nrow(env.with.pc.sf), 2000) , 1, nrow(env.with.pc.sf)),]
 
   # clean data
-  env.data.cleaned <- sf::st_drop_geometry(env.with.pc.fs[dimensions])
-  env.data.cleaned.subsampled <- sf::st_drop_geometry(env.with.pc.fs.subsampled[dimensions])
+  env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
+  env.data.cleaned.subsampled <- sf::st_drop_geometry(env.with.pc.sf.subsampled[dimensions])
 
   # environment model
-  if (verbose) cat("Fit environmental model")
+  if (verbose) cat("Fit environmental model \n")
   environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled,
                                                     plot = plot_proc,
                                                     verbose = verbose )
@@ -79,7 +79,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   env.data.raster.with.pc <- c(env.data.raster, rpc$PCs)
   virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc, virtual.presence.points, bind = TRUE) %>%
     sf::st_as_sf()
-  if (verbose) cat("Fit environmental model")
+  if (verbose) cat("Fit presence model \n")
   species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
                                         plot = plot_proc,
                                         verbose = verbose)
@@ -97,7 +97,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
 
   # # set sampling parameters
   covariance.scaling <-0.075
-  covariance.matrix <- stats::cov(sf::st_drop_geometry(env.with.pc.fs)[dimensions])
+  covariance.matrix <- stats::cov(sf::st_drop_geometry(env.with.pc.sf)[dimensions])
   proposalFunction <- addHighDimGaussian(cov.mat =covariance.scaling * covariance.matrix,
                                          dim = length(dimensions))
 
@@ -105,7 +105,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   results.computation <- list()
   results.computation <- mclapply(1:num.chains, function(interator) {
   # sample points
-    sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
+    sampled.points <- mcmcSampling(dataset = env.with.pc.sf,
                                    dimensions = dimensions,
                                    n.sample.points = chain.length,
                                    proposalFunction = proposalFunction,
@@ -117,23 +117,12 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   sampled.points <- do.call(rbind, results.computation)
 
   mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
-  mapped.sampled.points <- env.with.pc.fs[mapped.sampled.point.locations$nn.index,]
+  mapped.sampled.points <- env.with.pc.sf[mapped.sampled.point.locations$nn.index,]
   mapped.sampled.points$density <- sampled.points$density
   mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 
-
-  # use statistics on the environmental space to estimate a reasonable sistance threshold
-  neighbor.data <- FNN::get.knnx(env.data.cleaned, env.data.cleaned, k = 1 + n.neighbors.for.statistics) # plus one as each points is its own closest <<neighbor>>
-  neighbor.index <- neighbor.data$nn.index
-  neighbor.distance <- neighbor.data$nn.dist[, 2:n.neighbors.for.statistics + 1] # remove the column with the distance to itself
-  neighbor.distance.flat <- as.vector(neighbor.distance)
-  sorted.distances <- sort(neighbor.distance.flat)
-  top.end.points.without.outlayers.distance <- sorted.distances[(length(sorted.distances)- low.end.of.inclueded.points):
-                                                                  (length(sorted.distances) - high.end.of.included.points)]
-
-  #TODO Deside how this should be implemented
-  # distance.threshold <- stats::quantile(mapped.sampled.points$distance, 0.95)
-  distance.threshold <- mean(top.end.points.without.outlayers.distance) / 2
+  distance.threshold <- optimalDistanceThresholdNn(env.data = env.with.pc.sf,
+                                                   dimensions = dimensions)
   filtered.mapped.sampled.points <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
   sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points), length.out = min(n.samples * 2, nrow(filtered.mapped.sampled.points))))
@@ -145,9 +134,11 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
 
   filtered.mapped.sampled.points.subselected.unique <- filtered.mapped.sampled.points.subselected[
     !duplicated(filtered.mapped.sampled.points.subselected[dimensions[1]][]),]
-
-  message(paste("There were ", nrow(filtered.mapped.sampled.points.subselected) - nrow(filtered.mapped.sampled.points.subselected.unique),
-                "points that were sampled twice. A high number indicates oversampling in low density regions."))
+  if (verbose){
+    message(paste("\nThere were ", nrow(filtered.mapped.sampled.points.subselected) - nrow(filtered.mapped.sampled.points.subselected.unique),
+                  "points that were sampled twice. A high number indicates undersampling in low density regions or oversampling at the border regions.
+                In case of the first reduce the number of samples, in case of the later there is little to be done"))
+  }
 
   sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points.subselected.unique),
                               length.out = min(n.samples, nrow(filtered.mapped.sampled.points.subselected.unique))))
