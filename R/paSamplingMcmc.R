@@ -103,7 +103,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
 
   # Set up for multiple chains that sampled from
   results.computation <- list()
-  results.computation <- mclapply(1:num.chains, function(interator) {
+  results.computation <- parallel::mclapply(1:num.chains, function(interator) {
   # sample points
     sampled.points <- mcmcSampling(dataset = env.with.pc.sf,
                                    dimensions = dimensions,
@@ -127,7 +127,6 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
 
   sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points), length.out = min(n.samples * 2, nrow(filtered.mapped.sampled.points))))
   filtered.mapped.sampled.points.subselected <- filtered.mapped.sampled.points[sample.indexes, ]
-
   # The selection is done in two steps to be able to return the exact amount of desired points
   # without duplicates. If we remove duplicatates before selecting points, we would undersample
   # low density regions

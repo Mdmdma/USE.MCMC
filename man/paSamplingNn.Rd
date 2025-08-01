@@ -18,7 +18,8 @@ paSamplingNn(
   verbose = FALSE,
   dimensions = c("PC1", "PC2"),
   precomputed.pca = NULL,
-  n.samples = NULL
+  n.samples = NULL,
+  data.based.distance.threshold = TRUE
 )
 }
 \arguments{
@@ -44,9 +45,13 @@ paSamplingNn(
 
 \item{verbose}{(logical) Print verbose}
 
-\item{dimensions}{(string vector) specify the pc componets to analize. Has to have lenth 2}
+\item{dimensions}{(string vector) specify the pc components to analyse. Has to have length 2}
 
 \item{precomputed.pca}{If in an other step the pca has already been calculated it can be but in here to speed up computation}
+
+\item{n.samples}{Number of sample points that are returned}
+
+\item{data.based.distance.threshold}{If true uses the dataset to evaluate realistic distances to the repapped points}
 }
 \value{
 An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.

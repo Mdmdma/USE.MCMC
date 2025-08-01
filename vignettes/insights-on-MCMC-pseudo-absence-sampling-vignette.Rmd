@@ -39,7 +39,7 @@ For our use case Markov chains can be understood as a random walk. From a given 
 
 ```{r generate-sample-chain, message=FALSE}
 starting.point <- data.frame(x=0, y=0)
-sampled.points <- mcmcSampling(dataset=starting.point,
+sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                dimensions = c("x", "y"),
                                densityFunction = alwaysOne,
                                proposalFunction = addHighDimGaussian(dim=2),
@@ -59,12 +59,13 @@ p.example.chain <- ggplot(sampled.points) +
   scale_color_viridis()
 
 a.example.chain <- p.example.chain +
-  transition_time(step) + ease_aes('linear') +
+  transition_time(step) +
+  ease_aes('linear') +
   transition_reveal(step) +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.example.chain <- animate(a.example.chain, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 4)
+gif.example.chain <- gganimate::animate(a.example.chain, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 4)
 anim_save("gif_example_chain.gif", gif.example.chain)
 ```
 ![](gif_example_chain.gif)
@@ -548,12 +549,13 @@ So far we did nothing revolutionary. All of the given can be done using existing
 The function paSamplingMcmc wrapps what we did so far in this vignette into one single concise function to efficiently create pseudo absences.
 
 ```{r sample-in-higher-dim}
+# One core is used for rendering the vignette, is use this can be set higher
 sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points,
                                       precomputed.pca = rpc,
                                       environmental.cutof.percentile = 0.001,
                                       num.chains = 4,
-                                      num.cores = 4,
+                                      num.cores = 1,
                                       chain.length = 10000,
                                       n.samples = 500,
                                       verbose = TRUE,
@@ -644,7 +646,7 @@ chain.list <- mclapply(1:4, function(i) {
                                    verbose = FALSE)
   })
   chain.list[[i]] <- coda::as.mcmc(sampled.points[dimensions])
-}, mc.cores = 4)
+}, mc.cores = 1)
 coda.chain.list <- coda::mcmc.list(chain.list)
 ```  
 

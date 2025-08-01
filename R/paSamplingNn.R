@@ -21,6 +21,7 @@
 #' @param dimensions (string vector) specify the pc components to analyse. Has to have length 2
 #' @param precomputed.pca If in an other step the pca has already been calculated it can be but in here to speed up computation
 #' @param data.based.distance.threshold If true uses the dataset to evaluate realistic distances to the repapped points
+#' @param n.samples Number of sample points that are returned
 #' @importFrom stats na.omit quantile
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
 #' @export
@@ -71,13 +72,13 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
     rpc <- rastPCA(env.rast, stand = TRUE)
   }
 
-  env.data<- env.data.raster %>%
+  env.data <- env.rast %>%
     as.data.frame(xy = TRUE)
 
   env.with.pc <- rpc$PCs  %>%
     as.data.frame(env.with.pc, xy = TRUE) %>%
     na.omit() %>%
-    cbind(env.data.sf)
+    cbind(env.data)
 
   env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions)
 
@@ -168,9 +169,4 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   }
 
   return(sampled.points.unique)
-  # ggplot(outside.of.the.region.with.presence, aes(x = PC1, y = PC2, color = distance)) +
-  #   geom_point() +
-  #   geom_point(data = occ.df) +
-  #   scale_color_viridis_c() +  # Optional: prettier color scale
-  #   theme_minimal()
 }

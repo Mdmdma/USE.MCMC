@@ -109,19 +109,20 @@ sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
 ```
 Analog to the methods shown before we can use the MCMC approach to sample pseudo absences. It works with the same minimal parameters \code{env.rast} and \code{pres}, but can be supplied with additional parameters to controls its behavior. If verbose is set to true and multiple chains are selected, the output is not usefull.
 ```{r uniform.mcmc, message=FALSE}
+# One core has to be used to render the vignette. This number should be higher for actual use
 sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points,
                                       precomputed.pca = rpc,
                                       environmental.cutof.percentile = 0.001,
                                       num.chains = 4,
-                                      num.cores = 4,
+                                      num.cores = 1,
                                       chain.length = 10000,
                                       n.samples = n.sample.points,
                                       verbose = TRUE)
 ```
 We can now analyse the distribution of PC scores of the points sampled by different methods.
 
-Non of the algorithms try to sample the third dimension uniformly. We can see that the MCMC approach evades the presence stronger than the other approaches, especcialy visible in the second dimension. Importantly we see that on the high end it does not manage to sample points, even tough the species is not present any more. 
+Non of the algorithms try to sample the third dimension uniformly. We can see that the MCMC approach evades the presence stronger than the other approaches, especially visible in the second dimension. Importantly we see that on the high end it does not manage to sample points, even tough the species is not present any more. 
 ```{r visualize, fig.width=7, fig.height=11, echo=FALSE}
 # Create a layout with 3 rows: 2 for plots, 1 for legend
 if(TRUE) {
@@ -182,7 +183,7 @@ sampled.points.mcmc.higher.dim <- paSamplingMcmc(
   precomputed.pca = rpc, 
   environmental.cutof.percentile = 0.001,
   num.chains = 4,
-  num.cores = 4,
+  # num.cores = 1,
   chain.length = 10000,
   n.samples = n.sample.points,
   verbose = TRUE,

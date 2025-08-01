@@ -37,6 +37,12 @@ Suggests:
     viridis,
     virtualspecies,
     testthat (>= 3.0.0),
-    geodata
+    geodata,
+    coda,
+    entropy,
+    gganimate,
+    rnaturalearth,
+    rnaturalearthdata,
+    purrr
 VignetteBuilder: knitr
 Config/testthat/edition: 3

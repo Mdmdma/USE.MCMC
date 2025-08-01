@@ -20,6 +20,7 @@ This vignette gives some insights on the concept of nearest neighbor search in t
 library(USE.MCMC)
 library(ggplot2)
 library(rnaturalearth)
+library(rnaturalearthdata)
 library(FNN)
 library(sf)
 library(dplyr)
@@ -33,10 +34,12 @@ The foundation of the approach is the assumption that we can map a point in vari
 In the geographical space this concept is very intuitive. The closest city to a given test point is the one with the least distance.
 
 ```{r, geographical-space-example, fig.height=5, fig.width=7, echo=FALSE}
-countries_sf <- ne_countries(scale = "medium", returnclass = "sf")
+countries_sf <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 italy <- countries_sf[countries_sf$admin == "Italy", ]
 italy <- italy$geometry
+```
 
+```{r, geographical-space-example-part-2, fig.height=5, fig.width=7, echo=FALSE}
 
 city.points <- data.frame(
   name = c("Rome", "Milan", "Venice", "Naples", "Turin", "Palermo"),

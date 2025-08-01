@@ -18,10 +18,8 @@
 #' @param dimensions Vector containing the dimensions included in the analysis
 #' @param num.neighbors Number of Neighbors
 #'
-#' @returns
+#' @returns maximal distance a point should be remapped from to have originated from a region inside of the environmental space.
 #' @export
-#'
-#' @examples
 optimalDistanceThresholdNn <- function(env.data = NULL,
                                       index.for.cutof = 5,
                                       dimensions = c("PC1", "PC2"),
