@@ -6,7 +6,7 @@ articles:
   insights-on-MCMC-pseudo-absence-sampling-vignette: insights-on-MCMC-pseudo-absence-sampling-vignette.html
   Insights-on-nearest-neighbor-search: Insights-on-nearest-neighbor-search.html
   USE_vignette: USE_vignette.html
-last_built: 2025-08-01T15:19Z
+last_built: 2025-08-01T15:30Z
 urls:
   reference: https://mdmdma.github.io/USE.MCMC/reference
   article: https://mdmdma.github.io/USE.MCMC/articles
