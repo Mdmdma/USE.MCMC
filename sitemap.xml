@@ -1,9 +1,11 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://mdmdma.github.io/USE.MCMC/404.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/LICENSE.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/articles/Insights-on-nearest-neighbor-search.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/USE_vignette.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/development_vignette.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/index.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/authors.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/index.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/news/index.html</loc></url>
@@ -20,6 +22,7 @@
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/mclustDensityFunction.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/mcmcSampling.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/optimRes.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/optimalDistanceThresholdNn.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/paSampling.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/paSamplingMcmc.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/paSamplingNn.html</loc></url>
