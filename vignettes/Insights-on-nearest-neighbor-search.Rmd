@@ -1,5 +1,5 @@
 ---
-title: "Insights-on-nearest-neighbor-search"
+title: "Insights on nearest neighbor search"
 autor: "Mathis Erler"
 output: rmarkdown::html_vignette
 vignette: >
@@ -154,7 +154,7 @@ plot(combined.plot.real.space)
 
 In this case Venice is closest to the test point. If we want to get a real point from our test point using geographical distance as out metric we would therefore choose Venice. 
 
-We can now do the same thing in the environmental space. To start lets build an example with just two dimensions. As an example we can look at bioclimatical variables 14 and 15. Bioclim 14 denotes the precipitation of the driest month, bioclim 15 the Precipitation Seasonality. 
+We can now do the same thing in the environmental space. To start lets build an example with just two dimensions. As an example we can look at bioclimatical variables 14 and 15. Bioclim 14 denotes the precipitation of the driest month, bioclim 15 the precipitation seasonality. 
 
 ```{r env-example, fig.height=10, fig.width=7, echo=FALSE}
 
@@ -357,7 +357,7 @@ p.env.space.pc <- ggplot(env.with.pc.sf) +
 
 print(p.env.space.pc)
 ```
-Now lets explore how we can use the nearest neighbor mapping can help us to uniformly sample points out of this environmental space.
+\n Now lets explore how we can use the nearest neighbor mapping can help us to uniformly sample points out of this environmental space.
 
 If we would randomly pick points out of the set of points in the environment we would recreate the distribution of points in the environment and not get a flat, uniform, distribution. 
 
@@ -420,7 +420,7 @@ print(p.grid.noisy)
 
 ```
 
-Now we come to the main concept of this approach. So far the points on the grid are not present in the real dataset. For each point in the repeated noisy grid we search the closest neighbor in the real environmental space. This is implement with the FNN package. By using a KD-tree, it can handle large data sets in higher dimensions quickly. 
+We have reached the main concept of this approach. So far the points on the grid are not present in the real dataset. For each point in the repeated noisy grid we search the closest neighbor in the real environmental space. This is implement with the FNN package. By using a KD-tree, it can handle large data sets in higher dimensions quickly. 
 
 ```{r remapp-points}
 mapped.sampled.point.data <- FNN::get.knnx(env.with.pc[dimensions], 

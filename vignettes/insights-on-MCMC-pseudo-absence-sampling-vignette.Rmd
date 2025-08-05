@@ -1,5 +1,5 @@
 ---
-title: "insights-on-MCMC-pseudo-absence-sampling-vignette"
+title: "Insights on MCMC pseudo absence sampling vignette"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
@@ -120,7 +120,7 @@ $$
 Given a point $p_n$ we calculate a proposed point $p'$. The function $d(p)$ now guides our chain. If the value of $d()$ is higher at the new location, the chain always continues. If the value of $d(p)$ is lower at the new location the chain sometimes transitions. This guaranties that the whole space is getting sampled.
 
 Looking at the posterior of our sampled points, the distribution of x and y values of our points, we see that they resemble Gaussian, but our sample size was too small.
-```{r gaussian-posterior-plot, echo=FALSE, fig.height=5, fig.width=7}
+```{r gaussian-posterior-plot, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
 p.gaussian.posterior.x.limited.samplesize <- ggplot(sampled.points.gaussian) +
   geom_density(aes(x=x)) +
   xlim(-5,5)
@@ -175,7 +175,7 @@ gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifsk
 anim_save("gif_example_chain_gaussian_long.gif", gif.example.chain.gaussian)
 ```
 ![](gif_example_chain_gaussian_long.gif)
-```{r gaussian-posterior-plot-more-samples, echo=FALSE, fig.height=5, fig.width=7}
+```{r gaussian-posterior-plot-more-samples, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
 p.gaussian.posterior.x.limited.samplesize <- ggplot(sampled.points.gaussian) +
   geom_density(aes(x=x)) +
   xlim(-5,5)
@@ -237,7 +237,7 @@ env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
 
 To generate pseudo absences we use two Gaussian mixture models. In a first step we fit the points in our environment. This model is later used to stop our chain from wandering into areas where no points are found. 
 
-```{r plot-env-data, message=FALSE, fig.height=4, fig.width=7}
+```{r plot-env-data, message=FALSE, fig.height=4, fig.width=7, echo=FALSE}
 p.points.in.the.environment <- ggplot() + 
   geom_point(data=env.data.cleaned,
              aes(x=PC1, y=PC2),
@@ -321,7 +321,7 @@ sampled.points.naive.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       burnIn = FALSE)
 ```
 
-```{r animate-naive-points, eval=FALSE}
+```{r animate-naive-points, eval=FALSE, echo=FALSE}
 
 sampled.points.naive.density$step <- 1:nrow(sampled.points.naive.density)
 p.chain.naive.density <- ggplot(sampled.points.naive.density) + 
@@ -378,7 +378,8 @@ densityFunctionPseudoAbsences <- function(env.model, env.threshold,
       return(0)
     } else {
       return(
-        max(0, 1-mclust::predict.densityMclust(pres.model, point) / pres.threshold)
+        max(0, 1-mclust::predict.densityMclust(pres.model, point) /
+              pres.threshold)
         )
     }
   }
@@ -419,7 +420,7 @@ sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,
 ```{r animate-pseudeo-absences, eval=FALSE}
 
 sampled.points.ps.density$step <- 1:nrow(sampled.points.ps.density)
-p.chain.ps.densitycom <- ggplot(sampled.points.ps.density) + 
+p.chain.ps.density <- ggplot(sampled.points.ps.density) + 
   geom_point(aes(x=PC1, y=PC2, color=step)) + 
   geom_path(aes(x=PC1, y=PC2, color=step)) + 
   theme_minimal() +
@@ -474,7 +475,7 @@ mapped.sampled.points.selected <- mapped.sampled.points.filtered[
 
 We can look at out points in the environmental space
 
-```{r points-in-the-environment, echo=FALSE, fig.height=4, fig.width=7}
+```{r points-in-the-environment, echo=FALSE, fig.height=4, fig.width=7, message=FALSE}
 p.points.in.the.environment <- p.density.pseudo.absence + 
   geom_point(data=mapped.sampled.points.selected,
              aes(x=PC1, y=PC2, color="Pseudo-absence"),
@@ -606,7 +607,6 @@ dimensions <- c("PC1", "PC2", "PC3")
 env.with.pc.sf.subsampled <- env.with.pc.sf[
   stats::runif(min(nrow(env.with.pc.sf), 2000) , 1, nrow(env.with.pc.sf)),] %>%
   sf::st_drop_geometry()
-  
 env.data.cleaned.subsampled <- sf::st_drop_geometry(
   env.with.pc.sf.subsampled[dimensions])
 environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled)
@@ -654,7 +654,7 @@ We can now look at the Gelman-Rubin plot of the chain ensemble. For the second a
 ```{r gelman-plot, fig.height=5, fig.width=7}
 coda::gelman.plot(coda.chain.list)
 ```
-Entropy is a measure for information. The higher the entropy, the more information a dataset contains. We can plot how the entropy of a chain evolves over time
+\n Entropy is a measure for information. The higher the entropy, the more information a dataset contains. We can plot how the entropy of a chain evolves over time
 ```{r entropy-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
 plot_entropy <- function(chain.list){
   interval <-  floor(seq(1,nrow(chain.list[[1]]), length.out = 100))
