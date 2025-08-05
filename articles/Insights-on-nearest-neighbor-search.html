@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Insights-on-nearest-neighbor-search • USE.MCMC</title>
+<title>Insights on nearest neighbor search • USE.MCMC</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Insights-on-nearest-neighbor-search">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Insights on nearest neighbor search">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -34,8 +34,8 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">insights-on-MCMC-pseudo-absence-sampling-vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights-on-nearest-neighbor-search</a></li>
+    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on MCMC pseudo absence sampling vignette</a></li>
+    <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul>
 </li>
@@ -59,7 +59,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Insights-on-nearest-neighbor-search</h1>
+      <h1>Insights on nearest neighbor search</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/mdmdma/USE.MCMC/blob/main/vignettes/Insights-on-nearest-neighbor-search.Rmd" class="external-link"><code>vignettes/Insights-on-nearest-neighbor-search.Rmd</code></a></small>
@@ -92,8 +92,8 @@ we would therefore choose Venice.</p>
 <p>We can now do the same thing in the environmental space. To start
 lets build an example with just two dimensions. As an example we can
 look at bioclimatical variables 14 and 15. Bioclim 14 denotes the
-precipitation of the driest month, bioclim 15 the Precipitation
-Seasonality.</p>
+precipitation of the driest month, bioclim 15 the precipitation
+seasonality.</p>
 <p><img src="Insights-on-nearest-neighbor-search_files/figure-html/env-example-1.png" width="672"></p>
 <p>Now Naples is the closest location. In this case the term distance is
 still somewhat sound, as both axis have the units mm. It starts to fall
@@ -197,7 +197,7 @@ each point.</p>
 <span><span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">noise.y</span>, <span class="va">noise.x</span><span class="op">)</span></span>
 <span><span class="va">grid.noisy</span> <span class="op">&lt;-</span> <span class="va">grid.repeated</span> <span class="op">+</span> <span class="va">noise</span></span></code></pre></div>
 <p><img src="Insights-on-nearest-neighbor-search_files/figure-html/add-noise-to-grid-plot-1.png" width="672"></p>
-<p>Now we come to the main concept of this approach. So far the points
+<p>We have reached the main concept of this approach. So far the points
 on the grid are not present in the real dataset. For each point in the
 repeated noisy grid we search the closest neighbor in the real
 environmental space. This is implement with the FNN package. By using a
