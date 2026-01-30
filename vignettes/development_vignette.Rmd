@@ -118,7 +118,8 @@ sampled.points.mcmc <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       num.cores = 1,
                                       chain.length = 10000,
                                       n.samples = n.sample.points,
-                                      verbose = TRUE)
+                                      verbose = TRUE,
+                                      covariance.correction = 100)
 ```
 We can now analyse the distribution of PC scores of the points sampled by different methods.
 

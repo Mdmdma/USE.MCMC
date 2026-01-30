@@ -10,8 +10,9 @@ mcmcSampling(
   densityFunction = alwaysOne,
   proposalFunction = addHighDimGaussian(dim = length(dimensions)),
   n.sample.points = 0,
-  burnIn = TRUE,
-  verbose = TRUE
+  burnIn = 1000,
+  verbose = TRUE,
+  covariance.correction = 1
 )
 }
 \arguments{
@@ -25,9 +26,11 @@ mcmcSampling(
 
 \item{n.sample.points}{Number of points to be sampled}
 
-\item{burnIn}{Boolean sets if a burn in shoud be done before the sampling}
+\item{burnIn}{Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped}
 
 \item{verbose}{Boolean to toggle progress updates}
+
+\item{covariance.correction}{Integer, initial value of the covariance correction.}
 }
 \value{
 A sf dataframe containing the sampled points

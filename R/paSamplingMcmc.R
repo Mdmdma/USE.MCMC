@@ -9,7 +9,8 @@
 #' @param chain.length number of points that are sampled for the chain
 #' @param verbose If true the function gives updates on the current state of the chain
 #' @param dimensions vector containg the names of the dimensions that should be included
-#' @param burn.in If False the burnin is skipped
+#' @param burnIn Integer, sets the number of steps per adaptive burnin cycle. If 0 the burnin is skipped
+#' @param covariance.correction Integer, sets the inital value of the covariance correction
 #' @param precomputed.pca If rastPCA has already been evoked, it the result of it can be passed here to not recompute
 #' @param seed.number seednumber used to get repeatable results
 #' @param n.neighbors.for.statistics number of neighbors used to calculate the maximal sensible distance to real points that should be included
@@ -26,7 +27,8 @@
 
 paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, chain.length = 10000,
                           verbose = FALSE, dimensions = c("PC1", "PC2"),
-                          burn.in = TRUE,
+                          burnIn = 1000,
+                          covariance.correction = 1,
                           precomputed.pca = NULL,
                           seed.number = 42,
                           n.neighbors.for.statistics = 2, low.end.of.inclueded.points = 100, high.end.of.included.points = 5,
@@ -110,7 +112,8 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                    n.sample.points = chain.length,
                                    proposalFunction = proposalFunction,
                                    densityFunction = densityFunction,
-                                   burnIn = burn.in,
+                                   burnIn = burnIn,
+                                   covariance.correction = covariance.correction,
                                    verbose = TRUE)
   }, mc.cores = min(num.chains, num.cores))
 

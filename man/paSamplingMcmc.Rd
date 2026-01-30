@@ -14,7 +14,8 @@ paSamplingMcmc(
   chain.length = 10000,
   verbose = FALSE,
   dimensions = c("PC1", "PC2"),
-  burn.in = TRUE,
+  burnIn = 1000,
+  covariance.correction = 1,
   precomputed.pca = NULL,
   seed.number = 42,
   n.neighbors.for.statistics = 2,
@@ -40,7 +41,9 @@ paSamplingMcmc(
 
 \item{dimensions}{vector containg the names of the dimensions that should be included}
 
-\item{burn.in}{If False the burnin is skipped}
+\item{burnIn}{Integer, sets the number of steps per adaptive burnin cycle. If 0 the burnin is skipped}
+
+\item{covariance.correction}{Integer, sets the inital value of the covariance correction}
 
 \item{precomputed.pca}{If rastPCA has already been evoked, it the result of it can be passed here to not recompute}
 

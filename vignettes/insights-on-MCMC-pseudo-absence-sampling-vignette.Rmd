@@ -33,9 +33,9 @@ library(entropy)
 set.seed(42)
 ```
 
-Before we can understand why Monte Carlo Markov chains are usefull, we have to understand how they work. 
+Before we can understand why Markov chains are usefull, we have to understand how they work. 
 
-For our use case Markov chains can be understood as a random walk. From a given starting point the chain starts to explore the given space. Given the current point we calculate the update step. In this case this step is two dimensional gaussian nosise. The algorithm then desides if it wants to accept this proposed point. In this first example we accept all points.
+For our use case Markov chains can be understood as a random walk. From a given starting point the chain starts to explore the given space. Given the current point we calculate the update step. In this case this step is two dimensional Gaussian noise. The algorithm then decides if it wants to accept this proposed point. In this first example we accept all points.
 
 ```{r generate-sample-chain, message=FALSE}
 starting.point <- data.frame(x=0, y=0)
@@ -43,7 +43,8 @@ sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                dimensions = c("x", "y"),
                                densityFunction = alwaysOne,
                                proposalFunction = addHighDimGaussian(dim=2),
-                               burnIn = FALSE, 
+                               burnIn = 0,
+                               covariance.correction = 1, 
                                n.sample.points = 100,
                                verbose = FALSE)
 ```
@@ -70,7 +71,9 @@ anim_save("gif_example_chain.gif", gif.example.chain)
 ```
 ![](gif_example_chain.gif)
 
-In practical cases a Markov chain does not perform a completely random walk. The chain tries to replicate some kind of function. In the case above this function is one everywhere. Therefore the chain explores in all directions and without limit. In this unbound case the chain would not converge to some stationary state. We can supply the MCMC algorithm a function that represents the distribution we want to replicate. 
+In practical cases a Markov chain does not perform a completely random walk. The chain tries to replicate some kind of target function. In the case above this function is one everywhere. Therefore the chain explores in all directions and without limit. In this unbound case the chain does not converge to a stationary state. 
+
+In a real usecase we want to generate samples from a target density. We can supply the MCMC algorithm with this function that represents the distribution we want to replicate. 
 
 Lets make an example and create samples from a two dimensional Gaussian.
 
@@ -83,7 +86,8 @@ sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
                                   dimensions = c("x", "y"),
                                   densityFunction = densityFunctionGaussian,
                                   proposalFunction = addHighDimGaussian(dim=2),
-                                  burnIn = FALSE, 
+                                  burnIn = 0,
+                                  covariance.correction = 13,
                                   n.sample.points = 100,
                                   verbose = FALSE)
 ```
@@ -112,12 +116,13 @@ anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ![](gif_example_chain_gaussian.gif)
 As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the metropolis Hastings algorithm.
 $$
+
 \alpha = \frac{d(p')}{d(p)}, \quad p_{n+1} = \begin{cases}
         p' & \alpha >n, n\sim \mathcal{U}(0,1)  \\
         p_n & \text{otherwise}
     \end{cases}
 $$
-Given a point $p_n$ we calculate a proposed point $p'$. The function $d(p)$ now guides our chain. If the value of $d()$ is higher at the new location, the chain always continues. If the value of $d(p)$ is lower at the new location the chain sometimes transitions. This guaranties that the whole space is getting sampled.
+Given a point $p_n$ we calculate a proposed point $p'$. The function $d(p)$ guides our chain. If the value of $d(p')$ is higher at the new location, the chain always continues. If the value of $d(p)$ is lower at the new location the chain sometimes transitions. This guaranties that the whole space is getting sampled. This assumption only holds up if we sample for enough steps and the sampled function is compact, in addition to probably other things.
 
 Looking at the posterior of our sampled points, the distribution of x and y values of our points, we see that they resemble Gaussian, but our sample size was too small.
 ```{r gaussian-posterior-plot, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
@@ -197,17 +202,17 @@ In this low dimensional case with a simple function there are more simple ways t
 
 Lets explore the dimensionality issue first. If we compute the value of our function on a grid with 100 cells, a moderate resolution, that is 10'000 points in the two dimensional case. In the five dimensional case that are 10 billion. Computational and memory requirements become limiting factors for application of such approaches.
 
-In case of MCMC sampling the computational complexity increases, but less fast. The function that we have to evaluate to decide if we want to accept a new point becomes more complex and we have to run the chain for longer until we have nice convergence. 
+In case of MCMC sampling the computational complexity increases, but less fast. The function that we have to evaluate to decide if we want to accept a new point becomes more complex and we have to run the chain for longer until we have good convergence. 
 
 # Pseudo absence sampling
 
 If we want to use MCMC to generate pseudo absences we first have to construct the function that represents the density of our pseudo absences in the environmental space. 
 
-Here we demonstrate an approach using Gaussian mixtures. As the example above shows we can generate sample points from a Gaussian distribution. On the other hand we can also use sample points to find the Gaussian that is best at explaining the given data. In a Gaussian mixtures we do not only fit one Gaussian, but can find the number of Gaussian that is most probably at explaining the data. 
+Here we demonstrate an approach using Gaussian mixtures. As the example above shows we can generate sample points from a Gaussian distribution.We can also use sample points to find the Gaussian that explains the given data best. In a Gaussian mixture model we do not only fit one Gaussian, but can find the number of Gaussian that approximates the given point distribution. 
 
-For the model to fit the data well it has to resemble a multi modal Gaussian. The environment does not necessarily have this structure. We therefore perform a pca to have a more simple structure in our data and reduce its dimensionality.
+For the Gaussian mixture model to fit the data well it has to resemble a multi modal Gaussian. The environment does not necessarily have this structure. We therefore perform a PCA to have a more simple structure in our data and reduce its dimensionality.
 
-In a first step we have to descide the dimensions we want to unifromwly sample.
+In a first step we have to decide the dimensions we want to uniformly sample.
 ```{r set-dimesnions}
 dimensions <- c("PC1", "PC2")
 ```
@@ -235,7 +240,7 @@ env.with.pc.sf <- rpc$PCs %>%
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
 ```
 
-To generate pseudo absences we use two Gaussian mixture models. In a first step we fit the points in our environment. This model is later used to stop our chain from wandering into areas where no points are found. 
+To generate pseudo absences we use two Gaussian mixture models. In a first step we fit the points in our environment. This part of the model is later used to stop our chain from wandering into areas outside our environment.
 
 ```{r plot-env-data, message=FALSE, fig.height=4, fig.width=7, echo=FALSE}
 p.points.in.the.environment <- ggplot() + 
@@ -259,7 +264,7 @@ environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled)
 title("Gaussian mixture fitted to the environment")
 ```
 
-The model is a function that gives us the sum of the Gaussian components at each location. The higher the value the more probably it is to find a point at the given location. In our case we want to sample the environmental space uniformly, not reproduce the underlying distribution. We use this environmental model only to set the boundaries for our chain. 
+The fitted model is a function that gives us the sum of the Gaussian components at each location. The higher the value the higher the probably to find a point at the given location. In our case we want to sample the environmental space uniformly, not reproduce the underlying distribution. We use this environmental model only to set the boundaries for our chain. 
 
 The model density at the points in the environment can be used to find the threshold under which no points are expected any more.
 
@@ -311,14 +316,15 @@ p.density.naive <- ggplot() +
 print(p.density.naive)
 ```
 
-We can now use the mcmc algorithm from before to generate samples from this function. 
+We can now use the Markov chain algorithm from before to generate samples from this function. 
 
 ```{r sample-naive-points}
 sampled.points.naive.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
                                       n.sample.points = 5000,
-                                      burnIn = FALSE)
+                                      burnIn = 100,
+                                      covariance.correction = 13)
 ```
 
 ```{r animate-naive-points, eval=FALSE, echo=FALSE}
@@ -342,7 +348,7 @@ anim_save("chain.naive.density.gif", gif.chain.naive.density)
 ```
 ![](chain.naive.density.gif)
 
-We now can sample our environmental space uniformely. Pseudo absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. 
+We now can sample our environmental space uniformly. Pseudo absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that
 
 ```{r generate-virtual-species}
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
@@ -354,7 +360,7 @@ virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
   sf::st_as_sf()
 ```
 
-As before we can fit a gaussian mixture to the given datapoints
+As before we can fit a Gaussian mixture to the given data points of the model species.
 
 ```{r fit-species-model, message=FALSE, fig.height=4, fig.width=7}
 species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]))
@@ -364,7 +370,7 @@ title("Gaussian mixture model fitted to the target species")
 
 ```
 
-Now we can build a function that describes the distribution of pseudo absences. To evade the presence we subtract something in areas with species occurrence. The density of the presence model therefor has to be scaled. We do this by selecting the density at a given quantile of the presence points and scale the whole function so that the value becomes 1. As we subtract it from the former function value, we now get values below zero in these areas, meaning we will never visit them with the chain.
+Now we can build a function that describes the distribution of pseudo absences. To evade the presence we subtract the value of the presence model. The value of the presence model can be scaled to tune how strongly the presence species is avoided. We do this by selecting the density at a given quantile of the presence points and scale the whole function so that the value becomes 1. As we subtract it from the former function value, we now get values below zero in these areas, meaning we will never visit them with the chain.
 
 ```{r full-pseudo-absence-density-funciton}
 densityFunctionPseudoAbsences <- function(env.model, env.threshold,
@@ -414,7 +420,8 @@ sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
                                       n.sample.points = 5000,
-                                      burnIn = TRUE)
+                                      burnIn = 100,
+                                      covariance.correction = 20)
 ```
 
 ```{r animate-pseudeo-absences, eval=FALSE}
@@ -438,7 +445,7 @@ anim_save("chain.ps.density.gif", gif.chain.ps.density)
 ```
 ![](chain.ps.density.gif)
 
-So far the sample points are not contained in the environment. They only have values for the dimension we wanted to sample. To get real points again we use the nearest neighbor search. The technique is further described in [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html). The core of the idea is that we can compute the distance from a sample point to other points in the dataset and choose the point with the shortest distance to represent our sample point. 
+So far the sample points are real points in the environment. They only have values for the dimension we wanted to sample. To get real points again we use the nearest neighbor search. The technique is further described in [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html). The core of the idea is that we can compute the distance from a sample point to other points in the dataset and choose the point with the shortest distance to represent our sample point. 
 
 ```{r remapping}
 sampled.points <- sampled.points.ps.density
@@ -449,7 +456,7 @@ mapped.sampled.points <- env.with.pc.sf[
 mapped.sampled.points$density <- sampled.points$density
 mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 ```
-Now we have real points in our environemnt with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered of the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lays between a point and its origin should never be more than half the maximal distance between points in the dataset. 
+Now we have real points in our environment with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered of the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lays between a point and its origin should never be more than half the maximal distance between points in the dataset. 
 
 ```{r neighbor-distance-threshold}
 nearest.neighbors.distance<- FNN::knn.dist(env.data.cleaned[dimensions],
@@ -559,6 +566,7 @@ sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.rast
                                       num.cores = 1,
                                       chain.length = 10000,
                                       n.samples = 500,
+                                      covariance.correction = 70,
                                       verbose = TRUE,
                                       dimensions = c("PC1", "PC2", "PC3"))
 ```
@@ -642,8 +650,9 @@ chain.list <- mclapply(1:4, function(i) {
                                    n.sample.points = 5000,
                                    densityFunction = densityFunction,
                                    proposalFunction = proposalFunction,
-                                   burnIn = TRUE,
-                                   verbose = FALSE)
+                                   burnIn = 1000,
+                                   covariance.correction = 50,
+                                   verbose = TRUE)
   })
   chain.list[[i]] <- coda::as.mcmc(sampled.points[dimensions])
 }, mc.cores = 1)
@@ -683,8 +692,7 @@ plot_entropy <- function(chain.list){
 p.entropy <- plot_entropy(coda.chain.list)
 print(p.entropy)
 ```
-
-We see that the entropy of the chain ensemble increases over time. This is to be expected, as the number of data points increases. The more important metric is the entropy is the entropy at a given number of points.
+We see that the entropy stablizeses and is simmilar for our different chains, indicating that they are well mixed. 
 
 
 
