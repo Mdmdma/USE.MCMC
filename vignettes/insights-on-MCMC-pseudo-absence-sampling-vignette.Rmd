@@ -1,5 +1,5 @@
 ---
-title: "Insights on MCMC pseudo absence sampling vignette"
+title: "Insights on Markov chain based pseudo-absence sampling"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette gives insights on how MCMC works and how it can be used to sample pseudo absences. It builds on ideas of neareast neighbor mapping. This concept is explained in detail in the [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html).
+This vignette gives insights into how MCMC works and how it can be used to sample pseudo-absences. It builds on the idea of nearest neighbor mapping. This concept is explained in detail in the [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html).
 ```{r setup, message=FALSE}
 library(USE.MCMC)
 library(terra)
@@ -29,15 +29,14 @@ library(tcltk)
 library(viridis)
 library(cowplot)
 library(entropy)
-# fixing the
-set.seed(42)
+set.seed(40)
 ```
 
-Before we can understand why Markov chains are usefull, we have to understand how they work. 
+Before we can understand why Markov chains are useful, we have to understand how they work. 
 
-For our use case Markov chains can be understood as a random walk. From a given starting point the chain starts to explore the given space. Given the current point we calculate the update step. In this case this step is two dimensional Gaussian noise. The algorithm then decides if it wants to accept this proposed point. In this first example we accept all points.
+For our use-case, Markov chains can be understood as a random walk. From a given starting point the chain starts to explore the given space. Given the current point, we calculate the update step. In this case, this step is two dimensional Gaussian noise. The algorithm then decides if it wants to accept this proposed point. In this first example we accept all points.
 
-```{r generate-sample-chain, message=FALSE}
+```{r generate-sample-chain, message=FALSE, results="hide"}
 starting.point <- data.frame(x=0, y=0)
 sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                dimensions = c("x", "y"),
@@ -71,13 +70,13 @@ anim_save("gif_example_chain.gif", gif.example.chain)
 ```
 ![](gif_example_chain.gif)
 
-In practical cases a Markov chain does not perform a completely random walk. The chain tries to replicate some kind of target function. In the case above this function is one everywhere. Therefore the chain explores in all directions and without limit. In this unbound case the chain does not converge to a stationary state. 
+In practical cases a Markov chain does not perform a completely random walk. The chain tries to replicate some kind of target function. In the case above this function is one everywhere. Therefore the chain explores in all directions and without limit. In this unbounded case the chain does not converge to a stationary state. 
 
-In a real usecase we want to generate samples from a target density. We can supply the MCMC algorithm with this function that represents the distribution we want to replicate. 
+In a real use case we want to generate samples from a target density. We can supply the MCMC algorithm with this function that represents the distribution we want to replicate. 
 
 Lets make an example and create samples from a two dimensional Gaussian.
 
-```{r generate-sample-gaussian-chain}
+```{r generate-sample-gaussian-chain, results="hide"}
 densityFunctionGaussian <- function(point, lengthscale=5){
   density <- exp(-(point$x ** 2 + point$y ** 2) / lengthscale)
 }
@@ -114,7 +113,7 @@ anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ```
 
 ![](gif_example_chain_gaussian.gif)
-As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the metropolis Hastings algorithm.
+As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the Metropolis–Hastings algorithm.
 $$
 
 \alpha = \frac{d(p')}{d(p)}, \quad p_{n+1} = \begin{cases}
@@ -122,7 +121,7 @@ $$
         p_n & \text{otherwise}
     \end{cases}
 $$
-Given a point $p_n$ we calculate a proposed point $p'$. The function $d(p)$ guides our chain. If the value of $d(p')$ is higher at the new location, the chain always continues. If the value of $d(p)$ is lower at the new location the chain sometimes transitions. This guaranties that the whole space is getting sampled. This assumption only holds up if we sample for enough steps and the sampled function is compact, in addition to probably other things.
+Given a point $p_n$ we calculate a proposed point $p'$. The function $d(p)$ guides our chain. If the value of $d(p')$ is higher at the new location, the chain always continues. If the value of $d(p)$ is lower at the new location the chain sometimes transitions. This guarantees that the whole space is eventually sampled. This assumption only holds up if we sample for enough steps and the sampled function is compact, in addition to probably other things.
 
 Looking at the posterior of our sampled points, the distribution of x and y values of our points, we see that they resemble Gaussian, but our sample size was too small.
 ```{r gaussian-posterior-plot, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
@@ -200,19 +199,19 @@ ggdraw() +
 
 In this low dimensional case with a simple function there are more simple ways to generate samples. The case where MCMC gets useful for sample generation is if the function is very complicated and expensive to compute and in case our problem lives in high dimensions. 
 
-Lets explore the dimensionality issue first. If we compute the value of our function on a grid with 100 cells, a moderate resolution, that is 10'000 points in the two dimensional case. In the five dimensional case that are 10 billion. Computational and memory requirements become limiting factors for application of such approaches.
+Lets explore the dimensionality issue first. If we compute the value of our function on a grid with 100 cells per dimension—a moderate resolution—this results in 10,000 points in the two-dimensional case. In the five-dimensional case, this results in 10 billion points. Computational and memory requirements become limiting factors for application of such approaches.
 
 In case of MCMC sampling the computational complexity increases, but less fast. The function that we have to evaluate to decide if we want to accept a new point becomes more complex and we have to run the chain for longer until we have good convergence. 
 
-# Pseudo absence sampling
+# pseudo-absence sampling
 
-If we want to use MCMC to generate pseudo absences we first have to construct the function that represents the density of our pseudo absences in the environmental space. 
+If we want to use MCMC to generate pseudo-absences we first have to construct the function that represents the density of our pseudo-absences in the environmental space. 
 
 Here we demonstrate an approach using Gaussian mixtures. As the example above shows we can generate sample points from a Gaussian distribution.We can also use sample points to find the Gaussian that explains the given data best. In a Gaussian mixture model we do not only fit one Gaussian, but can find the number of Gaussian that approximates the given point distribution. 
 
-For the Gaussian mixture model to fit the data well it has to resemble a multi modal Gaussian. The environment does not necessarily have this structure. We therefore perform a PCA to have a more simple structure in our data and reduce its dimensionality.
+For the Gaussian mixture model to fit the data well it has to resemble a multi-modal Gaussian. The environment does not necessarily have this structure. We therefore perform a PCA to have a more simple structure in our data and reduce its dimensionality.
 
-In a first step we have to decide the dimensions we want to uniformly sample.
+In a first step, we have to decide which dimensions we want to sample uniformly.
 ```{r set-dimesnions}
 dimensions <- c("PC1", "PC2")
 ```
@@ -240,7 +239,7 @@ env.with.pc.sf <- rpc$PCs %>%
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
 ```
 
-To generate pseudo absences we use two Gaussian mixture models. In a first step we fit the points in our environment. This part of the model is later used to stop our chain from wandering into areas outside our environment.
+To generate pseudo-absences we use two Gaussian mixture models. In a first step we fit the points in our environment. This part of the model is later used to stop our chain from wandering into areas outside our environment.
 
 ```{r plot-env-data, message=FALSE, fig.height=4, fig.width=7, echo=FALSE}
 p.points.in.the.environment <- ggplot() + 
@@ -318,7 +317,7 @@ print(p.density.naive)
 
 We can now use the Markov chain algorithm from before to generate samples from this function. 
 
-```{r sample-naive-points}
+```{r sample-naive-points, results="hide"}
 sampled.points.naive.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
@@ -348,9 +347,9 @@ anim_save("chain.naive.density.gif", gif.chain.naive.density)
 ```
 ![](chain.naive.density.gif)
 
-We now can sample our environmental space uniformly. Pseudo absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that
+We can now sample our environmental space uniformly. pseudo-absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that
 
-```{r generate-virtual-species}
+```{r generate-virtual-species, results="hide"}
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
   env.data = env.data.raster.with.pc, n.samples = 300)
 virtual.presence.points <- virtual.presence.data$sample.points
@@ -370,7 +369,7 @@ title("Gaussian mixture model fitted to the target species")
 
 ```
 
-Now we can build a function that describes the distribution of pseudo absences. To evade the presence we subtract the value of the presence model. The value of the presence model can be scaled to tune how strongly the presence species is avoided. We do this by selecting the density at a given quantile of the presence points and scale the whole function so that the value becomes 1. As we subtract it from the former function value, we now get values below zero in these areas, meaning we will never visit them with the chain.
+Now we can build a function that describes the distribution of pseudo-absences. To evade the presence we subtract the value of the presence model. The value of the presence model can be scaled to tune how strongly the presence species is avoided. We do this by selecting the density at a given quantile of the presence points and scale the whole function so that the value becomes 1. As we subtract it from the former function value, we now get values below zero in these areas, meaning we will never visit them with the chain.
 
 ```{r full-pseudo-absence-density-funciton}
 densityFunctionPseudoAbsences <- function(env.model, env.threshold,
@@ -409,13 +408,13 @@ p.density.pseudo.absence <- ggplot() +
   scale_color_manual(values = c("Presence" = "red"),
                      name = "Point type") + 
   theme_minimal() + 
-  labs(title = "Value of the pseudo absence function") 
+  labs(title = "Value of the pseudo-absence function") 
   
 p.density.pseudo.absence
 ```
 
 
-```{r sample-pseudo-absences}
+```{r sample-pseudo-absences, results="hide"}
 sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
@@ -431,7 +430,7 @@ p.chain.ps.density <- ggplot(sampled.points.ps.density) +
   geom_point(aes(x=PC1, y=PC2, color=step)) + 
   geom_path(aes(x=PC1, y=PC2, color=step)) + 
   theme_minimal() +
-  labs(title = "Chain on full pseudo absence model")  + 
+  labs(title = "Chain on full pseudo-absence model")  + 
   scale_color_viridis()
 
 a.chain.ps.density <- p.chain.ps.density +
@@ -456,7 +455,7 @@ mapped.sampled.points <- env.with.pc.sf[
 mapped.sampled.points$density <- sampled.points$density
 mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 ```
-Now we have real points in our environment with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered of the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lays between a point and its origin should never be more than half the maximal distance between points in the dataset. 
+Now we have real points in our environment with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered off the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lies between a point and its origin should never be more than half the maximal distance between points in the dataset. 
 
 ```{r neighbor-distance-threshold}
 nearest.neighbors.distance<- FNN::knn.dist(env.data.cleaned[dimensions],
@@ -480,7 +479,7 @@ mapped.sampled.points.selected <- mapped.sampled.points.filtered[
 ```
 
 
-We can look at out points in the environmental space
+We can look at our points in the environmental space
 
 ```{r points-in-the-environment, echo=FALSE, fig.height=4, fig.width=7, message=FALSE}
 p.points.in.the.environment <- p.density.pseudo.absence + 
@@ -533,7 +532,7 @@ ggdraw() +
 
 
 ```
-For the selected dimensions the posterior is flat, for the other ones, in this case principal component three the distribution follows the environment. 
+For the selected dimensions the posterior density is flat, for the other ones, in this case principal component three, the distribution follows the environment. 
 
 The sampled points can also be plotted in the geographical space.
 ```{r plot-in-geo, echo=FALSE, fig.height=4, fig.width=7}
@@ -554,10 +553,10 @@ p.sampled.points.in.geographical.space
 
 So far we did nothing revolutionary. All of the given can be done using existing techniques.The advantage emerges when we want to increase the dimensions included. The only thing that has to change is the vector from the beginning in which we stated the dimensions to include. As the results are getting difficult to represent in 2d plots, we focus on the results of such computations. 
 
-The function paSamplingMcmc wrapps what we did so far in this vignette into one single concise function to efficiently create pseudo absences.
+The function paSamplingMcmc wraps what we did so far in this vignette into one single concise function to efficiently create pseudo-absences.
 
-```{r sample-in-higher-dim}
-# One core is used for rendering the vignette, is use this can be set higher
+```{r sample-in-higher-dim, message=FALSE, results="hide"}
+# One core is used for rendering the vignette, for interactive use this can be set higher
 sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points,
                                       precomputed.pca = rpc,
@@ -567,10 +566,10 @@ sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.rast
                                       chain.length = 10000,
                                       n.samples = 500,
                                       covariance.correction = 70,
-                                      verbose = TRUE,
+                                      verbose = FALSE,
                                       dimensions = c("PC1", "PC2", "PC3"))
 ```
-By including the third dimension into the algorithm we now get a flat posterior also from it.
+By including the third dimension into the algorithm we now get a flat posterior density also for it.
 
 ```{r plot-3d, echo=FALSE, fig.height=5, fig.width=7}
 p.mcmc.posterior.pc1 <- ggplot() +
@@ -606,7 +605,7 @@ ggdraw() +
 # Conververnce
 A topic not cover so far is convergence. The reason why we use MCMC is to reduce computational complexity of our problem. Therefore we have to know how long we have to run the algorithm and how many chains we should combine to get satisfying results. 
 
-To evaluate these issues lets first generate some long chains. 
+To evaluate these issues let's first generate some long chains. 
 
 
 ```{r highe-dim-convergence, fig.height=4, fig.width=7}
@@ -692,10 +691,175 @@ plot_entropy <- function(chain.list){
 p.entropy <- plot_entropy(coda.chain.list)
 print(p.entropy)
 ```
-We see that the entropy stablizeses and is simmilar for our different chains, indicating that they are well mixed. 
+The entropy stabilizes and is similar, indicating that they are well mixed. Looking at the autocorrelation we get an insight of how much thinning we have to do if we want the assumption of independently sampled points should hold. After a lag of around 30 the autocorrelation stays within the bounds of the long-running range.
+
+```{r autocorreltation-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+autocorr.plot(coda.chain.list[1], lag.max = 50)
+```
+We can now compare our newly introduced method to other sampling approaches. Here we compare it to other approaches that sample uniformly in the environmental space. We see that if we only use uniform sampling on two dimensions, the new method performs as the old methods, if we extend the sampling to 3 dimensions, we also sample the third dimension uniformly. This comes at the cost of having less uniform sampling along the first two dimensions. While looking like an issue, it probably represents more uniform samples, as we want to sample the environmental volume uniformly, not the single components them self. If component three has a large range at pc1 = 1, we expect the density of pc1 to be higher at pc1 = 1
+
+```{r uniform.paper, message=FALSE, results='hide'}
+sampled.points.uniform.p <- paSampling(env.rast = env.data.raster,
+                                       pres = virtual.presence.points, 
+                                       grid.res = 10)
+sampled.points.uniform.p.location <- sf::st_drop_geometry(
+  sampled.points.uniform.p) %>%
+  dplyr::select(c("x", "y")) %>%
+  sf::st_as_sf(coords = c("x", "y"))
+sampled.points.uniform.paper <- terra::extract(
+  env.data.raster.with.pc, 
+  sampled.points.uniform.p.location)
+```
+```{r uniform.nn, message=FALSE}
+n.sample.points = 300
+sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
+                                          pres = virtual.presence.points,
+                                          grid.res = 15, n.tr = 2,
+                                          n.samples = n.sample.points)
+
+```
 
 
+```{r compare-to-uniform-models-2d, echo=FALSE, fig.height=7, fig.width=7}
+p.pc1 <- ggplot() +
+  geom_density(data = mapped.sampled.points.selected, aes(x = PC1, color = "Sampled MCMC 2d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC1, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC1, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC1, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 2d" = "red"
+    ),
+    name = "Point type"
+  ) +
+  theme(legend.position = "none")
 
+p.pc2 <- ggplot() +
+  geom_density(data = mapped.sampled.points.selected, aes(x = PC2, color = "Sampled MCMC 2d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC2, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC2, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC2, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 2d" = "red"
+    ),
+    name = "Point type"
+  )
+
+p.pc3 <- ggplot() +
+  geom_density(data = mapped.sampled.points.selected, aes(x = PC3, color = "Sampled MCMC 2d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC3, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC3, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC3, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 2d" = "red"
+    ),
+    name = "Point type"
+  ) +
+  theme(legend.position = "none")
+
+ggdraw() +
+  draw_plot(
+    plot_grid(
+      p.pc1,
+      p.pc2,
+      p.pc3,
+      ncol = 1,
+      align = "v"
+    ),
+    height = 0.9
+  ) +
+  draw_label(
+    "Comparison to other uniform PA sampling methods",
+    x = 0.5, y = 0.95, size = 16
+  )
+```
+```{r compare-to-uniform-models-3d, echo=FALSE, fig.height=7, fig.width=7}
+p.pc1 <- ggplot() +
+  geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC1, color = "Sampled MCMC 3d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC1, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC1, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC1, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 3d" = "red"
+    ),
+    name = "Point type"
+  ) +
+  theme(legend.position = "none")
+
+p.pc2 <- ggplot() +
+  geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC2, color = "Sampled MCMC 3d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC2, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC2, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC2, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 3d" = "red"
+    ),
+    name = "Point type"
+  )
+
+p.pc3 <- ggplot() +
+  geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC3, color = "Sampled MCMC 3d")) +
+  geom_density(data = env.with.pc.sf, aes(x = PC3, color = "Environment")) +
+  geom_density(data = virtual.presence.points.pc, aes(x = PC3, color = "Virtual Presence")) +
+  geom_density(data = sampled.points.uniform.paper, aes(x = PC3, color = "Sampled uniform")) +
+  geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
+  scale_color_manual(
+    values = c(
+      "Environment" = "green",
+      "Virtual Presence" = "black",
+      "Sampled uniform" = "orange",
+      "Sampled uniform NN" = "blue",
+      "Sampled MCMC 3d" = "red"
+    ),
+    name = "Point type"
+  ) +
+  theme(legend.position = "none")
+
+ggdraw() +
+  draw_plot(
+    plot_grid(
+      p.pc1,
+      p.pc2,
+      p.pc3,
+      ncol = 1,
+      align = "v"
+    ),
+    height = 0.9
+  ) +
+  draw_label(
+    "Comparison to other uniform PA sampling methods",
+    x = 0.5, y = 0.95, size = 16
+  )
+```
 
 
 

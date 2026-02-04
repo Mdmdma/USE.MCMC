@@ -27,8 +27,12 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
     if (verbose){
       pb.burnin <- utils::txtProgressBar(min = 0, max = burnIn, style = 3)
     }
-   while (points.accepted / burnIn < 0.21| points.accepted / burnIn > 0.25) {
+   while (points.accepted / burnIn < 0.21 | points.accepted / burnIn > 0.25) {
       # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
+
+      if (verbose){
+            cat("\rThe current acceptance rate is", points.accepted /burnIn, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
+      }
       points.accepted <- 0
       for (i in 1:burnIn) {
         proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
@@ -45,10 +49,6 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       }
       if (points.accepted / burnIn < 0.21) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
       if (points.accepted /burnIn > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
-      if (verbose){
-        cat("\rThe current acceptance rate is", points.accepted /burnIn, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
-      }
-
     }
   }
   else cat("Burn in skipped")
