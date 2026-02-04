@@ -25,7 +25,7 @@ limit to the sampling space and a GMM fitted on the target species as a way to e
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on MCMC pseudo absence sampling vignette</a></li>
+    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
     <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul></li>
@@ -62,7 +62,8 @@ limit to the sampling space and a GMM fitted on the target species as a way to e
 <span>  chain.length <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  dimensions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PC1"</span>, <span class="st">"PC2"</span><span class="op">)</span>,</span>
-<span>  burn.in <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  burnIn <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  covariance.correction <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  precomputed.pca <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed.number <span class="op">=</span> <span class="fl">42</span>,</span>
 <span>  n.neighbors.for.statistics <span class="op">=</span> <span class="fl">2</span>,</span>
@@ -104,8 +105,12 @@ limit to the sampling space and a GMM fitted on the target species as a way to e
 <dd><p>vector containg the names of the dimensions that should be included</p></dd>
 
 
-<dt id="arg-burn-in">burn.in<a class="anchor" aria-label="anchor" href="#arg-burn-in"></a></dt>
-<dd><p>If False the burnin is skipped</p></dd>
+<dt id="arg-burnin">burnIn<a class="anchor" aria-label="anchor" href="#arg-burnin"></a></dt>
+<dd><p>Integer, sets the number of steps per adaptive burnin cycle. If 0 the burnin is skipped</p></dd>
+
+
+<dt id="arg-covariance-correction">covariance.correction<a class="anchor" aria-label="anchor" href="#arg-covariance-correction"></a></dt>
+<dd><p>Integer, sets the inital value of the covariance correction</p></dd>
 
 
 <dt id="arg-precomputed-pca">precomputed.pca<a class="anchor" aria-label="anchor" href="#arg-precomputed-pca"></a></dt>
@@ -162,7 +167,7 @@ limit to the sampling space and a GMM fitted on the target species as a way to e
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

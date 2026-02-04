@@ -34,7 +34,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on MCMC pseudo absence sampling vignette</a></li>
+    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
     <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul>
@@ -85,7 +85,7 @@ point in various dimensions to real points in our environment using
 distance as the metric that tells us which point matches best.</p>
 <p>In the geographical space this concept is very intuitive. The closest
 city to a given test point is the one with the least distance.</p>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/geographical-space-example-part-2-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/geographical-space-example-part-2-1.png" class="r-plt" alt="" width="672"></p>
 <p>In this case Venice is closest to the test point. If we want to get a
 real point from our test point using geographical distance as out metric
 we would therefore choose Venice.</p>
@@ -94,7 +94,7 @@ lets build an example with just two dimensions. As an example we can
 look at bioclimatical variables 14 and 15. Bioclim 14 denotes the
 precipitation of the driest month, bioclim 15 the precipitation
 seasonality.</p>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/env-example-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/env-example-1.png" class="r-plt" alt="" width="672"></p>
 <p>Now Naples is the closest location. In this case the term distance is
 still somewhat sound, as both axis have the units mm. It starts to fall
 apart when axis to not share the same units, as is unclear how the
@@ -115,7 +115,7 @@ component analysis on five bioclim variables(3, 4, 9, 14, 15).</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">rpc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rastPCA.html">rastPCA</a></span><span class="op">(</span><span class="va">env.data.raster</span>,  stand <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">env.data.raster.with.pc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rpc</span><span class="op">$</span><span class="va">PCs</span> , <span class="va">env.data.raster</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-pca-example%20-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-pca-example%20-1.png" class="r-plt" alt="" width="672"></p>
 <p>Looking at the first two principal components we see that the test
 point is climate wise closest to Turin, while still being far. In
 addition we see that the distance to Naples, Milan and Venice is not
@@ -141,7 +141,7 @@ arc minutes there are over 18’000 data points in western Europe.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">env.data.sf</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">env.with.pc.sf</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">env.with.pc</span>, coords <span class="op">=</span> <span class="va">dimensions</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/env-in-pc-plot-1.png" width="672">
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/env-in-pc-plot-1.png" class="r-plt" alt="" width="672">
 Now lets explore how we can use the nearest neighbor mapping can help us
 to uniformly sample points out of this environmental space.</p>
 <p>If we would randomly pick points out of the set of points in the
@@ -171,7 +171,7 @@ environmental range.</p>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span> <span class="op">=</span> <span class="va">dimensions</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-grid-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-grid-1.png" class="r-plt" alt="" width="672"></p>
 <p>As we may want multiple points sampled from the same grid cell, we
 repeat the grid the respective number of times.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -196,7 +196,7 @@ each point.</p>
 <span><span class="va">noise.y</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">grid.repeated</span><span class="op">)</span>, <span class="op">-</span><span class="va">step.y</span>, <span class="va">step.y</span><span class="op">)</span></span>
 <span><span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">noise.y</span>, <span class="va">noise.x</span><span class="op">)</span></span>
 <span><span class="va">grid.noisy</span> <span class="op">&lt;-</span> <span class="va">grid.repeated</span> <span class="op">+</span> <span class="va">noise</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/add-noise-to-grid-plot-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/add-noise-to-grid-plot-1.png" class="r-plt" alt="" width="672"></p>
 <p>We have reached the main concept of this approach. So far the points
 on the grid are not present in the real dataset. For each point in the
 repeated noisy grid we search the closest neighbor in the real
@@ -207,7 +207,7 @@ KD-tree, it can handle large data sets in higher dimensions quickly.</p>
 <span>                                           <span class="va">grid.noisy</span>, k <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">mapped.sampled.points</span> <span class="op">&lt;-</span> <span class="va">env.with.pc</span><span class="op">[</span><span class="va">mapped.sampled.point.data</span><span class="op">$</span><span class="va">nn.index</span>,<span class="op">]</span></span>
 <span><span class="va">mapped.sampled.points</span><span class="op">$</span><span class="va">distance</span> <span class="op">&lt;-</span> <span class="va">mapped.sampled.point.data</span><span class="op">$</span><span class="va">nn.dist</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/remapp-points-plot-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/remapp-points-plot-1.png" class="r-plt" alt="" width="672"></p>
 <p>Now we have points distributed nearly uniformely in the environment.
 The issue remaining is that we oversampled the border regions, as even
 cells that did not contain any points where remapped to the closest
@@ -240,7 +240,7 @@ the original data</p>
 <code class="sourceCode R"><span><span class="va">nearest.neighbors.distance</span><span class="op">&lt;-</span> <span class="fu">FNN</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/FNN/man/knn.dist.html" class="external-link">knn.dist</a></span><span class="op">(</span><span class="va">env.with.pc</span><span class="op">[</span><span class="va">dimensions</span><span class="op">]</span>,</span>
 <span>                                           k<span class="op">=</span><span class="va">num.samples.per.cell</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-distance-histogram-1.png" width="672"><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-distance-histogram-cut-1.png" width="672">
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-distance-histogram-1.png" class="r-plt" alt="" width="672"><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-distance-histogram-cut-1.png" class="r-plt" alt="" width="672">
 We see that the distance histogram is dominated by the low distances
 originating in regions with high densities. If we look at the top end on
 the other hand, we get information on the spacing of areas with a low
@@ -255,7 +255,7 @@ threshold from the extreme values.</p>
 <span></span>
 <span><span class="va">mapped.sampled.points.filtered</span> <span class="op">&lt;-</span> <span class="va">mapped.sampled.points</span><span class="op">[</span></span>
 <span>  <span class="va">mapped.sampled.points</span><span class="op">$</span><span class="va">distance</span> <span class="op">&lt;</span> <span class="va">distance.threshold</span>, <span class="op">]</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/mapped-points-plots-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/mapped-points-plots-1.png" class="r-plt" alt="" width="672"></p>
 <p>It can still happen that we map two sampled points to the same real
 point. These points should be removed, as they do not provide additional
 information. The probability to map twice to the same point is
@@ -268,7 +268,7 @@ not trivial how to eliminate this issue.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mapped.sampled.points.filtered.unique</span> <span class="op">&lt;-</span> <span class="va">mapped.sampled.points.filtered</span><span class="op">[</span></span>
 <span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated</a></span><span class="op">(</span><span class="va">mapped.sampled.points.filtered</span><span class="op">[[</span><span class="st">"PC1"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/removed-dublicates-plot-1.png" width="672">
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/removed-dublicates-plot-1.png" class="r-plt" alt="" width="672">
 We can see that the chosen threshold is reasonable, as it reduces the
 oversampling in border regions well without removing points in areas
 that we think to be part of the environment.</p>
@@ -344,9 +344,9 @@ species.</p>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">virtual.presence.points.pc</span><span class="op">$</span><span class="va">type</span> <span class="op">&lt;-</span> <span class="st">"Presence"</span></span>
 <span><span class="va">virtual.presence.points.pc</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_set_crs</a></span><span class="op">(</span><span class="va">virtual.presence.points.pc</span>, <span class="st">""</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-sampled-point-with-pres-differenciated-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-sampled-point-with-pres-differenciated-1.png" class="r-plt" alt="" width="672"></p>
 <p>We can also plot the plots in the real geographical space.</p>
-<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-in-geographical-space-1.png" width="672"></p>
+<p><img src="Insights-on-nearest-neighbor-search_files/figure-html/plot-in-geographical-space-1.png" class="r-plt" alt="" width="672"></p>
 <p>We can see that the points that where uniformly sampled in the
 environmental space are not evenly spaced any more. Areas with large
 environmental gradients get sampled more often.</p>
@@ -360,7 +360,7 @@ environmental gradients get sampled more often.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

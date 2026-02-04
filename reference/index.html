@@ -19,7 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on MCMC pseudo absence sampling vignette</a></li>
+    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
     <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul></li>
@@ -43,8 +43,7 @@
 
 
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -55,109 +54,127 @@
 
         </dt>
         <dd>Virtual species probability of occurrence</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="Worldclim_tmp.html">Worldclim_tmp</a></code>
 
         </dt>
         <dd>A subset of WorldClim bioclimatic variables</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="addHighDimGaussian.html">addHighDimGaussian()</a></code>
 
         </dt>
         <dd>addHighDimGaussian</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="alwaysOne.html">alwaysOne()</a></code>
 
         </dt>
         <dd>AlwaysOne</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getVirtualSpeciesPresencePoints.html">getVirtualSpeciesPresencePoints()</a></code>
 
         </dt>
         <dd>Function to streamline the generation and sampling of a virtual species</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="mapBackOnRealPoints.html">mapBackOnRealPoints()</a></code>
 
         </dt>
         <dd>Map Back on Real Points searches the closest point in the dataset regarding the given point and the dimensions given</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="maxResNn.html">maxResNn()</a></code>
 
         </dt>
         <dd>maxResNN is a function that can be used to compute a reasonable grid resolution for nearest neighbor based uniform sampling. The core idea behind its working principle is that we want to expect a grid cell to contain points if it overlaps with the environment. This implementation looks at the low density regions using distance to n neighbors as a proxy. The approach assumes that both coordinates have similar range, as the axes are not weighted when computing Neighbors and converting from distances to number of grid cells If multiple points from the same grid cell should be sampled, the number of neighbors included in the computation should be set accordingly</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="mclustDensityFunction.html">mclustDensityFunction()</a></code>
 
         </dt>
         <dd>Helper to create a Density function that uses mclust Gaussian mixtures</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="mcmcSampling.html">mcmcSampling()</a></code>
 
         </dt>
         <dd>MCMC sampling from a given dataset</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="optimRes.html">optimRes()</a></code>
 
         </dt>
         <dd>Get optimal resolution of the sampling grid</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="optimalDistanceThresholdNn.html">optimalDistanceThresholdNn()</a></code>
 
         </dt>
         <dd>Function to calculate the optimal distance threshold for nearest neighborhood sampling.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="paSampling.html">paSampling()</a></code>
 
         </dt>
         <dd>Sampling pseudo-absences for the training and testing datasets.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="paSamplingMcmc.html">paSamplingMcmc()</a></code>
 
         </dt>
         <dd>paSamplingMcmc is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo absence sampling using a markov. In a first step a density function is constructed using a GMM fitted to the environment as a limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="paSamplingNn.html">paSamplingNn()</a></code>
 
         </dt>
         <dd>Sampling pseudo-absences for the training and testing datasets.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotDensityLines.html">plotDensityLines()</a></code>
 
         </dt>
         <dd>plotDensityLines enables the plotting of density function as well as a trace of a chain made of points in a dataframe on this density surface. In addition the species that was used to generate the density model can be supplied to verify the performance of the model. If that is the case the supplied dataset will be plotted as points instead of as a chain. This function has some issues with the check of devtools</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotInGeographicalSpace.html">plotInGeographicalSpace()</a></code>
 
         </dt>
         <dd>Function that plots the geographical location of points onto a raster</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="rastPCA.html">rastPCA()</a></code>
 
         </dt>
         <dd>Principal Component Analysis for Rasters</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="thresh.inspect.html">thresh.inspect()</a></code>
 
         </dt>
         <dd>Inspect the effect of the kernel threshold parameter on the environmental space partitioning</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="uniformSampling.html">uniformSampling()</a></code>
 
@@ -172,7 +189,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

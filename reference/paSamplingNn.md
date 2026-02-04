@@ -1,0 +1,142 @@
+# Sampling pseudo-absences for the training and testing datasets.
+
+`paSampling` performs a two-step procedure for uniformly sampling
+pseudo-absences within the environmental space. In the initial step, a
+kernel-based filter is utilized to determine the subset of the
+environmental space that will be subsequently sampled. The kernel-based
+filter calculates the probability function based on the presence
+observations, enabling the identification of areas within the
+environmental space that likely exhibit suitable conditions for the
+species. To achieve this, a probability threshold value is utilized to
+assign observations to the corresponding portion of the environmental
+space. These areas, deemed to have suitable environmental conditions,
+are excluded from the subsequent uniform sampling process conducted in
+the second step using the `uniformSampling` function, which is
+internally called. The bandwidth of the kernel can be automatically
+estimated from the presence observations or directly set by the user,
+providing flexibility in determining the scope and precision of the
+filter.
+
+## Usage
+
+``` r
+paSamplingNn(
+  env.rast = NULL,
+  pres = NULL,
+  thres = 0.75,
+  H = NULL,
+  grid.res = 10,
+  n.tr = 5,
+  sub.ts = FALSE,
+  n.ts = 5,
+  prev = NULL,
+  plot_proc = FALSE,
+  verbose = FALSE,
+  dimensions = c("PC1", "PC2"),
+  precomputed.pca = NULL,
+  n.samples = NULL,
+  data.based.distance.threshold = TRUE
+)
+```
+
+## Arguments
+
+- env.rast:
+
+  A RasterStack, RasterBrick or a SpatRaster object comprising the
+  variables describing the environmental space.
+
+- pres:
+
+  A SpatialPointsDataframe, a SpatVector or an sf object including the
+  presence-only observations of the species of interest.
+
+- thres:
+
+  (double) This value identifies the quantile value used to specify the
+  boundary of the kernel density estimate (default `thres=0.75` ). Thus,
+  probability values higher than the threshold should indicate portions
+  of the multivariate space likely associated with presence points.
+
+- H:
+
+  The kernel bandwidth (i.e., the width of the kernel density function
+  that defines its shape) excluding the portion of the environmental
+  space associated with environmental conditions likely suitable for the
+  species. It can be either defined by the user or automatically
+  estimated by `paSampling` via
+  [`ks::Hpi`](https://rdrr.io/pkg/ks/man/Hpi.html).
+
+- grid.res:
+
+  (integer) resolution of the sampling grid. The resolution can be
+  arbitrarily selected or defined using the `optimRes` function.
+
+- n.tr:
+
+  (integer) number of pseudo-absences for the training dataset to sample
+  in each cell of the sampling grid
+
+- sub.ts:
+
+  (logical) sample the validation pseudo-absences
+
+- n.ts:
+
+  (integer; optional) number of pseudo-absences for the testing dataset
+  to sample in each cell of the sampling grid. sub.ts argument must be
+  TRUE.
+
+- prev:
+
+  (double) prevalence value to be specified instead of n.tr and n.ts
+
+- plot_proc:
+
+  (logical) plot progress of the sampling, default FALSE
+
+- verbose:
+
+  (logical) Print verbose
+
+- dimensions:
+
+  (string vector) specify the pc components to analyse. Has to have
+  length 2
+
+- precomputed.pca:
+
+  If in an other step the pca has already been calculated it can be but
+  in here to speed up computation
+
+- n.samples:
+
+  Number of sample points that are returned
+
+- data.based.distance.threshold:
+
+  If true uses the dataset to evaluate realistic distances to the
+  repapped points
+
+## Value
+
+An sf object with the coordinates of the pseudo-absences both in the
+geographical and environmental space.
+
+## Details
+
+Being designed with species distribution models in mind, `paSampling`
+allows collectively sampling pseudo-absences for both the training and
+testing dataset (optional). In both cases, the user must provide a
+number of observations that will be sampled in each cell of the sampling
+grid (`n.tr`: points for the training dataset; `n.ts`: points for the
+testing dataset). Note that the optimal resolution of the sampling grid
+can be found using the `optimRes` function. Also, note that the number
+of pseudo-absences eventually sampled in each cell by the
+internally-called `uniformSampling` function depends on the spatial
+configuration of the observations within the environmental space.
+Indeed, in most cases some cells of the sampling grid will be empty
+(i.e., those at the boundary of the environmental space). For this
+reason, the number of pseudo-absences returned by `paSampling` is likely
+to be lower than the product between the number of cells of the sampling
+gird and `n.tr`(or `n.ts`).
