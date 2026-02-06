@@ -20,6 +20,7 @@
 #' @param verbose (logical) Print verbose
 #' @param dimensions (string vector) specify the pc components to analyse. Has to have length 2
 #' @param precomputed.pca If in an other step the pca has already been calculated it can be but in here to speed up computation
+#' @param nn.based.presence.exclusion Boolean, if true uses nn to select the quantile with closest neighbors and computes the convex hull around them. All points laying inside this convex hull are excludet.
 #' @param data.based.distance.threshold If true uses the dataset to evaluate realistic distances to the repapped points
 #' @param n.samples Number of sample points that are returned
 #' @importFrom stats na.omit quantile
@@ -31,6 +32,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
                         verbose = FALSE, dimensions = c("PC1", "PC2"),
                         precomputed.pca = NULL,
                         n.samples = NULL,
+                        nn.based.presence.exclusion = TRUE,
                         data.based.distance.threshold = TRUE) {
   if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
                                                       "SpatRaster")) {
@@ -117,7 +119,30 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   # Remove points that are located in the region that is associated with the target species
   # Analog to the paper the convex hull is computed, but the we just remove the points that layed in this area, instead of
   # excluding them from the possible dataset. This is done as it could happen that the maximal grid resolution could change excluding this area.
-  if (!is.null(pres)) {
+  if (!is.null(pres))
+    # use distance to the 100 closest other presence locations as a proxy for density instead of the kernel.
+    if (nn.based.presence.exclusion) {
+      message("nearest neigbor based presence exclusion")
+      virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc, virtual.presence.points, bind = TRUE) %>%
+        sf::st_as_sf()
+      virtual.presence.points.pc <- cbind(sf::st_drop_geometry(virtual.presence.points.pc), sf::st_coordinates(virtual.presence.points.pc))
+
+      get.nearest.ten.neighbors <- FNN::get.knnx(virtual.presence.points.pc[dimensions], virtual.presence.points.pc[dimensions], k =100)
+      average.distance.to.neighbors <- rowMeans(get.nearest.ten.neighbors$nn.dist)
+      idx <- which(average.distance.to.neighbors <= quantile(average.distance.to.neighbors, 1-thres))
+      points.with.closest.neighbors <- virtual.presence.points.pc[idx, ]
+      convex.hull <- sf::st_as_sf(points.with.closest.neighbors, coords = c("PC1", "PC2")) %>%
+        sf::st_union() %>%
+        sf::st_convex_hull()
+      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
+      outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, convex.hull, sparse = FALSE), ]
+      sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
+      colnames(sampled.points) <- c("PC1", "PC2")
+      sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+    }
+
+    else {
+      message("kernel based presence exclusion")
     id_rast <- terra::rast(vals= 1:terra::ncell(env.rast),
                            names ="myID",
                            extent = terra::ext(env.rast),
@@ -170,3 +195,4 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
 
   return(sampled.points.unique)
 }
+
