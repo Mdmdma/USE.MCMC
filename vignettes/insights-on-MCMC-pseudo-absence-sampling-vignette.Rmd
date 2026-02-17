@@ -711,7 +711,7 @@ sampled.points.uniform.paper <- terra::extract(
   sampled.points.uniform.p.location)
 ```
 ```{r uniform.nn, message=FALSE}
-n.sample.points = 300
+n.sample.points <- 300
 sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
                                           pres = virtual.presence.points,
                                           grid.res = 15, n.tr = 2,
@@ -719,20 +719,24 @@ sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
 
 ```
 
+```{r random_geo_sampled, message=FALSE}
+sampled.points.random.geo <- env.with.pc.sf[
+  stats::runif(min(nrow(env.with.pc.sf), n.sample.points) , 1, nrow(env.with.pc.sf)),]
+```
 
 ```{r compare-to-uniform-models-2d, echo=FALSE, fig.height=7, fig.width=7}
 p.pc1 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC1, color = "Sampled MCMC 2d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC1, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC1, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC1, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC1, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
+      #"Sampled uniform NN" = "blue",
       "Sampled MCMC 2d" = "red"
     ),
     name = "Point type"
@@ -741,16 +745,15 @@ p.pc1 <- ggplot() +
 
 p.pc2 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC2, color = "Sampled MCMC 2d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC2, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC2, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC2, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC2, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
       "Sampled MCMC 2d" = "red"
     ),
     name = "Point type"
@@ -758,23 +761,23 @@ p.pc2 <- ggplot() +
 
 p.pc3 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC3, color = "Sampled MCMC 2d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC3, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC3, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC3, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC3, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
+      #"Sampled uniform NN" = "blue",
       "Sampled MCMC 2d" = "red"
     ),
     name = "Point type"
   ) +
   theme(legend.position = "none")
 
-ggdraw() +
+plot.2d.comparisson <- ggdraw() +
   draw_plot(
     plot_grid(
       p.pc1,
@@ -784,25 +787,24 @@ ggdraw() +
       align = "v"
     ),
     height = 0.9
-  ) +
-  draw_label(
-    "Comparison to other uniform PA sampling methods",
-    x = 0.5, y = 0.95, size = 16
-  )
+  ) 
+#+  draw_label("Comparison to other uniform PA sampling methods", x = 0.5, y = 0.95, size = 16)
 ```
+
+
 ```{r compare-to-uniform-models-3d, echo=FALSE, fig.height=7, fig.width=7}
 p.pc1 <- ggplot() +
   geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC1, color = "Sampled MCMC 3d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC1, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC1, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC1, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC1, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
+      #"Sampled uniform NN" = "blue",
       "Sampled MCMC 3d" = "red"
     ),
     name = "Point type"
@@ -811,16 +813,16 @@ p.pc1 <- ggplot() +
 
 p.pc2 <- ggplot() +
   geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC2, color = "Sampled MCMC 3d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC2, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC2, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC2, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC2, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
+      #"Sampled uniform NN" = "blue",
       "Sampled MCMC 3d" = "red"
     ),
     name = "Point type"
@@ -828,23 +830,23 @@ p.pc2 <- ggplot() +
 
 p.pc3 <- ggplot() +
   geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC3, color = "Sampled MCMC 3d")) +
-  geom_density(data = env.with.pc.sf, aes(x = PC3, color = "Environment")) +
+  geom_density(data = sampled.points.random.geo, aes(x = PC3, color = "Sampled random geo")) +
   geom_density(data = virtual.presence.points.pc, aes(x = PC3, color = "Virtual Presence")) +
   geom_density(data = sampled.points.uniform.paper, aes(x = PC3, color = "Sampled uniform")) +
-  geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
+  #geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Environment" = "green",
+      "Sampled random geo" = "green",
       "Virtual Presence" = "black",
       "Sampled uniform" = "orange",
-      "Sampled uniform NN" = "blue",
+      #"Sampled uniform NN" = "blue",
       "Sampled MCMC 3d" = "red"
     ),
     name = "Point type"
   ) +
   theme(legend.position = "none")
 
-ggdraw() +
+plot.3d.comparisson <- ggdraw() +
   draw_plot(
     plot_grid(
       p.pc1,
@@ -854,13 +856,19 @@ ggdraw() +
       align = "v"
     ),
     height = 0.9
-  ) +
-  draw_label(
-    "Comparison to other uniform PA sampling methods",
-    x = 0.5, y = 0.95, size = 16
-  )
+  ) 
+#+  draw_label("Comparison to other uniform PA sampling methods", x = 0.5, y = 0.95, size = 16)
 ```
 
+```{r generate-combined-plot, echo=FALSE, fig.height=7, fig.width=12}
+library(cowplot)
 
+combined.comparrison.plot <- plot_grid(plot.2d.comparisson, plot.3d.comparisson, ncol = 2)
 
+titled_plot <- ggdraw() +
+  draw_label("Comparison to other PA sampling methods", x = 0.5, y = 0.95, size = 16)+
+  draw_plot(combined.comparrison.plot, y = 0.02, height = 1)
 
+titled_plot
+
+```
