@@ -580,11 +580,16 @@ sampled.points.uniform.paper <- terra::extract(
 ```
 
 ``` r
-n.sample.points = 300
+n.sample.points <- 300
 sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
                                           pres = virtual.presence.points,
                                           grid.res = 15, n.tr = 2,
                                           n.samples = n.sample.points)
 ```
 
-![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/compare-to-uniform-models-2d-1.png)![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/compare-to-uniform-models-3d-1.png)
+``` r
+sampled.points.random.geo <- env.with.pc.sf[
+  stats::runif(min(nrow(env.with.pc.sf), n.sample.points) , 1, nrow(env.with.pc.sf)),]
+```
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/generate-combined-plot-1.png)
