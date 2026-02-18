@@ -724,7 +724,7 @@ sampled.points.random.geo <- env.with.pc.sf[
   stats::runif(min(nrow(env.with.pc.sf), n.sample.points) , 1, nrow(env.with.pc.sf)),]
 ```
 
-```{r compare-to-uniform-models-2d, echo=FALSE, fig.height=7, fig.width=7}
+```{r compare-to-uniform-models-2d, echo=FALSE, fig.height=7, fig.width=5}
 p.pc1 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC1, color = "Sampled MCMC 2d")) +
   geom_density(data = sampled.points.random.geo, aes(x = PC1, color = "Sampled random geo")) +
@@ -757,7 +757,8 @@ p.pc2 <- ggplot() +
       "Sampled MCMC 2d" = "red"
     ),
     name = "Point type"
-  )
+  ) +
+  theme(legend.position = "none")
 
 p.pc3 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC3, color = "Sampled MCMC 2d")) +
@@ -773,9 +774,15 @@ p.pc3 <- ggplot() +
       #"Sampled uniform NN" = "blue",
       "Sampled MCMC 2d" = "red"
     ),
-    name = "Point type"
+    name = ""
   ) +
-  theme(legend.position = "none")
+  theme(legend.position = "bottom") +
+  guides(
+    color = guide_legend(ncol = 1),
+    fill  = guide_legend(ncol = 1),
+    shape = guide_legend(ncol = 1),
+    linetype = guide_legend(ncol = 1)
+  )
 
 plot.2d.comparisson <- ggdraw() +
   draw_plot(
@@ -784,7 +791,8 @@ plot.2d.comparisson <- ggdraw() +
       p.pc2,
       p.pc3,
       ncol = 1,
-      align = "v"
+      align = "v", 
+      rel_heights = c(0.2,0.2, 0.35)
     ),
     height = 0.9
   ) 
@@ -826,7 +834,8 @@ p.pc2 <- ggplot() +
       "Sampled MCMC 3d" = "red"
     ),
     name = "Point type"
-  )
+  ) +
+  theme(legend.position = "none")
 
 p.pc3 <- ggplot() +
   geom_density(data = sampled.points.mcmc.higher.dim, aes(x = PC3, color = "Sampled MCMC 3d")) +
@@ -842,9 +851,15 @@ p.pc3 <- ggplot() +
       #"Sampled uniform NN" = "blue",
       "Sampled MCMC 3d" = "red"
     ),
-    name = "Point type"
+    name = ""
   ) +
-  theme(legend.position = "none")
+  theme(legend.position = "bottom")+
+  guides(
+    color = guide_legend(ncol = 1),
+    fill  = guide_legend(ncol = 1),
+    shape = guide_legend(ncol = 1),
+    linetype = guide_legend(ncol = 1)
+  )
 
 plot.3d.comparisson <- ggdraw() +
   draw_plot(
@@ -853,14 +868,15 @@ plot.3d.comparisson <- ggdraw() +
       p.pc2,
       p.pc3,
       ncol = 1,
-      align = "v"
+      align = "v",
+      rel_heights = c(0.2,0.2, 0.35)
     ),
     height = 0.9
   ) 
 #+  draw_label("Comparison to other uniform PA sampling methods", x = 0.5, y = 0.95, size = 16)
 ```
 
-```{r generate-combined-plot, echo=FALSE, fig.height=7, fig.width=12}
+```{r generate-combined-plot, echo=FALSE, fig.height=9, fig.width=7}
 library(cowplot)
 
 combined.comparrison.plot <- plot_grid(plot.2d.comparisson, plot.3d.comparisson, ncol = 2)
