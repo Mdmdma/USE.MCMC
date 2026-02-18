@@ -203,7 +203,7 @@ Lets explore the dimensionality issue first. If we compute the value of our func
 
 In case of MCMC sampling the computational complexity increases, but less fast. The function that we have to evaluate to decide if we want to accept a new point becomes more complex and we have to run the chain for longer until we have good convergence. 
 
-# pseudo-absence sampling
+# Pseudo-absence sampling
 
 If we want to use MCMC to generate pseudo-absences we first have to construct the function that represents the density of our pseudo-absences in the environmental space. 
 
