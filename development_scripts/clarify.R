@@ -23,14 +23,14 @@ covariance.scaling <-0.1
 covariance.matrix <- covariance.scaling * diag(1, nrow = length(dimensions))
 proposalFunction <- addHighDimGaussian(cov.mat = covariance.scaling * covariance.matrix,
                                        dim = length(dimensions))
-proposed.point <- proposalFunction(point = point, covariance.adjuster = 1, dim = dimensions)
+proposed.point <- proposalFunction(point = c(PC1 = 0.5, PC2 = 0.5), covariance.adjuster = 1, dim = dimensions)
 
 sampled.points <- mcmcSampling(dataset = point,
                                dimensions = dimensions,
                                n.sample.points = 10000,
                                proposalFunction = proposalFunction,
                                densityFunction = densityFunction,
-                               burnIn = TRUE,
+                               burnIn = 1000,
                                verbose = TRUE)
 hist(sampled.points[[1]])
 hist(sampled.points[[2]])

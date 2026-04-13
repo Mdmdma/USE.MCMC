@@ -91,7 +91,7 @@ sampled.points <- mcmcSampling(dataset = env.with.pc.fs,
                                n.sample.points = 10000,
                                proposalFunction = proposalFunction,
                                densityFunction = densityFunction,
-                               burnIn = TRUE,
+                               burnIn = 1000,
                                verbose = TRUE)
 
 mapped.sampled.point.locations <- FNN::get.knnx(env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)

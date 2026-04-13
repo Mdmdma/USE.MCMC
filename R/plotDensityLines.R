@@ -13,7 +13,7 @@
 #' @param cols specifies the columns of the dataframe that are used for the density computation. It has to match to the columns used to build the density model.
 #' @param density boolean that tells the function if the density should be plotted
 #' @param species dataframe containing the simulated species, it has to contain the column names of cols
-#' @param densityFunction a function that can take a dataframe with the columns given in cols and retruns the density at that point
+#' @param densityFunction a function that takes a named numeric vector and returns the density at that point
 #' @param resolution int sets the resolution of the denisity grid
 #' @param minimal boolean if true removes titel, label, legend and axis
 #'
@@ -81,10 +81,13 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
 
     # Calculate densities
     if (is.function(densityFunction)) {
+      # Convert template to named numeric vector for density function interface
+      base_vec <- unlist(sf::st_drop_geometry(template))
       density_values <- parallel::mcmapply(function(pc1, pc2) {
-        template[[cols[1]]] <- pc1
-        template[[cols[2]]] <- pc2
-        densityFunction(template)
+        pv <- base_vec
+        pv[cols[1]] <- pc1
+        pv[cols[2]] <- pc2
+        densityFunction(pv)
       }, grid[[cols[1]]], grid[[cols[2]]], mc.cores = parallel::detectCores() - 1)
     } else {
       stop("A density function must be provided")

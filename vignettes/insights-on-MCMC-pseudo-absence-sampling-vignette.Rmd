@@ -78,7 +78,7 @@ Lets make an example and create samples from a two dimensional Gaussian.
 
 ```{r generate-sample-gaussian-chain, results="hide"}
 densityFunctionGaussian <- function(point, lengthscale=5){
-  density <- exp(-(point$x ** 2 + point$y ** 2) / lengthscale)
+  density <- exp(-(point[["x"]] ** 2 + point[["y"]] ** 2) / lengthscale)
 }
 d <- densityFunctionGaussian(sampled.points)
 sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
@@ -154,7 +154,7 @@ sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
                                   dimensions = c("x", "y"),
                                   densityFunction = densityFunctionGaussian,
                                   proposalFunction = addHighDimGaussian(dim=2),
-                                  burnIn = FALSE, 
+                                  burnIn = 0, 
                                   n.sample.points = 10000,
                                   verbose = FALSE)
 ```
@@ -278,9 +278,11 @@ We can now start to construct the function that our chain tries to sample from.
 ```{r set-naive-density-funciton}
 densityFunctionNaive <- function(env.model, env.threshold, dimensions){
   densityFunction <- function(point){
-    point <- as.data.frame(point)
-    point <- sf::st_drop_geometry(point[dimensions]) %>%
-      as.matrix()
+    if (is.data.frame(point)) {
+      point <- as.matrix(sf::st_drop_geometry(point[dimensions]))
+    } else {
+      point <- matrix(point, nrow = 1)
+    }
     env.density <- mclust::predict.densityMclust(env.model, point)
     if (env.density < env.threshold){
       return(0)
@@ -373,11 +375,14 @@ Now we can build a function that describes the distribution of pseudo-absences. 
 
 ```{r full-pseudo-absence-density-funciton}
 densityFunctionPseudoAbsences <- function(env.model, env.threshold,
-                                  pres.model, pres.threshold, 
+                                  pres.model, pres.threshold,
                                   dimensions){
   densityFunction <- function(point){
-    point <- sf::st_drop_geometry(point[dimensions]) %>%
-      as.matrix()
+    if (is.data.frame(point)) {
+      point <- as.matrix(sf::st_drop_geometry(point[dimensions]))
+    } else {
+      point <- matrix(point, nrow = 1)
+    }
     env.density <- mclust::predict.densityMclust(env.model, point)
     if (env.density < env.threshold){
       return(0)

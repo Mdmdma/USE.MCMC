@@ -68,6 +68,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   starting.index <- sample(nrow(dataset), 1)
   start.row <- sf::st_drop_geometry(dataset[starting.index, ])
   current.point <- as.numeric(start.row[, dimensions])
+  names(current.point) <- dimensions
   current.density <- densityFunction(current.point)
 
   # burn in
