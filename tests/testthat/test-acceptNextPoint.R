@@ -32,9 +32,9 @@ test_that("acceptNextPoint accepts when current density is zero", {
   expect_true(USE.MCMC:::acceptNextPoint(current, proposed))
 })
 
-test_that("acceptNextPoint errors when both densities are zero (NaN ratio)", {
+test_that("acceptNextPoint rejects when both densities are zero (NaN ratio)", {
   current <- data.frame(x = 0, density = 0)
   proposed <- data.frame(x = 1, density = 0)
-  # ratio = 0/0 = NaN, causes if() to fail with "missing value where TRUE/FALSE needed"
-  expect_error(USE.MCMC:::acceptNextPoint(current, proposed), "missing value")
+  # ratio = 0/0 = NaN, handled gracefully by rejecting the proposal
+  expect_false(USE.MCMC:::acceptNextPoint(current, proposed))
 })

@@ -10,6 +10,7 @@
 #'
 acceptNextPoint <- function(current.point, proposed.point){
   acceptance.ratio <- proposed.point$density / current.point$density
+  if (is.nan(acceptance.ratio) || is.na(acceptance.ratio)) return(FALSE)
   if (acceptance.ratio > 1) return(TRUE)
   if (stats::runif(1) < acceptance.ratio) return(TRUE)
   return(FALSE)

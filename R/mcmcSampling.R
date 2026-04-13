@@ -8,13 +8,14 @@
 #' @param burnIn Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped
 #' @param verbose Boolean to toggle progress updates
 #' @param covariance.correction Integer, initial value of the covariance correction.
+#' @param max.burnin.cycles Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.
 #' @returns A sf dataframe containing the sampled points
 #' @export
 #'
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
                          proposalFunction = addHighDimGaussian(dim = length(dimensions)),
                          n.sample.points = 0, burnIn = 1000, verbose = TRUE,
-                         covariance.correction = 1){
+                         covariance.correction = 1, max.burnin.cycles = 50){
   # Input validation
   if (is.null(dataset)) {
     stop("'dataset' must be provided (got NULL)", call. = FALSE)
@@ -46,6 +47,9 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if (!is.numeric(n.sample.points) || length(n.sample.points) != 1 || n.sample.points < 1) {
     stop(paste0("'n.sample.points' must be a positive number, got ", deparse(n.sample.points)), call. = FALSE)
   }
+  if (is.logical(burnIn)) {
+    stop("'burnIn' must be an integer, not logical (TRUE is coerced to 1 which causes issues)", call. = FALSE)
+  }
   if (!is.numeric(burnIn) || length(burnIn) != 1 || burnIn < 0) {
     stop(paste0("'burnIn' must be a non-negative number, got ", deparse(burnIn)), call. = FALSE)
   }
@@ -56,8 +60,11 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if (!is.numeric(covariance.correction) || length(covariance.correction) != 1 || covariance.correction <= 0) {
     stop(paste0("'covariance.correction' must be a positive number, got ", deparse(covariance.correction)), call. = FALSE)
   }
+  if (!is.numeric(max.burnin.cycles) || length(max.burnin.cycles) != 1 || max.burnin.cycles < 1) {
+    stop(paste0("'max.burnin.cycles' must be a positive integer, got ", deparse(max.burnin.cycles)), call. = FALSE)
+  }
 
-  starting.index <- stats::runif(1, 1, nrow(dataset))
+  starting.index <- sample(nrow(dataset), 1)
   current.point <- dataset[starting.index, ]
   current.point <- sf::st_drop_geometry(current.point)
   current.point$density <- densityFunction(current.point)
@@ -65,11 +72,20 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if(burnIn > 0) {
     cat("Burn in\n")
     points.accepted <- 0
+    burnin.cycle <- 0
     if (verbose){
       pb.burnin <- utils::txtProgressBar(min = 0, max = burnIn, style = 3)
     }
    while (points.accepted / burnIn < 0.21 | points.accepted / burnIn > 0.25) {
       # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
+      burnin.cycle <- burnin.cycle + 1
+      if (burnin.cycle > max.burnin.cycles) {
+        warning(paste0("Burn-in did not converge after ", max.burnin.cycles,
+                       " cycles (last acceptance rate: ", round(points.accepted / burnIn, 3),
+                       "). Proceeding with current covariance.correction = ",
+                       round(covariance.correction, 6)), call. = FALSE)
+        break
+      }
 
       if (verbose){
             cat("\rThe current acceptance rate is", points.accepted /burnIn, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
@@ -88,8 +104,8 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
           utils::setTxtProgressBar(pb.burnin, i)
         }
       }
-      if (points.accepted / burnIn < 0.21) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1)
-      if (points.accepted /burnIn > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
+      if (points.accepted / burnIn < 0.21) covariance.correction <- max(1e-10, covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1))
+      if (points.accepted / burnIn > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
     }
   }
   else cat("Burn in skipped")
@@ -98,27 +114,27 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   sampled.points <- data.frame(matrix(NA, nrow = n.sample.points, ncol = ncol(current.point)))
   colnames(sampled.points) <- colnames(current.point)
   points.rejected <- 0
-  points.accepted <- 0
+  iteration <- 0
 
   if (verbose) {
     pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   }
 
-  while (points.accepted < n.sample.points) {
+  while (iteration < n.sample.points) {
     proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
     proposed.point$density <- densityFunction(proposed.point)
-    points.accepted <- points.accepted + 1
+    iteration <- iteration + 1
     if (acceptNextPoint(current.point, proposed.point)){
       current.point <- proposed.point
-      sampled.points[points.accepted, ] <- current.point
+      sampled.points[iteration, ] <- current.point
     }
     else {
-      sampled.points[points.accepted, ] <- current.point
+      sampled.points[iteration, ] <- current.point
       points.rejected <- points.rejected + 1
     }
     if (verbose){
-      cat("\rPoints rejected:", points.rejected, "Points accepted:", points.accepted)
-      utils::setTxtProgressBar(pb, points.accepted)
+      cat("\rPoints rejected:", points.rejected, "Points sampled:", iteration)
+      utils::setTxtProgressBar(pb, iteration)
     }
   }
   cat("\nPoints rejected: ", points.rejected)
