@@ -19,6 +19,7 @@ paSamplingNn(
   dimensions = c("PC1", "PC2"),
   precomputed.pca = NULL,
   n.samples = NULL,
+  nn.based.presence.exclusion = TRUE,
   data.based.distance.threshold = TRUE
 )
 }
@@ -50,6 +51,8 @@ paSamplingNn(
 \item{precomputed.pca}{If in an other step the pca has already been calculated it can be but in here to speed up computation}
 
 \item{n.samples}{Number of sample points that are returned}
+
+\item{nn.based.presence.exclusion}{Boolean, if true uses nn to select the quantile with closest neighbors and computes the convex hull around them. All points laying inside this convex hull are excludet.}
 
 \item{data.based.distance.threshold}{If true uses the dataset to evaluate realistic distances to the repapped points}
 }

@@ -2,14 +2,14 @@
 #'
 #' @param dataset sf dataframe from which the points are sampled
 #' @param dimensions string vector containing the dimensions that should be included in the random walk
-#' @param densityFunction Function that can take a point given as a sf dataframe as a input and returns the target density at that location.
-#' @param proposalFunction Function that can take a point given as a sf dataframe and a vector of strings specifying the row names that should be changed as a input and returns a new proposed point
+#' @param densityFunction Function that can take a point given as a numeric vector as input and returns the target density at that location.
+#' @param proposalFunction Function that can take a point given as a numeric vector and a covariance adjuster as input and returns a new proposed point as a numeric vector.
 #' @param n.sample.points Number of points to be sampled
 #' @param burnIn Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped
 #' @param verbose Boolean to toggle progress updates
 #' @param covariance.correction Integer, initial value of the covariance correction.
 #' @param max.burnin.cycles Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.
-#' @returns A sf dataframe containing the sampled points
+#' @returns A data.frame containing the sampled points with dimension columns and a density column
 #' @export
 #'
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
@@ -64,10 +64,12 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
     stop(paste0("'max.burnin.cycles' must be a positive integer, got ", deparse(max.burnin.cycles)), call. = FALSE)
   }
 
+  n.dim <- length(dimensions)
   starting.index <- sample(nrow(dataset), 1)
-  current.point <- dataset[starting.index, ]
-  current.point <- sf::st_drop_geometry(current.point)
-  current.point$density <- densityFunction(current.point)
+  start.row <- sf::st_drop_geometry(dataset[starting.index, ])
+  current.point <- as.numeric(start.row[, dimensions])
+  current.density <- densityFunction(current.point)
+
   # burn in
   if(burnIn > 0) {
     cat("Burn in\n")
@@ -93,9 +95,10 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       points.accepted <- 0
       for (i in 1:burnIn) {
         proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
-        proposed.point$density <- densityFunction(proposed.point)
-        if (acceptNextPoint(current.point, proposed.point)){
+        proposed.density <- densityFunction(proposed.point)
+        if (acceptNextPoint(current.density, proposed.density)){
           current.point <- proposed.point
+          current.density <- proposed.density
           points.accepted <- points.accepted + 1
         }
 
@@ -111,8 +114,9 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   else cat("Burn in skipped")
 
   cat("\nThe final covariance correction is ", covariance.correction, "\n")
-  sampled.points <- data.frame(matrix(NA, nrow = n.sample.points, ncol = ncol(current.point)))
-  colnames(sampled.points) <- colnames(current.point)
+  # Pre-allocate output matrix (dimensions + density)
+  n.cols <- n.dim + 1
+  sampled.points <- matrix(NA_real_, nrow = n.sample.points, ncol = n.cols)
   points.rejected <- 0
   iteration <- 0
 
@@ -122,16 +126,16 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
 
   while (iteration < n.sample.points) {
     proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
-    proposed.point$density <- densityFunction(proposed.point)
+    proposed.density <- densityFunction(proposed.point)
     iteration <- iteration + 1
-    if (acceptNextPoint(current.point, proposed.point)){
+    if (acceptNextPoint(current.density, proposed.density)){
       current.point <- proposed.point
-      sampled.points[iteration, ] <- current.point
+      current.density <- proposed.density
     }
     else {
-      sampled.points[iteration, ] <- current.point
       points.rejected <- points.rejected + 1
     }
+    sampled.points[iteration, ] <- c(current.point, current.density)
     if (verbose){
       cat("\rPoints rejected:", points.rejected, "Points sampled:", iteration)
       utils::setTxtProgressBar(pb, iteration)
@@ -139,6 +143,8 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   }
   cat("\nPoints rejected: ", points.rejected)
 
+  # Convert output matrix to data.frame
+  sampled.points <- as.data.frame(sampled.points)
+  colnames(sampled.points) <- c(dimensions, "density")
   return(sampled.points)
 }
-

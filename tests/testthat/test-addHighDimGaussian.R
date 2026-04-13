@@ -51,22 +51,23 @@ test_that("addHighDimGaussian returns a function", {
   expect_true(is.function(fn))
 })
 
-test_that("returned function adds noise to specified dimensions", {
+test_that("returned function adds noise to a numeric vector", {
   set.seed(42)
   fn <- addHighDimGaussian(dim = 2)
-  point <- data.frame(PC1 = 0, PC2 = 0, other = 99)
+  point <- c(0, 0)
   result <- fn(point, covariance.adjuster = 1, dim = c("PC1", "PC2"))
-  # Should have modified PC1 and PC2 (almost certainly not exactly 0)
-  expect_true(result$PC1 != 0 || result$PC2 != 0)
+  # Should have modified the values (almost certainly not exactly 0)
+  expect_true(result[1] != 0 || result[2] != 0)
+  expect_length(result, 2)
 })
 
 test_that("returned function works in 1D", {
   set.seed(42)
   fn <- addHighDimGaussian(dim = 1)
-  point <- data.frame(x = 5)
+  point <- 5
   result <- fn(point, covariance.adjuster = 1, dim = c("x"))
-  expect_true(is.numeric(result$x))
-  expect_length(result$x, 1)
+  expect_true(is.numeric(result))
+  expect_length(result, 1)
 })
 
 test_that("covariance.adjuster scales the noise", {
@@ -74,11 +75,11 @@ test_that("covariance.adjuster scales the noise", {
   # Large adjuster -> larger noise variance
   set.seed(42)
   results_small <- replicate(100, {
-    fn(data.frame(x = 0), covariance.adjuster = 0.001, dim = "x")$x
+    fn(0, covariance.adjuster = 0.001, dim = "x")
   })
   set.seed(42)
   results_large <- replicate(100, {
-    fn(data.frame(x = 0), covariance.adjuster = 100, dim = "x")$x
+    fn(0, covariance.adjuster = 100, dim = "x")
   })
   expect_true(sd(results_large) > sd(results_small))
 })

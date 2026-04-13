@@ -2,14 +2,14 @@
 #'
 #' \code{acceptNextPoint} checks whether the proposed point should be accepted
 #'
-#' @param current.point Current state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.
-#' @param proposed.point Proposed next state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.
+#' @param current.density Numeric scalar, density at the current point.
+#' @param proposed.density Numeric scalar, density at the proposed point.
 #'
 #' @returns TRUE if the proposed point should be accepted
 #' @keywords internal
 #'
-acceptNextPoint <- function(current.point, proposed.point){
-  acceptance.ratio <- proposed.point$density / current.point$density
+acceptNextPoint <- function(current.density, proposed.density){
+  acceptance.ratio <- proposed.density / current.density
   if (is.nan(acceptance.ratio) || is.na(acceptance.ratio)) return(FALSE)
   if (acceptance.ratio > 1) return(TRUE)
   if (stats::runif(1) < acceptance.ratio) return(TRUE)

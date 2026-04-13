@@ -19,7 +19,7 @@ mclustDensityFunction(
 
 \item{dim}{string vector specifing the names of the dimensions}
 
-\item{threshold}{sets the curoff density from the environment}
+\item{threshold}{sets the cutoff density from the environment}
 
 \item{species.cutoff.threshold}{set the scaling factor with which the species model gets scaled before subtraction.}
 }

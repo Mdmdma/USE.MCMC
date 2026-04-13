@@ -12,7 +12,8 @@ mcmcSampling(
   n.sample.points = 0,
   burnIn = 1000,
   verbose = TRUE,
-  covariance.correction = 1
+  covariance.correction = 1,
+  max.burnin.cycles = 50
 )
 }
 \arguments{
@@ -20,9 +21,9 @@ mcmcSampling(
 
 \item{dimensions}{string vector containing the dimensions that should be included in the random walk}
 
-\item{densityFunction}{Function that can take a point given as a sf dataframe as a input and returns the target density at that location.}
+\item{densityFunction}{Function that can take a point given as a numeric vector as input and returns the target density at that location.}
 
-\item{proposalFunction}{Function that can take a point given as a sf dataframe and a vector of strings specifying the row names that should be changed as a input and returns a new proposed point}
+\item{proposalFunction}{Function that can take a point given as a numeric vector and a covariance adjuster as input and returns a new proposed point as a numeric vector.}
 
 \item{n.sample.points}{Number of points to be sampled}
 
@@ -31,9 +32,11 @@ mcmcSampling(
 \item{verbose}{Boolean to toggle progress updates}
 
 \item{covariance.correction}{Integer, initial value of the covariance correction.}
+
+\item{max.burnin.cycles}{Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.}
 }
 \value{
-A sf dataframe containing the sampled points
+A data.frame containing the sampled points with dimension columns and a density column
 }
 \description{
 MCMC sampling from a given dataset

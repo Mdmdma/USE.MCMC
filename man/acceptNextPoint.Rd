@@ -4,12 +4,12 @@
 \alias{acceptNextPoint}
 \title{Accept next point ?}
 \usage{
-acceptNextPoint(current.point, proposed.point)
+acceptNextPoint(current.density, proposed.density)
 }
 \arguments{
-\item{current.point}{Current state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.}
+\item{current.density}{Numeric scalar, density at the current point.}
 
-\item{proposed.point}{Proposed next state of the markov chain, given as a sf dataframe with a column called $density containing the value of the target density.}
+\item{proposed.density}{Numeric scalar, density at the proposed point.}
 }
 \value{
 TRUE if the proposed point should be accepted

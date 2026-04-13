@@ -75,7 +75,7 @@ test_that("returned density function returns numeric", {
   sp_model <- mclust::densityMclust(env_data, plot = FALSE, verbose = FALSE)
   fn <- mclustDensityFunction(env.model = env_model, species.model = sp_model,
                               dim = c("x", "y"), threshold = 0.01)
-  point <- data.frame(x = 0, y = 0)
+  point <- c(0, 0)
   result <- fn(point)
   expect_true(is.numeric(result))
   expect_length(result, 1)
@@ -89,7 +89,7 @@ test_that("density function returns low value for far-out points", {
   fn <- mclustDensityFunction(env.model = env_model, species.model = sp_model,
                               dim = c("x", "y"), threshold = 0.01)
   # Point very far from the data center — should be below threshold
-  far_point <- data.frame(x = 100, y = 100)
+  far_point <- c(100, 100)
   result <- fn(far_point)
   expect_true(result <= 0.01)
 })
