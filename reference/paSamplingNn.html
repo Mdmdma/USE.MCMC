@@ -67,6 +67,7 @@ The bandwidth of the kernel can be automatically estimated from the presence obs
 <span>  dimensions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PC1"</span>, <span class="st">"PC2"</span><span class="op">)</span>,</span>
 <span>  precomputed.pca <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n.samples <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nn.based.presence.exclusion <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  data.based.distance.threshold <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -129,6 +130,10 @@ The bandwidth of the kernel can be automatically estimated from the presence obs
 
 <dt id="arg-n-samples">n.samples<a class="anchor" aria-label="anchor" href="#arg-n-samples"></a></dt>
 <dd><p>Number of sample points that are returned</p></dd>
+
+
+<dt id="arg-nn-based-presence-exclusion">nn.based.presence.exclusion<a class="anchor" aria-label="anchor" href="#arg-nn-based-presence-exclusion"></a></dt>
+<dd><p>Boolean, if true uses nn to select the quantile with closest neighbors and computes the convex hull around them. All points laying inside this convex hull are excludet.</p></dd>
 
 
 <dt id="arg-data-based-distance-threshold">data.based.distance.threshold<a class="anchor" aria-label="anchor" href="#arg-data-based-distance-threshold"></a></dt>

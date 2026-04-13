@@ -1,7 +1,7 @@
 # addHighDimGaussian
 
 Adds high dimensional Gaussian noise to specific parameters of a point
-given as a dataframe.
+given as a numeric vector.
 
 ## Usage
 
@@ -9,7 +9,8 @@ given as a dataframe.
 addHighDimGaussian(
   dim = 0,
   mean.vec = matrix(0, ncol = dim),
-  cov.mat = diag(dim)
+  cov.mat = diag(dim),
+  batch.size = 1000
 )
 ```
 
@@ -27,7 +28,12 @@ addHighDimGaussian(
 
   covariance matrix of the Gaussian to be added
 
+- batch.size:
+
+  integer, number of random vectors to pre-generate at a time for
+  efficiency
+
 ## Value
 
-function that takes a point given as a dataframe as input and returns it
-with Gaussian noise added to the specified dimensions
+function that takes a point given as a numeric vector and returns it
+with Gaussian noise added

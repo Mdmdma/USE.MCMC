@@ -58,14 +58,15 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="development-repository">Development Repository<a class="anchor" aria-label="anchor" href="#development-repository"></a>
 </h1></div>
-<div class="section level2">
-<h2 id="this-is-a-development-repository">This is a development repository<a class="anchor" aria-label="anchor" href="#this-is-a-development-repository"></a>
-</h2>
-<p>It forks the <a href="https://github.com/danddr/USE" class="external-link">USE package</a> with the goal to extend it to enable MCMC sampling in higher dimensional spaces.</p>
-<p>The repo can be downloaded by using the following command in a terminal or downloading the repo as a zip file:</p>
-<pre><code>git clone git@github.com:Mdmdma/USE.MCMC.git</code></pre>
 </div>
+<div class="section level1">
+<h1 id="tldr">TLDR<a class="anchor" aria-label="anchor" href="#tldr"></a>
+</h1>
+<p>We can use markov chains to sample pseudo absences in moderate dimensions. In the process we overcome limitations of the original paper, especially those related to a sampling grid, only two dimensions in the PCA space, and the hard cutoff threshold to exclude the presence species. The figure below shows an overview of the proposed method. <img src="reference/figures/scheme.png" alt="scheme of the proposed method"> # This is a development repository It forks the <a href="https://github.com/danddr/USE" class="external-link">USE package</a> with the goal to extend it to enable MCMC sampling in higher dimensional spaces. The repo can be downloaded by using the following command in a terminal or downloading the repo as a zip file:</p>
+<p>git clone <a href="https://github.com/Mdmdma/USE.MCMC.git" class="external-link uri">https://github.com/Mdmdma/USE.MCMC.git</a></p>
+<p>The vignette <a href="https://mdmdma.github.io/USE.MCMC/articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a> gives insights into the developed method, the vignette <a href="https://mdmdma.github.io/USE.MCMC/articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a> adds an explainer to the concept of using distance in the principal component space as a way to map fictional simulated points to real points in the environment. Both vignettes can be found on the GitHub Pages site. # Basic principle and result We fit Gaussian mixture models (GMMs) to both the points of the environment and the model species in the PCA space of their environmental variables. From these GMMs we construct a function on which we run a markov chain. The figure below displays the sampled function, the sample species points as well as the sampled points in the space spanned by the first two principle components. <img src="reference/figures/points-in-the-environment-1.png" alt="sampled points in the pc space overlayd over the sampled function"> We can show the sampled points in the geographic space. <img src="reference/figures/plot-in-geo-1.png" alt="Sampled points in the geographical space"> Looking at the density of the pc scores, we can see that our newly developed method enables the user to sample more dimensions uniformly. If this is beneficial to the downstream model depends on the amount of variability explained by the first two components. <img src="reference/figures/compare2dvs3d.png" alt="posterior density of the first three principal components"></p>
 </div>
+
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">

@@ -119,7 +119,7 @@ distribution we want to replicate.</p>
 Gaussian.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">densityFunctionGaussian</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">point</span>, <span class="va">lengthscale</span><span class="op">=</span><span class="fl">5</span><span class="op">)</span><span class="op">{</span></span>
-<span>  <span class="va">density</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="va">point</span><span class="op">$</span><span class="va">x</span> <span class="op">**</span> <span class="fl">2</span> <span class="op">+</span> <span class="va">point</span><span class="op">$</span><span class="va">y</span> <span class="op">**</span> <span class="fl">2</span><span class="op">)</span> <span class="op">/</span> <span class="va">lengthscale</span><span class="op">)</span></span>
+<span>  <span class="va">density</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="va">point</span><span class="op">[[</span><span class="st">"x"</span><span class="op">]</span><span class="op">]</span> <span class="op">**</span> <span class="fl">2</span> <span class="op">+</span> <span class="va">point</span><span class="op">[[</span><span class="st">"y"</span><span class="op">]</span><span class="op">]</span> <span class="op">**</span> <span class="fl">2</span><span class="op">)</span> <span class="op">/</span> <span class="va">lengthscale</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">densityFunctionGaussian</span><span class="op">(</span><span class="va">sampled.points</span><span class="op">)</span></span>
 <span><span class="va">sampled.points.gaussian</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mcmcSampling.html">mcmcSampling</a></span><span class="op">(</span>dataset<span class="op">=</span><span class="va">starting.point</span>,</span>
@@ -165,13 +165,13 @@ Increasing the sample size results in a better approximation.</p>
 <span>                                  dimensions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span>,</span>
 <span>                                  densityFunction <span class="op">=</span> <span class="va">densityFunctionGaussian</span>,</span>
 <span>                                  proposalFunction <span class="op">=</span> <span class="fu"><a href="../reference/addHighDimGaussian.html">addHighDimGaussian</a></span><span class="op">(</span>dim<span class="op">=</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                  burnIn <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>                                  burnIn <span class="op">=</span> <span class="fl">0</span>, </span>
 <span>                                  n.sample.points <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>                                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Burn in skipped</span></span>
 <span><span class="co">#&gt; The final covariance correction is  1 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Points rejected:  2994</span></span></code></pre></div>
+<span><span class="co">#&gt; Points rejected:  3020</span></span></code></pre></div>
 <p><img src="gif_example_chain_gaussian_long.gif"><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/gaussian-posterior-plot-more-samples-1.png" class="r-plt" alt="" width="672"></p>
 <p>In this low dimensional case with a simple function there are more
 simple ways to generate samples. The case where MCMC gets useful for
@@ -188,7 +188,7 @@ less fast. The function that we have to evaluate to decide if we want to
 accept a new point becomes more complex and we have to run the chain for
 longer until we have good convergence.</p>
 <div class="section level2">
-<h2 id="pseudo-absence-sampling">pseudo-absence sampling<a class="anchor" aria-label="anchor" href="#pseudo-absence-sampling"></a>
+<h2 id="pseudo-absence-sampling">Pseudo-absence sampling<a class="anchor" aria-label="anchor" href="#pseudo-absence-sampling"></a>
 </h2>
 <p>If we want to use MCMC to generate pseudo-absences we first have to
 construct the function that represents the density of our
@@ -263,9 +263,11 @@ sample from.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">densityFunctionNaive</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">env.model</span>, <span class="va">env.threshold</span>, <span class="va">dimensions</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">densityFunction</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">point</span><span class="op">)</span><span class="op">{</span></span>
-<span>    <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">point</span><span class="op">)</span></span>
-<span>    <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_drop_geometry</a></span><span class="op">(</span><span class="va">point</span><span class="op">[</span><span class="va">dimensions</span><span class="op">]</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>      <span class="fu"><a href="https://rspatial.github.io/terra/reference/coerce.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">point</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/coerce.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_drop_geometry</a></span><span class="op">(</span><span class="va">point</span><span class="op">[</span><span class="va">dimensions</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>      <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">point</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
 <span>    <span class="va">env.density</span> <span class="op">&lt;-</span> <span class="fu">mclust</span><span class="fu">::</span><span class="fu"><a href="https://mclust-org.github.io/mclust/reference/predict.densityMclust.html" class="external-link">predict.densityMclust</a></span><span class="op">(</span><span class="va">env.model</span>, <span class="va">point</span><span class="op">)</span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="va">env.density</span> <span class="op">&lt;</span> <span class="va">env.threshold</span><span class="op">)</span><span class="op">{</span></span>
 <span>      <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
@@ -308,7 +310,7 @@ the function from above to reflect that</p>
 <span><span class="co">#&gt;               </span></span>
 <span><span class="co">#&gt; - beta = 0.55</span></span>
 <span><span class="co">#&gt; - alpha = -0.05</span></span>
-<span><span class="co">#&gt; - species prevalence =0.453490212631246</span></span>
+<span><span class="co">#&gt; - species prevalence =0.237957051654092</span></span>
 <span><span class="va">virtual.presence.points</span> <span class="op">&lt;-</span> <span class="va">virtual.presence.data</span><span class="op">$</span><span class="va">sample.points</span></span>
 <span><span class="va">virtual.presence.points.pc</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span><span class="va">env.data.raster.with.pc</span>,</span>
 <span>                                             <span class="va">virtual.presence.points</span>,</span>
@@ -332,11 +334,14 @@ former function value, we now get values below zero in these areas,
 meaning we will never visit them with the chain.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">densityFunctionPseudoAbsences</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">env.model</span>, <span class="va">env.threshold</span>,</span>
-<span>                                  <span class="va">pres.model</span>, <span class="va">pres.threshold</span>, </span>
+<span>                                  <span class="va">pres.model</span>, <span class="va">pres.threshold</span>,</span>
 <span>                                  <span class="va">dimensions</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">densityFunction</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">point</span><span class="op">)</span><span class="op">{</span></span>
-<span>    <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_drop_geometry</a></span><span class="op">(</span><span class="va">point</span><span class="op">[</span><span class="va">dimensions</span><span class="op">]</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>      <span class="fu"><a href="https://rspatial.github.io/terra/reference/coerce.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">point</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/coerce.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_drop_geometry</a></span><span class="op">(</span><span class="va">point</span><span class="op">[</span><span class="va">dimensions</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>      <span class="va">point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">point</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
 <span>    <span class="va">env.density</span> <span class="op">&lt;-</span> <span class="fu">mclust</span><span class="fu">::</span><span class="fu"><a href="https://mclust-org.github.io/mclust/reference/predict.densityMclust.html" class="external-link">predict.densityMclust</a></span><span class="op">(</span><span class="va">env.model</span>, <span class="va">point</span><span class="op">)</span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="va">env.density</span> <span class="op">&lt;</span> <span class="va">env.threshold</span><span class="op">)</span><span class="op">{</span></span>
 <span>      <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>

@@ -5,20 +5,18 @@
 ## Usage
 
 ``` r
-acceptNextPoint(current.point, proposed.point)
+acceptNextPoint(current.density, proposed.density)
 ```
 
 ## Arguments
 
-- current.point:
+- current.density:
 
-  Current state of the markov chain, given as a sf dataframe with a
-  column called \$density containing the value of the target density.
+  Numeric scalar, density at the current point.
 
-- proposed.point:
+- proposed.density:
 
-  Proposed next state of the markov chain, given as a sf dataframe with
-  a column called \$density containing the value of the target density.
+  Numeric scalar, density at the proposed point.
 
 ## Value
 

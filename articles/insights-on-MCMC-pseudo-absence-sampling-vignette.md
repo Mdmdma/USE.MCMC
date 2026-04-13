@@ -62,7 +62,7 @@ Lets make an example and create samples from a two dimensional Gaussian.
 
 ``` r
 densityFunctionGaussian <- function(point, lengthscale=5){
-  density <- exp(-(point$x ** 2 + point$y ** 2) / lengthscale)
+  density <- exp(-(point[["x"]] ** 2 + point[["y"]] ** 2) / lengthscale)
 }
 d <- densityFunctionGaussian(sampled.points)
 sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
@@ -106,13 +106,13 @@ sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
                                   dimensions = c("x", "y"),
                                   densityFunction = densityFunctionGaussian,
                                   proposalFunction = addHighDimGaussian(dim=2),
-                                  burnIn = FALSE, 
+                                  burnIn = 0, 
                                   n.sample.points = 10000,
                                   verbose = FALSE)
 #> Burn in skipped
 #> The final covariance correction is  1 
 #> 
-#> Points rejected:  2994
+#> Points rejected:  3020
 ```
 
 ![](gif_example_chain_gaussian_long.gif)![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/gaussian-posterior-plot-more-samples-1.png)
@@ -134,7 +134,7 @@ less fast. The function that we have to evaluate to decide if we want to
 accept a new point becomes more complex and we have to run the chain for
 longer until we have good convergence.
 
-## pseudo-absence sampling
+## Pseudo-absence sampling
 
 If we want to use MCMC to generate pseudo-absences we first have to
 construct the function that represents the density of our
@@ -228,9 +228,11 @@ sample from.
 ``` r
 densityFunctionNaive <- function(env.model, env.threshold, dimensions){
   densityFunction <- function(point){
-    point <- as.data.frame(point)
-    point <- sf::st_drop_geometry(point[dimensions]) %>%
-      as.matrix()
+    if (is.data.frame(point)) {
+      point <- as.matrix(sf::st_drop_geometry(point[dimensions]))
+    } else {
+      point <- matrix(point, nrow = 1)
+    }
     env.density <- mclust::predict.densityMclust(env.model, point)
     if (env.density < env.threshold){
       return(0)
@@ -282,7 +284,7 @@ virtual.presence.data <- getVirtualSpeciesPresencePoints(
 #>               
 #> - beta = 0.55
 #> - alpha = -0.05
-#> - species prevalence =0.453490212631246
+#> - species prevalence =0.237957051654092
 virtual.presence.points <- virtual.presence.data$sample.points
 virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
                                              virtual.presence.points,
@@ -313,11 +315,14 @@ meaning we will never visit them with the chain.
 
 ``` r
 densityFunctionPseudoAbsences <- function(env.model, env.threshold,
-                                  pres.model, pres.threshold, 
+                                  pres.model, pres.threshold,
                                   dimensions){
   densityFunction <- function(point){
-    point <- sf::st_drop_geometry(point[dimensions]) %>%
-      as.matrix()
+    if (is.data.frame(point)) {
+      point <- as.matrix(sf::st_drop_geometry(point[dimensions]))
+    } else {
+      point <- matrix(point, nrow = 1)
+    }
     env.density <- mclust::predict.densityMclust(env.model, point)
     if (env.density < env.threshold){
       return(0)

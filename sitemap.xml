@@ -14,7 +14,13 @@
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/acceptNextPoint.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/addHighDimGaussian.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/alwaysOne.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_columns_exist.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_in_range.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_positive_integer.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_raster_input.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_spatial_points.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/euclidianMetric.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/fast_gmm_density.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/getVirtualSpeciesPresencePoints.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/index.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/mapBackOnRealPoints.html</loc></url>
@@ -29,6 +35,7 @@
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/pca_predict.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/plotDensityLines.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/plotInGeographicalSpace.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/precompute_gmm_params.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/princompCustom.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/rastPCA.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/thresh.inspect.html</loc></url>

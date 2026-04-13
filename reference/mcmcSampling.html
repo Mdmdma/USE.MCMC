@@ -54,7 +54,8 @@
 <span>  n.sample.points <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  burnIn <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  covariance.correction <span class="op">=</span> <span class="fl">1</span></span>
+<span>  covariance.correction <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  max.burnin.cycles <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -71,11 +72,11 @@
 
 
 <dt id="arg-densityfunction">densityFunction<a class="anchor" aria-label="anchor" href="#arg-densityfunction"></a></dt>
-<dd><p>Function that can take a point given as a sf dataframe as a input and returns the target density at that location.</p></dd>
+<dd><p>Function that can take a point given as a numeric vector as input and returns the target density at that location.</p></dd>
 
 
 <dt id="arg-proposalfunction">proposalFunction<a class="anchor" aria-label="anchor" href="#arg-proposalfunction"></a></dt>
-<dd><p>Function that can take a point given as a sf dataframe and a vector of strings specifying the row names that should be changed as a input and returns a new proposed point</p></dd>
+<dd><p>Function that can take a point given as a numeric vector and a covariance adjuster as input and returns a new proposed point as a numeric vector.</p></dd>
 
 
 <dt id="arg-n-sample-points">n.sample.points<a class="anchor" aria-label="anchor" href="#arg-n-sample-points"></a></dt>
@@ -93,10 +94,14 @@
 <dt id="arg-covariance-correction">covariance.correction<a class="anchor" aria-label="anchor" href="#arg-covariance-correction"></a></dt>
 <dd><p>Integer, initial value of the covariance correction.</p></dd>
 
+
+<dt id="arg-max-burnin-cycles">max.burnin.cycles<a class="anchor" aria-label="anchor" href="#arg-max-burnin-cycles"></a></dt>
+<dd><p>Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A sf dataframe containing the sampled points</p>
+    <p>A data.frame containing the sampled points with dimension columns and a density column</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

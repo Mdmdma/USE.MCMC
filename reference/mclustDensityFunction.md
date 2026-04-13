@@ -30,7 +30,7 @@ mclustDensityFunction(
 
 - threshold:
 
-  sets the curoff density from the environment
+  sets the cutoff density from the environment
 
 - species.cutoff.threshold:
 

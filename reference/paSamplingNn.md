@@ -35,6 +35,7 @@ paSamplingNn(
   dimensions = c("PC1", "PC2"),
   precomputed.pca = NULL,
   n.samples = NULL,
+  nn.based.presence.exclusion = TRUE,
   data.based.distance.threshold = TRUE
 )
 ```
@@ -112,6 +113,12 @@ paSamplingNn(
 - n.samples:
 
   Number of sample points that are returned
+
+- nn.based.presence.exclusion:
+
+  Boolean, if true uses nn to select the quantile with closest neighbors
+  and computes the convex hull around them. All points laying inside
+  this convex hull are excludet.
 
 - data.based.distance.threshold:
 

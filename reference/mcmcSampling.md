@@ -13,7 +13,8 @@ mcmcSampling(
   n.sample.points = 0,
   burnIn = 1000,
   verbose = TRUE,
-  covariance.correction = 1
+  covariance.correction = 1,
+  max.burnin.cycles = 50
 )
 ```
 
@@ -30,14 +31,14 @@ mcmcSampling(
 
 - densityFunction:
 
-  Function that can take a point given as a sf dataframe as a input and
+  Function that can take a point given as a numeric vector as input and
   returns the target density at that location.
 
 - proposalFunction:
 
-  Function that can take a point given as a sf dataframe and a vector of
-  strings specifying the row names that should be changed as a input and
-  returns a new proposed point
+  Function that can take a point given as a numeric vector and a
+  covariance adjuster as input and returns a new proposed point as a
+  numeric vector.
 
 - n.sample.points:
 
@@ -56,6 +57,13 @@ mcmcSampling(
 
   Integer, initial value of the covariance correction.
 
+- max.burnin.cycles:
+
+  Integer, maximum number of burn-in adaptation cycles before stopping
+  with a warning. Prevents infinite loops when the target acceptance
+  rate cannot be reached.
+
 ## Value
 
-A sf dataframe containing the sampled points
+A data.frame containing the sampled points with dimension columns and a
+density column
