@@ -14,8 +14,22 @@
 #' @usage
 #' SpatialProba(coefs, env.rast, quadr_term, marginalPlots)
 SpatialProba <- function(coefs=NULL, env.rast=NULL, quadr_term = NULL, marginalPlots=TRUE) {
-  #check if names(coefs) is null
-  if(isTRUE(is.null(names(coefs)))) stop("coefs must be a named vector")
+  # Input validation
+  if (is.null(coefs)) {
+    stop("'coefs' must be provided (got NULL)", call. = FALSE)
+  }
+  if (!is.numeric(coefs)) {
+    stop(paste0("'coefs' must be a numeric vector, got '", paste(class(coefs), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (is.null(names(coefs))) {
+    stop("'coefs' must be a named vector (names must match environmental layer names)", call. = FALSE)
+  }
+  check_raster_input(env.rast, "env.rast")
+  if (!is.logical(marginalPlots) || length(marginalPlots) != 1) {
+    stop(paste0("'marginalPlots' must be a single logical value, got '",
+                paste(class(marginalPlots), collapse = "/"), "'"), call. = FALSE)
+  }
+
   #check if the input env.rast is a SpatRaster
   if (inherits(env.rast, "BasicRaster")) {
     env.rast <- terra::rast(env.rast)

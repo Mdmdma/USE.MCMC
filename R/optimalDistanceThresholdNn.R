@@ -24,6 +24,30 @@ optimalDistanceThresholdNn <- function(env.data = NULL,
                                       index.for.cutof = 5,
                                       dimensions = c("PC1", "PC2"),
                                       num.neighbors = 3){
+  # Input validation
+  if (is.null(env.data)) {
+    stop("'env.data' must be provided (got NULL)", call. = FALSE)
+  }
+  if (!is.data.frame(env.data) && !inherits(env.data, "sf")) {
+    stop(paste0("'env.data' must be a data.frame or sf object, got '",
+                paste(class(env.data), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.character(dimensions) || length(dimensions) < 1) {
+    stop("'dimensions' must be a character vector of column names", call. = FALSE)
+  }
+  env_cols <- if (inherits(env.data, "sf")) setdiff(names(env.data), attr(env.data, "sf_column")) else names(env.data)
+  missing_dims <- setdiff(dimensions, env_cols)
+  if (length(missing_dims) > 0) {
+    stop(paste0("'dimensions' contains columns not found in 'env.data': ",
+                paste0("'", missing_dims, "'", collapse = ", "),
+                ". Available columns: ", paste(env_cols, collapse = ", ")), call. = FALSE)
+  }
+  if (!is.numeric(index.for.cutof) || length(index.for.cutof) != 1 || index.for.cutof < 1 || index.for.cutof != floor(index.for.cutof)) {
+    stop(paste0("'index.for.cutof' must be a positive integer, got ", deparse(index.for.cutof)), call. = FALSE)
+  }
+  if (!is.numeric(num.neighbors) || length(num.neighbors) != 1 || num.neighbors < 1 || num.neighbors != floor(num.neighbors)) {
+    stop(paste0("'num.neighbors' must be a positive integer, got ", deparse(num.neighbors)), call. = FALSE)
+  }
 
   env.data.cleaned <- sf::st_drop_geometry(env.data)
   nearest.neighbors.distance <- FNN::knn.dist(env.data.cleaned[dimensions],

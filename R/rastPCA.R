@@ -19,10 +19,23 @@
 #' @export 
 
 rastPCA <- function (env.rast, nPC=NULL, naMask=TRUE, stand=FALSE){
-  
+  # Input validation
+  check_raster_input(env.rast, "env.rast")
+  if (!is.null(nPC)) {
+    if (!is.numeric(nPC) || length(nPC) != 1 || nPC < 1 || nPC != floor(nPC)) {
+      stop(paste0("'nPC' must be a positive integer or NULL, got ", deparse(nPC)), call. = FALSE)
+    }
+  }
+  if (!is.logical(naMask) || length(naMask) != 1) {
+    stop(paste0("'naMask' must be a single logical value, got '", paste(class(naMask), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(stand) || length(stand) != 1) {
+    stop(paste0("'stand' must be a single logical value, got '", paste(class(stand), collapse = "/"), "'"), call. = FALSE)
+  }
+
   if (inherits(env.rast, "BasicRaster")) {
     env.rast <- terra::rast(env.rast)
-  } 
+  }
   if (terra::nlyr(env.rast) <= 1) {
     stop("At least two layers are needed to calculate PCA")
   }

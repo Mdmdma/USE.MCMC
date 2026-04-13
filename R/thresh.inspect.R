@@ -11,17 +11,10 @@
 #' @export
 thresh.inspect <- function (env.rast, pres = NULL, thres = 0.75, H = NULL)
 {
-  if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
-                                                      "SpatRaster")) {
-    stop("Environmental data provided in an unconvenient form")
-  }
-  if (is.null(pres)) {
-    stop("Species occurrences must be provided by the user")
-  }
-  if (!inherits(pres, "SpatialPoints") && !inherits(pres, "SpatialPointsDataFrame") &&
-      !inherits(pres, "SpatVector") && !inherits(pres, "sf")) {
-    stop("Occurrences must be provided as spatial object")
-  }
+  # Input validation
+  check_raster_input(env.rast, "env.rast")
+  check_spatial_points(pres, "pres")
+  check_in_range(thres, "thres", min_val = 0, max_val = 1)
   if (inherits(env.rast, "BasicRaster")) {
     env.rast <- terra::rast(env.rast)
   }

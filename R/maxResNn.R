@@ -17,6 +17,29 @@
 #'
 #'
 maxResNn<- function(env.data.raster, dimensions = c("PC1", "PC2") , low.end.of.inclueded.points = 20, high.end.of.included.points = 4 , n.neighbors = 2, PCA = FALSE) {
+  # Input validation
+  if (!is.logical(PCA) || length(PCA) != 1) {
+    stop(paste0("'PCA' must be a single logical value, got '", paste(class(PCA), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!PCA) {
+    check_raster_input(env.data.raster, "env.data.raster")
+  } else {
+    if (!is.list(env.data.raster) || is.null(env.data.raster$PCs)) {
+      stop("When PCA=TRUE, 'env.data.raster' must be a list with a '$PCs' element (result of rastPCA)", call. = FALSE)
+    }
+  }
+  if (!is.character(dimensions) || length(dimensions) < 2) {
+    stop("'dimensions' must be a character vector with at least 2 elements", call. = FALSE)
+  }
+  if (!is.numeric(low.end.of.inclueded.points) || length(low.end.of.inclueded.points) != 1 || low.end.of.inclueded.points < 1) {
+    stop(paste0("'low.end.of.inclueded.points' must be a positive number, got ", deparse(low.end.of.inclueded.points)), call. = FALSE)
+  }
+  if (!is.numeric(high.end.of.included.points) || length(high.end.of.included.points) != 1 || high.end.of.included.points < 1) {
+    stop(paste0("'high.end.of.included.points' must be a positive number, got ", deparse(high.end.of.included.points)), call. = FALSE)
+  }
+  if (!is.numeric(n.neighbors) || length(n.neighbors) != 1 || n.neighbors < 1 || n.neighbors != floor(n.neighbors)) {
+    stop(paste0("'n.neighbors' must be a positive integer, got ", deparse(n.neighbors)), call. = FALSE)
+  }
 
   # PCA if a pca has been performed upstream
   if(PCA) {

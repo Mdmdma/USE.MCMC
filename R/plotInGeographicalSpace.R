@@ -8,8 +8,28 @@
 #' @returns NULL, as the function just plots
 #' @export
 plotInGeographicalSpace <- function(presence.distribution.raster = NULL, presence.points = NULL, absence.points = NULL, minimal = FALSE) {
+  # Input validation
+  check_raster_input(presence.distribution.raster, "presence.distribution.raster")
+  if (is.null(presence.points)) {
+    stop("'presence.points' must be provided (got NULL)", call. = FALSE)
+  }
+  if (!inherits(presence.points, "sf")) {
+    stop(paste0("'presence.points' must be an sf object, got '",
+                paste(class(presence.points), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (is.null(absence.points)) {
+    stop("'absence.points' must be provided (got NULL)", call. = FALSE)
+  }
+  if (!inherits(absence.points, "sf")) {
+    stop(paste0("'absence.points' must be an sf object, got '",
+                paste(class(absence.points), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(minimal) || length(minimal) != 1) {
+    stop(paste0("'minimal' must be a single logical value, got '",
+                paste(class(minimal), collapse = "/"), "'"), call. = FALSE)
+  }
   if (sf::st_crs(presence.points) != sf::st_crs(absence.points)){
-    stop("Both points need to be in the same coordinate system")
+    stop("Both points need to be in the same coordinate system", call. = FALSE)
   }
 
   rs <- terra::classify(presence.distribution.raster, c(-1,0,1))

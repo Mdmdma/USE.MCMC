@@ -15,11 +15,34 @@
 #' @return An sf object with the coordinates of the sampled points both in the geographical and environmental space
 #' @export
 uniformSampling <- function(sdf, grid.res, n.tr = 5, n.prev = NULL, sub.ts = FALSE, n.ts = 5, plot_proc = FALSE, verbose = FALSE) {
-  if(!(all(sf::st_is(sdf, "POINT")))) {
-    stop("sdf object must have a sf POINT GEOMETRY class")
+  # Input validation
+  if (!inherits(sdf, "sf")) {
+    stop(paste0("'sdf' must be an sf object, got '", paste(class(sdf), collapse = "/"), "'"), call. = FALSE)
   }
-  if(!is.numeric(n.tr)) stop(paste(n.tr, "is not of class 'numeric'.", sep = " "))
-  if(!is.logical(plot_proc)) stop("plot_proc is not of class 'logical'; it has class 'numeric'.")
+  if (!(all(sf::st_is(sdf, "POINT")))) {
+    stop("'sdf' must have sf POINT geometry", call. = FALSE)
+  }
+  if (!is.numeric(grid.res) || length(grid.res) != 1 || grid.res < 1) {
+    stop(paste0("'grid.res' must be a positive number, got ", deparse(grid.res)), call. = FALSE)
+  }
+  if (!is.numeric(n.tr) || length(n.tr) != 1 || n.tr < 1) {
+    stop(paste0("'n.tr' must be a positive number, got ", deparse(n.tr)), call. = FALSE)
+  }
+  if (!is.logical(sub.ts) || length(sub.ts) != 1) {
+    stop(paste0("'sub.ts' must be a single logical value, got '", paste(class(sub.ts), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.numeric(n.ts) || length(n.ts) != 1 || n.ts < 1) {
+    stop(paste0("'n.ts' must be a positive number, got ", deparse(n.ts)), call. = FALSE)
+  }
+  if (!is.logical(plot_proc) || length(plot_proc) != 1) {
+    stop(paste0("'plot_proc' must be a single logical value, got '", paste(class(plot_proc), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(verbose) || length(verbose) != 1) {
+    stop(paste0("'verbose' must be a single logical value, got '", paste(class(verbose), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.null(n.prev) && (!is.numeric(n.prev) || length(n.prev) != 1 || n.prev < 1)) {
+    stop(paste0("'n.prev' must be NULL or a positive number, got ", deparse(n.prev)), call. = FALSE)
+  }
   grid <- sf::st_make_grid(sdf, n = grid.res)
   sdf$ID <- row.names(sdf)
   print(sdf)

@@ -7,6 +7,20 @@
 #' @export
 
 getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0, plot = FALSE){
+  # Input validation
+  if (!requireNamespace("virtualspecies", quietly = TRUE)) {
+    stop("Package 'virtualspecies' is required for this function but is not installed. ",
+         "Install it with install.packages('virtualspecies')", call. = FALSE)
+  }
+  check_raster_input(env.data, "env.data")
+  if (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1 || n.samples != floor(n.samples)) {
+    stop(paste0("'n.samples' must be a positive integer, got ", deparse(n.samples)), call. = FALSE)
+  }
+  if (!is.logical(plot) || length(plot) != 1) {
+    stop(paste0("'plot' must be a single logical value, got '",
+                paste(class(plot), collapse = "/"), "'"), call. = FALSE)
+  }
+
   # Create virtual species
   random.sp <- virtualspecies::generateRandomSp(env.data,
                                                 convert.to.PA = FALSE,

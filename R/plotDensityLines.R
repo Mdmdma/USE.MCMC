@@ -28,6 +28,37 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
                              lines = FALSE,
                              density = FALSE, species = NULL, densityFunction = alwaysOne, resolution = 10,
                              minimal = FALSE) {
+  # Input validation
+  if (!is.numeric(xlim) || length(xlim) != 2) {
+    stop(paste0("'xlim' must be a numeric vector of length 2, got length ", length(xlim)), call. = FALSE)
+  }
+  if (!is.numeric(ylim) || length(ylim) != 2) {
+    stop(paste0("'ylim' must be a numeric vector of length 2, got length ", length(ylim)), call. = FALSE)
+  }
+  if (!is.character(title) || length(title) != 1) {
+    stop(paste0("'title' must be a single character string, got '", paste(class(title), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(lines) || length(lines) != 1) {
+    stop(paste0("'lines' must be a single logical value, got '", paste(class(lines), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(density) || length(density) != 1) {
+    stop(paste0("'density' must be a single logical value, got '", paste(class(density), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(minimal) || length(minimal) != 1) {
+    stop(paste0("'minimal' must be a single logical value, got '", paste(class(minimal), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.numeric(resolution) || length(resolution) != 1 || resolution < 1) {
+    stop(paste0("'resolution' must be a positive number, got ", deparse(resolution)), call. = FALSE)
+  }
+  if (!is.null(cols) && !is.null(dataset)) {
+    missing_cols <- setdiff(cols, names(dataset))
+    if (length(missing_cols) > 0) {
+      stop(paste0("'cols' contains columns not found in 'dataset': ",
+                  paste0("'", missing_cols, "'", collapse = ", "),
+                  ". Available: ", paste(names(dataset), collapse = ", ")), call. = FALSE)
+    }
+  }
+
   p <- ggplot2::ggplot()
 
   # plot density

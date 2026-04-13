@@ -36,6 +36,46 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           species.cutoff.threshold = 0.95,
                           plot_proc = FALSE,
                           num.chains = 1, num.cores = 1) {
+  # Input validation
+  check_raster_input(env.data.raster, "env.data.raster")
+  check_spatial_points(pres, "pres")
+  if (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1) {
+    stop(paste0("'n.samples' must be a positive number, got ", deparse(n.samples)), call. = FALSE)
+  }
+  if (!is.numeric(chain.length) || length(chain.length) != 1 || chain.length < 1) {
+    stop(paste0("'chain.length' must be a positive number, got ", deparse(chain.length)), call. = FALSE)
+  }
+  if (!is.character(dimensions) || length(dimensions) < 2) {
+    stop("'dimensions' must be a character vector with at least 2 elements", call. = FALSE)
+  }
+  if (!is.numeric(burnIn) || length(burnIn) != 1 || burnIn < 0) {
+    stop(paste0("'burnIn' must be a non-negative number, got ", deparse(burnIn)), call. = FALSE)
+  }
+  if (!is.numeric(covariance.correction) || length(covariance.correction) != 1 || covariance.correction <= 0) {
+    stop(paste0("'covariance.correction' must be a positive number, got ", deparse(covariance.correction)), call. = FALSE)
+  }
+  if (!is.null(precomputed.pca)) {
+    if (!is.list(precomputed.pca) || is.null(precomputed.pca$PCs)) {
+      stop("'precomputed.pca' must be a list with a '$PCs' element (result of rastPCA), or NULL", call. = FALSE)
+    }
+  }
+  if (!is.numeric(seed.number) || length(seed.number) != 1) {
+    stop(paste0("'seed.number' must be a single numeric value, got ", deparse(seed.number)), call. = FALSE)
+  }
+  if (!is.numeric(num.chains) || length(num.chains) != 1 || num.chains < 1) {
+    stop(paste0("'num.chains' must be a positive integer, got ", deparse(num.chains)), call. = FALSE)
+  }
+  if (!is.numeric(num.cores) || length(num.cores) != 1 || num.cores < 1) {
+    stop(paste0("'num.cores' must be a positive integer, got ", deparse(num.cores)), call. = FALSE)
+  }
+  if (!is.logical(verbose) || length(verbose) != 1) {
+    stop(paste0("'verbose' must be a single logical value, got '", paste(class(verbose), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(plot_proc) || length(plot_proc) != 1) {
+    stop(paste0("'plot_proc' must be a single logical value, got '", paste(class(plot_proc), collapse = "/"), "'"), call. = FALSE)
+  }
+  check_in_range(environmental.cutof.percentile, "environmental.cutof.percentile", min_val = 0, max_val = 1)
+  check_in_range(species.cutoff.threshold, "species.cutoff.threshold", min_val = 0, max_val = 1)
 
   env.data.sf <- env.data.raster %>%
     as.data.frame(xy = TRUE) %>%

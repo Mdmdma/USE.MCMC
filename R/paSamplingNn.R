@@ -34,17 +34,39 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
                         n.samples = NULL,
                         nn.based.presence.exclusion = TRUE,
                         data.based.distance.threshold = TRUE) {
-  if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast,
-                                                      "SpatRaster")) {
-    stop("Environmental data provided in an unconvenient form")
+  # Input validation
+  check_raster_input(env.rast, "env.rast")
+  check_spatial_points(pres, "pres", allow_null = TRUE)
+  if (!is.character(dimensions) || length(dimensions) < 2) {
+    stop("'dimensions' must be a character vector with at least 2 elements", call. = FALSE)
   }
+  check_in_range(thres, "thres", min_val = 0, max_val = 1)
+  if (!is.numeric(grid.res) || length(grid.res) != 1 || grid.res < 1) {
+    stop(paste0("'grid.res' must be a positive number, got ", deparse(grid.res)), call. = FALSE)
+  }
+  if (!is.numeric(n.tr) || length(n.tr) != 1 || n.tr < 1) {
+    stop(paste0("'n.tr' must be a positive number, got ", deparse(n.tr)), call. = FALSE)
+  }
+  if (!is.null(n.samples) && (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1)) {
+    stop(paste0("'n.samples' must be NULL or a positive number, got ", deparse(n.samples)), call. = FALSE)
+  }
+  if (!is.logical(nn.based.presence.exclusion) || length(nn.based.presence.exclusion) != 1) {
+    stop(paste0("'nn.based.presence.exclusion' must be a single logical value, got '",
+                paste(class(nn.based.presence.exclusion), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(data.based.distance.threshold) || length(data.based.distance.threshold) != 1) {
+    stop(paste0("'data.based.distance.threshold' must be a single logical value, got '",
+                paste(class(data.based.distance.threshold), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.null(precomputed.pca)) {
+    if (!is.list(precomputed.pca) || is.null(precomputed.pca$PCs)) {
+      stop("'precomputed.pca' must be a list with a '$PCs' element (result of rastPCA), or NULL", call. = FALSE)
+    }
+  }
+
   if (is.null(pres)) {
     message("No species has been supplied. This leads to standard uniform sampling.")
   } else {
-    if (!inherits(pres, "SpatialPoints") && !inherits(pres, "SpatialPointsDataFrame") &&
-        !inherits(pres, "SpatVector") && !inherits(pres, "sf")) {
-      stop("Occurrences must be provided as spatial object")
-    }
 
     if (is.null(grid.res)) {
       stop("A grid resolution must be provided as length-one integer")

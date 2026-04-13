@@ -22,23 +22,34 @@
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
 #' @export
 #' 
-paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = NULL, 
-                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE, 
-                         verbose = FALSE) 
+paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = NULL,
+                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
+                         verbose = FALSE)
 {
-  if (!inherits(env.rast, "BasicRaster") && !inherits(env.rast, 
-                                                      "SpatRaster")) {
-    stop("Environmental data provided in an unconvenient form")
-  }
-  if (is.null(pres)) {
-    stop("Species occurrences must be provided by the user")
-  }
-  if (!inherits(pres, "SpatialPoints") && !inherits(pres, "SpatialPointsDataFrame") && 
-      !inherits(pres, "SpatVector") && !inherits(pres, "sf")) {
-    stop("Occurrences must be provided as spatial object")
-  }
+  # Input validation
+  check_raster_input(env.rast, "env.rast")
+  check_spatial_points(pres, "pres")
   if (is.null(grid.res)) {
-    stop("A grid resolution must be provided as length-one integer")
+    stop("'grid.res' must be provided as a positive integer (got NULL)", call. = FALSE)
+  }
+  if (!is.numeric(grid.res) || length(grid.res) != 1 || grid.res < 1) {
+    stop(paste0("'grid.res' must be a positive number, got ", deparse(grid.res)), call. = FALSE)
+  }
+  check_in_range(thres, "thres", min_val = 0, max_val = 1)
+  if (!is.numeric(n.tr) || length(n.tr) != 1 || n.tr < 1) {
+    stop(paste0("'n.tr' must be a positive number, got ", deparse(n.tr)), call. = FALSE)
+  }
+  if (!is.logical(sub.ts) || length(sub.ts) != 1) {
+    stop(paste0("'sub.ts' must be a single logical value, got '", paste(class(sub.ts), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(verbose) || length(verbose) != 1) {
+    stop(paste0("'verbose' must be a single logical value, got '", paste(class(verbose), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.logical(plot_proc) || length(plot_proc) != 1) {
+    stop(paste0("'plot_proc' must be a single logical value, got '", paste(class(plot_proc), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.null(prev)) {
+    check_in_range(prev, "prev", min_val = 0, max_val = 1)
   }
   if (is.null(prev)) {
     estPrev <- round(nrow(pres)/(n.tr * (grid.res^2)), 2)

@@ -15,6 +15,47 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
                          proposalFunction = addHighDimGaussian(dim = length(dimensions)),
                          n.sample.points = 0, burnIn = 1000, verbose = TRUE,
                          covariance.correction = 1){
+  # Input validation
+  if (is.null(dataset)) {
+    stop("'dataset' must be provided (got NULL)", call. = FALSE)
+  }
+  if (!is.data.frame(dataset) && !inherits(dataset, "sf")) {
+    stop(paste0("'dataset' must be a data.frame or sf object, got '",
+                paste(class(dataset), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (nrow(dataset) == 0) {
+    stop("'dataset' must have at least one row", call. = FALSE)
+  }
+  if (!is.character(dimensions) && !is.list(dimensions)) {
+    stop(paste0("'dimensions' must be a character vector, got '",
+                paste(class(dimensions), collapse = "/"), "'"), call. = FALSE)
+  }
+  dimensions <- unlist(dimensions)
+  if (!is.character(dimensions) || length(dimensions) < 1 || all(dimensions == "")) {
+    stop("'dimensions' must be a non-empty character vector of column names", call. = FALSE)
+  }
+  check_columns_exist(dataset, dimensions, "dataset", "dimensions")
+  if (!is.function(densityFunction)) {
+    stop(paste0("'densityFunction' must be a function, got '",
+                paste(class(densityFunction), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.function(proposalFunction)) {
+    stop(paste0("'proposalFunction' must be a function, got '",
+                paste(class(proposalFunction), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.numeric(n.sample.points) || length(n.sample.points) != 1 || n.sample.points < 1) {
+    stop(paste0("'n.sample.points' must be a positive number, got ", deparse(n.sample.points)), call. = FALSE)
+  }
+  if (!is.numeric(burnIn) || length(burnIn) != 1 || burnIn < 0) {
+    stop(paste0("'burnIn' must be a non-negative number, got ", deparse(burnIn)), call. = FALSE)
+  }
+  if (!is.logical(verbose) || length(verbose) != 1) {
+    stop(paste0("'verbose' must be a single logical value, got '",
+                paste(class(verbose), collapse = "/"), "'"), call. = FALSE)
+  }
+  if (!is.numeric(covariance.correction) || length(covariance.correction) != 1 || covariance.correction <= 0) {
+    stop(paste0("'covariance.correction' must be a positive number, got ", deparse(covariance.correction)), call. = FALSE)
+  }
 
   starting.index <- stats::runif(1, 1, nrow(dataset))
   current.point <- dataset[starting.index, ]
