@@ -1,6 +1,8 @@
 ---
 title: "Insights on Markov chain based pseudo-absence sampling"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    self_contained: false
 vignette: >
   %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
   %\VignetteEngine{knitr::rmarkdown}
@@ -308,8 +310,8 @@ names(grid) <- c("PC1", "PC2")
 
 grid$density <- purrr::map_dbl(1:nrow(grid), ~ densityFunction(grid[.x, , drop = FALSE]))
 
-p.density.naive <- ggplot() + 
-  geom_tile(data=grid, aes(x=PC1, y=PC2, fill=density)) + 
+p.density.naive <- ggplot() +
+  geom_raster(data=grid, aes(x=PC1, y=PC2, fill=density)) +
   geom_point(data=env.data.cleaned, aes(x=PC1, y=PC2), size = 0.1) +
   theme_minimal() + 
   labs(title = "Density function in the naive case") 
@@ -317,7 +319,43 @@ p.density.naive <- ggplot() +
 print(p.density.naive)
 ```
 
-We can now use the Markov chain algorithm from before to generate samples from this function. 
+The cutoff is controlled by a single quantile of the per-point environmental densities. To see how the accepted region shrinks as we become stricter, we sweep the quantile from "exclude only the single lowest-density point" (`1/N`) up to the lowest few percent, and stack the resulting masks onto a single plot. Since a stricter mask is always contained in a looser one, painting them in increasing order of strictness produces nested shells that show exactly which slivers are cut off as the quantile grows.
+
+```{r plot-density-threshold-sweep, echo=FALSE, fig.height=4, fig.width=7}
+threshold.quantiles <- c(
+  "single lowest point" = 1 / length(environmental.densities),
+  "q = 0.001"           = 0.001,
+  "q = 0.005"           = 0.005,
+  "q = 0.01"            = 0.01,
+  "q = 0.05"            = 0.05
+)
+threshold.quantiles <- sort(threshold.quantiles)
+
+grid.raw.density <- mclust::predict.densityMclust(
+  environmental.data.model, grid[, c("PC1", "PC2")])
+
+grid.sweep <- purrr::map_dfr(names(threshold.quantiles), function(lbl) {
+  q   <- threshold.quantiles[[lbl]]
+  thr <- stats::quantile(environmental.densities, q)
+  keep <- grid.raw.density >= thr
+  data.frame(
+    PC1             = grid$PC1[keep],
+    PC2             = grid$PC2[keep],
+    threshold_label = factor(lbl, levels = names(threshold.quantiles))
+  )
+})
+
+p.density.sweep <- ggplot() +
+  geom_raster(data = grid.sweep, aes(x = PC1, y = PC2, fill = threshold_label)) +
+  geom_point(data = env.data.cleaned, aes(x = PC1, y = PC2), size = 0.1) +
+  scale_fill_viridis_d(name = "included at", direction = -1) +
+  theme_minimal() +
+  labs(title = "Accepted environment vs. threshold quantile")
+
+print(p.density.sweep)
+```
+
+We can now use the Markov chain algorithm from before to generate samples from this function.
 
 ```{r sample-naive-points, results="hide"}
 sampled.points.naive.density <- mcmcSampling(dataset = env.with.pc.sf,
@@ -407,8 +445,8 @@ As before we can plot the function we want to sample from.
 ```{r plot-pseudo-absence-density, echo=FALSE, fig.height=4, fig.width=7}
 grid$density <- purrr::map_dbl(1:nrow(grid), ~ densityFunction(grid[.x, , drop = FALSE]))
 
-p.density.pseudo.absence <- ggplot() + 
-  geom_tile(data=grid, aes(x=PC1, y=PC2, fill=density)) + 
+p.density.pseudo.absence <- ggplot() +
+  geom_raster(data=grid, aes(x=PC1, y=PC2, fill=density)) +
   geom_point(data=virtual.presence.points.pc, aes(x=PC1, y=PC2, color="Presence"), size = 0.1) +
   scale_color_manual(values = c("Presence" = "red"),
                      name = "Point type") + 
@@ -418,6 +456,88 @@ p.density.pseudo.absence <- ggplot() +
 p.density.pseudo.absence
 ```
 
+The species term `1 - pres.density(x) / pres.threshold` is a linear rescale of `pres.density(x)` followed by a clip at zero, so a naive small-multiples sweep over `pres.threshold` would mostly differ in contrast and in where the zero-frontier sits. Two complementary views capture the sweep more honestly: a 2D heatmap of `f(x)` itself at one strong species threshold, with the rest of the threshold sweep encoded as contour rings; and a 1D slice along PC1 at fixed PC2 showing how the resulting `f(x; q)` curves rescale with `q`.
+
+```{r pseudo-absence-sweep-precompute, echo=FALSE}
+species.quantiles  <- c(0.5, 0.75, 0.95)
+species.thresholds <- stats::quantile(species.densities, species.quantiles)
+
+grid.coords        <- grid[, c("PC1", "PC2")]
+grid.env.density   <- mclust::predict.densityMclust(environmental.data.model, grid.coords)
+grid.pres.density  <- mclust::predict.densityMclust(species.model,           grid.coords)
+grid.env.passes    <- grid.env.density >= environmental.threshold
+```
+
+The first view plots the pseudo-absence function itself, `f(x) = 0` where the env model is below threshold and `f(x) = max(0, 1 - pres.density(x)/pres.threshold)` otherwise, evaluated at one strong species threshold (`q = 0.95`). Contour rings drawn at the species thresholds for every `q` in the sweep show where the zero-frontier sits at each setting.
+
+```{r pseudo-absence-sweep-contours, echo=FALSE, fig.height=4, fig.width=7}
+strong.q   <- 0.5
+strong.thr <- stats::quantile(species.densities, strong.q)
+
+heat <- data.frame(
+  PC1 = grid$PC1,
+  PC2 = grid$PC2,
+  f   = ifelse(grid.env.passes,
+               pmax(0, 1 - grid.pres.density / strong.thr),
+               0)
+)
+contour.data <- data.frame(
+  PC1          = grid$PC1,
+  PC2          = grid$PC2,
+  pres.density = grid.pres.density
+)
+
+ggplot(heat, aes(PC1, PC2)) +
+  geom_raster(aes(fill = f)) +
+  geom_contour(data = contour.data,
+               aes(z = pres.density,
+                   color = factor(after_stat(level),
+                                  levels = as.character(as.numeric(species.thresholds)))),
+               breaks = as.numeric(species.thresholds),
+               linewidth = 0.6) +
+  geom_point(data = virtual.presence.points.pc,
+             aes(PC1, PC2), color = "red", size = 0.1) +
+  scale_fill_continuous(name = "f(x)") +
+  scale_color_viridis_d(option = "magma",
+                        end = 0.85,
+                        labels = sprintf("q = %.2f", species.quantiles),
+                        name = "species threshold") +
+  theme_minimal() +
+  labs(title = "Pseudo-absence sampling function")
+```
+
+The second view fixes `PC2 = 0.5` (a slice through the more variable axis) and plots `f(x; q)` along `PC1`. The curves share shape and only differ in how strongly the species penalty is rescaled and where the zero-clip kicks in.
+
+```{r pseudo-absence-sweep-ridge, echo=FALSE, fig.height=3.5, fig.width=7}
+pc2.fixed <- 0.5
+pc1.range <- range(env.data.cleaned$PC1)
+pc1.seq   <- seq(pc1.range[1], pc1.range[2], length.out = 300)
+ridge     <- data.frame(PC1 = pc1.seq, PC2 = pc2.fixed)
+ridge$env.density  <- mclust::predict.densityMclust(
+  environmental.data.model, ridge[, c("PC1", "PC2")])
+ridge$pres.density <- mclust::predict.densityMclust(
+  species.model,           ridge[, c("PC1", "PC2")])
+
+curves <- purrr::map_dfr(seq_along(species.quantiles), function(i) {
+  thr  <- species.thresholds[i]
+  fval <- ifelse(ridge$env.density >= environmental.threshold,
+                 pmax(0, 1 - ridge$pres.density / thr),
+                 0)
+  data.frame(
+    PC1 = ridge$PC1, f = fval,
+    q   = factor(sprintf("q = %.2f", species.quantiles[i]),
+                 levels = sprintf("q = %.2f", species.quantiles))
+  )
+})
+
+ggplot(curves, aes(PC1, f, color = q)) +
+  geom_line(linewidth = 0.7) +
+  scale_color_viridis_d(direction = -1, name = "species threshold") +
+  theme_minimal() +
+  labs(title = sprintf("f along PC1 at fixed PC2 = %.2f", pc2.fixed),
+       x = "PC1",
+       y = "f(x; q)")
+```
 
 ```{r sample-pseudo-absences, results="hide"}
 sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,

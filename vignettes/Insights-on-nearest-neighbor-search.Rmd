@@ -1,7 +1,9 @@
 ---
 title: "Insights on nearest neighbor search"
 autor: "Mathis Erler"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    self_contained: false
 vignette: >
   %\VignetteIndexEntry{Insights-on-nearest-neighbor-search}
   %\VignetteEngine{knitr::rmarkdown}

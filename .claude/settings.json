@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "../GaussNiche",
+      "../markov-chain-sampler-paper"
+    ]
+  }
+}
