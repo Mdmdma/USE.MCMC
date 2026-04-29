@@ -714,6 +714,189 @@ p.sampled.points.in.geographical.space <- ggplot() +
 p.sampled.points.in.geographical.space
 ```
 
+The compound figure below summarises the six steps of the pipeline at a glance, assembled from the data objects produced earlier in this vignette.
+
+```{r plot-pipeline-scheme, echo=FALSE, message=FALSE, warning=FALSE, fig.height=6, fig.width=10}
+# --- Local helpers (chunk-scoped, not exported) ---
+panel.with.badge <- function(plot, letter, title, position = c("top", "bottom")) {
+  position <- match.arg(position)
+  if (position == "top") {
+    badge.y <- 0.93
+    plot.y  <- 0
+    plot.h  <- 0.84
+  } else {
+    badge.y <- 0.07
+    plot.y  <- 0.16
+    plot.h  <- 0.84
+  }
+  # Center "[letter]  title" as a unit. Title is anchored center-right of the
+  # badge; the circle sits a fixed offset to its left. The offset is small
+  # enough that variable-length titles still look "next to" the letter.
+  title.x  <- 0.5
+  badge.r  <- 0.045
+  badge.gap <- 0.04
+  approx.title.halfwidth <- nchar(title) * 0.0085
+  badge.x  <- title.x - approx.title.halfwidth - badge.r - badge.gap
+  cowplot::ggdraw() +
+    cowplot::draw_plot(plot, x = 0, y = plot.y, width = 1, height = plot.h) +
+    cowplot::draw_grob(grid::circleGrob(
+      x  = badge.x, y = badge.y, r = badge.r,
+      gp = grid::gpar(col = "grey15", fill = NA, lwd = 1.2))) +
+    cowplot::draw_label(letter, x = badge.x, y = badge.y, fontface = "italic",
+                        size  = 12, hjust = 0.5, vjust = 0.5,
+                        colour = "grey15") +
+    cowplot::draw_label(title, x = badge.x + badge.r + badge.gap, y = badge.y,
+                        hjust = 0, size = 12, colour = "grey15")
+}
+arrow.gutter <- function(direction = c("right", "left", "down")) {
+  direction <- match.arg(direction)
+  xs <- switch(direction,
+               right = c(0.10, 0.90),
+               left  = c(0.90, 0.10),
+               down  = c(0.50, 0.50))
+  ys <- switch(direction,
+               right = c(0.50, 0.50),
+               left  = c(0.50, 0.50),
+               down  = c(0.90, 0.10))
+  cowplot::ggdraw() +
+    cowplot::draw_line(x = xs, y = ys,
+                       arrow = grid::arrow(length = grid::unit(2.5, "mm"),
+                                           type   = "closed"),
+                       linewidth = 0.6, colour = "grey25")
+}
+stacked.rasters <- function(rast, layer.names, palette = "viridis") {
+  tiles <- lapply(layer.names, function(nm) {
+    ggplot() +
+      tidyterra::geom_spatraster(data = rast[[nm]]) +
+      scale_fill_viridis_c(option = palette, guide = "none",
+                           na.value = "transparent") +
+      theme_void()
+  })
+  offsets <- seq(0, 0.18, length.out = length(tiles))
+  side    <- 0.78
+  canvas  <- cowplot::ggdraw()
+  for (i in rev(seq_along(tiles))) {
+    canvas <- canvas + cowplot::draw_plot(
+      tiles[[i]],
+      x      = offsets[i],
+      y      = max(offsets) - offsets[i],
+      width  = side,
+      height = side)
+  }
+  canvas
+}
+
+# --- Panel a: three environmental raster bands ---
+env.layer.names <- names(env.data.raster)[1:3]
+panel.a <- stacked.rasters(env.data.raster, env.layer.names, palette = "viridis")
+
+# --- Panel b: first two PC bands ---
+panel.b <- stacked.rasters(rpc$PCs, c("PC1", "PC2"), palette = "viridis")
+
+# --- Panel c: env GMM and species GMM as contour pair ---
+gmm.range.pc1 <- range(env.data.cleaned$PC1)
+gmm.range.pc2 <- range(env.data.cleaned$PC2)
+gmm.grid <- expand.grid(
+  PC1 = seq(gmm.range.pc1[1], gmm.range.pc1[2], length.out = 80),
+  PC2 = seq(gmm.range.pc2[1], gmm.range.pc2[2], length.out = 80))
+gmm.grid$d.env  <- mclust::predict.densityMclust(environmental.data.model,
+                                                 gmm.grid[, c("PC1", "PC2")])
+gmm.grid$d.spec <- mclust::predict.densityMclust(species.model,
+                                                 gmm.grid[, c("PC1", "PC2")])
+gmm.theme <- theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 8),
+        axis.text  = element_text(size = 7))
+p.gmm.env <- ggplot(gmm.grid, aes(PC1, PC2, z = d.env)) +
+  geom_contour(colour = "grey25", linewidth = 0.3, bins = 8) +
+  coord_cartesian(xlim = gmm.range.pc1, ylim = gmm.range.pc2,
+                  expand = FALSE) + gmm.theme
+p.gmm.spec <- ggplot(gmm.grid, aes(PC1, PC2, z = d.spec)) +
+  geom_contour(colour = "grey25", linewidth = 0.3, bins = 8) +
+  coord_cartesian(xlim = gmm.range.pc1, ylim = gmm.range.pc2,
+                  expand = FALSE) + gmm.theme
+panel.c <- cowplot::plot_grid(p.gmm.env, p.gmm.spec, ncol = 2, align = "hv")
+
+# --- Panel d: chain end-state (all points coloured by step) ---
+chain.df      <- sampled.points.ps.density
+chain.df$step <- seq_len(nrow(chain.df))
+panel.d <- ggplot(chain.df, aes(PC1, PC2, colour = step)) +
+  geom_path(linewidth = 0.15, alpha = 0.35) +
+  geom_point(size = 0.35, alpha = 0.8) +
+  scale_color_viridis_c(name = "Step", option = "turbo") +
+  theme_minimal(base_size = 9) +
+  theme(legend.position  = "right",
+        legend.key.height = unit(0.5, "cm"),
+        legend.key.width  = unit(0.25, "cm"),
+        panel.grid       = element_blank())
+
+# --- Panel e: remapping arrows on the existing crop ---
+# `arrow.data` and `grid` are inherited from the plot-remapping-arrows chunk.
+panel.e <- ggplot() +
+  geom_raster(data = grid, aes(x = PC1, y = PC2, fill = density)) +
+  geom_segment(data = arrow.data,
+               aes(x = PC1.start, y = PC2.start,
+                   xend = PC1.end, yend = PC2.end,
+                   color = distance),
+               arrow     = arrow(length = unit(0.12, "cm"), type = "closed"),
+               linewidth = 0.25) +
+  geom_point(data = arrow.data, aes(x = PC1.start, y = PC2.start),
+             color = "black", size = 0.25) +
+  geom_point(data = arrow.data, aes(x = PC1.end, y = PC2.end),
+             color = "white", size = 0.25) +
+  scale_color_gradientn(
+    colors = c("#2c7bb6", "#00ccbc", "#ffff8c", "#fdae61", "#d7191c"),
+    trans  = "sqrt", guide = "none") +
+  scale_fill_continuous(guide = "none") +
+  coord_cartesian(xlim = c(-3.5, -1.5), ylim = c(-2, 1)) +
+  theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 8),
+        axis.text  = element_text(size = 7))
+
+# --- Panel f: pseudo-absences in geographic space ---
+panel.f <- ggplot() +
+  geom_sf(data = env.data.sf, aes(color = "Environment"),
+          size = 0.02, show.legend = FALSE) +
+  geom_sf(data = mapped.sampled.points.selected,
+          aes(color = "Pseudo-absence"), size = 0.6) +
+  geom_sf(data = virtual.presence.points.pc,
+          aes(color = "Presence"), size = 0.6) +
+  scale_color_manual(
+    values = c("Presence" = "red", "Pseudo-absence" = "black",
+               "Environment" = "lightgreen"),
+    breaks = c("Presence", "Pseudo-absence"),
+    name   = NULL) +
+  theme_minimal(base_size = 9) +
+  theme(legend.position = "bottom",
+        legend.text     = element_text(size = 7),
+        axis.text       = element_text(size = 6),
+        axis.title      = element_blank(),
+        panel.grid      = element_blank())
+
+# --- Compose 5x3 grid: panels in odd cells, arrows in even cells ---
+scheme <- cowplot::plot_grid(
+  panel.with.badge(panel.a, "a", "Environment"),
+  arrow.gutter("right"),
+  panel.with.badge(panel.b, "b", "PCA"),
+  arrow.gutter("right"),
+  panel.with.badge(panel.c, "c", "Fitting Gaussian mixtures"),
+
+  NULL, NULL, NULL, NULL, arrow.gutter("down"),
+
+  panel.with.badge(panel.f, "f", "Pseudo absences",         position = "bottom"),
+  arrow.gutter("left"),
+  panel.with.badge(panel.e, "e", "Nearest neighbor",        position = "bottom"),
+  arrow.gutter("left"),
+  panel.with.badge(panel.d, "d", "Markov chain",            position = "bottom"),
+
+  ncol        = 5,
+  rel_widths  = c(1, 0.18, 1, 0.18, 1),
+  rel_heights = c(1, 0.18, 1)
+)
+scheme
+```
+
 So far we did nothing revolutionary. All of the given can be done using existing techniques.The advantage emerges when we want to increase the dimensions included. The only thing that has to change is the vector from the beginning in which we stated the dimensions to include. As the results are getting difficult to represent in 2d plots, we focus on the results of such computations. 
 
 The function paSamplingMcmc wraps what we did so far in this vignette into one single concise function to efficiently create pseudo-absences.

@@ -9,7 +9,7 @@ Authors@R: c(
     )
 Description: USE.MCMC performs MCMC sampling of the environmental space.
 Depends: R (>= 3.6.0)
-Imports: 
+Imports:
     sf,
     parallel,
     terra,
@@ -21,7 +21,8 @@ Imports:
     grDevices,
     mclust,
     rlang,
-    FNN
+    FNN,
+    tidyterra
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -29,11 +30,10 @@ URL: https://mdmdma.github.io/USE.MCMC/
 BugReports: https://github.com/mdmdma/USE.MCMC/issues
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Suggests: 
+Suggests:
     rmarkdown,
     knitr,
     raster,
-    tidyterra,
     viridis,
     virtualspecies,
     testthat (>= 3.0.0),
