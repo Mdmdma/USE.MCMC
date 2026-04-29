@@ -580,7 +580,45 @@ mapped.sampled.points <- env.with.pc.sf[
 mapped.sampled.points$density <- sampled.points$density
 mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 ```
-Now we have real points in our environment with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered off the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lies between a point and its origin should never be more than half the maximal distance between points in the dataset. 
+
+The figure below visualises the remapping step on a random subset of the chain: each arrow points from a sampled chain point to its nearest real environmental point, coloured by the distance travelled.
+
+```{r plot-remapping-arrows, echo=FALSE, fig.height=4, fig.width=7}
+arrow.subsample.size <- min(1000, nrow(sampled.points))
+arrow.idx <- sample(seq_len(nrow(sampled.points)), arrow.subsample.size)
+
+arrow.data <- data.frame(
+  PC1.start = sampled.points$PC1[arrow.idx],
+  PC2.start = sampled.points$PC2[arrow.idx],
+  PC1.end   = mapped.sampled.points$PC1[arrow.idx],
+  PC2.end   = mapped.sampled.points$PC2[arrow.idx],
+  distance  = mapped.sampled.points$distance[arrow.idx]
+)
+
+p.remapping.arrows <- ggplot() +
+  geom_raster(data = grid, aes(x = PC1, y = PC2, fill = density)) +
+  geom_segment(data = arrow.data,
+               aes(x = PC1.start, y = PC2.start,
+                   xend = PC1.end, yend = PC2.end,
+                   color = distance),
+               arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               linewidth = 0.4) +
+  geom_point(data = arrow.data, aes(x = PC1.start, y = PC2.start),
+             color = "black", size = 0.4) +
+  geom_point(data = arrow.data, aes(x = PC1.end, y = PC2.end),
+             color = "white", size = 0.4) +
+  scale_color_gradientn(
+    name = "Distance",
+    colors = c("#2c7bb6", "#00ccbc", "#ffff8c", "#fdae61", "#d7191c"),
+    trans = "sqrt") +
+  coord_cartesian(xlim = c(-3.5, -1.5), ylim = c(-2, 1)) +
+  theme_minimal() +
+  labs(title = "Sampled points remapped to nearest real points")
+
+p.remapping.arrows
+```
+
+Now we have real points in our environment with a geographical location. The model of our environment is not perfect. The distance to the remapped point gives an indication on how far the chain wandered off the real data points. We can use it to filter points that originated in areas where our environmental model was bad. The distance that lies between a point and its origin should never be more than half the maximal distance between points in the dataset.
 
 ```{r neighbor-distance-threshold}
 nearest.neighbors.distance<- FNN::knn.dist(env.data.cleaned[dimensions],
