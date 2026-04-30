@@ -820,10 +820,23 @@ panel.c <- cowplot::plot_grid(p.gmm.env, p.gmm.spec, ncol = 2, align = "hv")
 # --- Panel d: chain end-state (all points coloured by step) ---
 chain.df      <- sampled.points.ps.density
 chain.df$step <- seq_len(nrow(chain.df))
-panel.d <- ggplot(chain.df, aes(PC1, PC2, colour = step)) +
-  geom_path(linewidth = 0.15, alpha = 0.35) +
-  geom_point(size = 0.35, alpha = 0.8) +
-  scale_color_viridis_c(name = "Step", option = "turbo") +
+chain.range.pc1 <- range(chain.df$PC1)
+chain.range.pc2 <- range(chain.df$PC2)
+chain.density.grid <- expand.grid(
+  PC1 = seq(chain.range.pc1[1], chain.range.pc1[2], length.out = 120),
+  PC2 = seq(chain.range.pc2[1], chain.range.pc2[2], length.out = 120))
+chain.density.grid$density <- purrr::map_dbl(
+  seq_len(nrow(chain.density.grid)),
+  ~ densityFunction(chain.density.grid[.x, , drop = FALSE]))
+panel.d <- ggplot() +
+  geom_raster(data = chain.density.grid,
+              aes(x = PC1, y = PC2, fill = density)) +
+  scale_fill_continuous(guide = "none") +
+  geom_path(data = chain.df, aes(PC1, PC2, colour = step),
+            linewidth = 0.35) +
+  scale_color_viridis_c(name = "Step", option = "magma") +
+  coord_cartesian(xlim = chain.range.pc1, ylim = chain.range.pc2,
+                  expand = FALSE) +
   theme_minimal(base_size = 9) +
   theme(legend.position  = "right",
         legend.key.height = unit(0.5, "cm"),
