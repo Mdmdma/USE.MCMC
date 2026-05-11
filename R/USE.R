@@ -14,4 +14,5 @@
 #'
 #' @useDynLib USE.MCMC, .registration = TRUE
 #' @importFrom Rcpp evalCpp
+#' @importFrom magrittr %>%
 "_PACKAGE"

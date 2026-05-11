@@ -27,7 +27,8 @@ Imports:
     rlang,
     FNN,
     tidyterra,
-    Rcpp
+    Rcpp,
+    magrittr
 LinkingTo:
     Rcpp,
     RcppArmadillo
