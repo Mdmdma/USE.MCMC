@@ -77,26 +77,24 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   check_in_range(environmental.cutof.percentile, "environmental.cutof.percentile", min_val = 0, max_val = 1)
   check_in_range(species.cutoff.threshold, "species.cutoff.threshold", min_val = 0, max_val = 1)
 
-  env.data.sf <- env.data.raster %>%
-    as.data.frame(xy = TRUE) %>%
-    sf::st_as_sf(coords = c("x", "y"))
-
-  # fixing the
+  if (inherits(env.data.raster, "BasicRaster")) {
+    env.data.raster <- terra::rast(env.data.raster)
+  }
   set.seed(seed.number)
 
   # Generate the environmental space using PCA
   if (is.null(precomputed.pca)){
-    rpc <- rastPCA(env.data.raster,  stand = TRUE)
+    rpc <- rastPCA(env.data.raster, stand = TRUE)
   } else {
     rpc <- precomputed.pca
   }
 
-  # Attaching the data in the PCA coordinates
-  env.with.pc.sf <- rpc$PCs %>%
-    as.data.frame(xy = TRUE) %>%
+  # Combine environment and PCA layers on the shared raster grid; avoids the
+  # expensive sf::st_join over tens-of-thousands of point geometries that the
+  # earlier pipeline performed.
+  env.with.pc.sf <- terra::as.data.frame(c(env.data.raster, rpc$PCs), xy = TRUE) %>%
     na.omit() %>%
-    sf::st_as_sf(coords = c("x", "y")) %>%
-    sf::st_join(env.data.sf)
+    sf::st_as_sf(coords = c("x", "y"))
 
   # subsample env space to speed up the process
   env.with.pc.sf.subsampled <- env.with.pc.sf[stats::runif(min(nrow(env.with.pc.sf), 2000) , 1, nrow(env.with.pc.sf)),]
@@ -127,7 +125,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                         verbose = verbose)
   summary(species.model)
   species.densities <- species.model$density
-  species.cutoff.threshold <- stats::quantile(species.densities, 0.9)
+  species.cutoff.threshold <- stats::quantile(species.densities, species.cutoff.threshold)
 
   #density Function
   densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
@@ -154,7 +152,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                    densityFunction = densityFunction,
                                    burnIn = burnIn,
                                    covariance.correction = covariance.correction,
-                                   verbose = TRUE)
+                                   verbose = verbose)
   }, mc.cores = min(num.chains, num.cores))
 
   sampled.points <- do.call(rbind, results.computation)

@@ -55,20 +55,19 @@ maxResNn<- function(env.data.raster, dimensions = c("PC1", "PC2") , low.end.of.i
     na.omit() %>%
     dplyr::select(dimensions)
 
-  neighbor.data <- FNN::get.knnx(pc.df[dimensions], pc.df[dimensions],k = 1 + n.neighbors) # plus one as each points is its own closest <<neighbor>>
+  neighbor.data <- FNN::get.knnx(pc.df[dimensions], pc.df[dimensions], k = 1 + n.neighbors) # plus one as each point is its own closest <<neighbor>>
   neighbor.index <- neighbor.data$nn.index
-  neighbor.distance <- neighbor.data$nn.dist[, 2:n.neighbors + 1] # remove the column with the distance to itself
+  # Columns 2:(n.neighbors+1) are the distances to the n.neighbors nearest non-self
+  # points (column 1 is the self-distance). The previous `2:n.neighbors + 1` was
+  # parsed as `(2:n.neighbors) + 1` and silently dropped the nearest non-self.
+  neighbor.distance <- neighbor.data$nn.dist[, 2:(n.neighbors + 1), drop = FALSE]
   neighbor.distance.flat <- as.vector(neighbor.distance)
   sorted.distances <- sort(neighbor.distance.flat)
-  top.end.points.without.outlayers.distance <- sorted.distances[(length(sorted.distances)- low.end.of.inclueded.points):(length(sorted.distances) - high.end.of.included.points)]
+  top.end.points.without.outlayers.distance <- sorted.distances[(length(sorted.distances) - low.end.of.inclueded.points):(length(sorted.distances) - high.end.of.included.points)]
   data.ranges <- sapply(pc.df, function(col) range(col))
-  data.ranges <- max(data.ranges[2,1] - data.ranges[1,1], data.ranges[2,2], data.ranges[2,1])
-  max.num.of.cells <- ceiling(data.ranges / mean(top.end.points.without.outlayers.distance))
+  max.dim.range <- max(data.ranges[2, 1] - data.ranges[1, 1],
+                       data.ranges[2, 2] - data.ranges[1, 2])
+  max.num.of.cells <- ceiling(max.dim.range / mean(top.end.points.without.outlayers.distance))
 
   return(max.num.of.cells)
-
-  # interesting insights into distance related metrics
-  graphics::par(mfrow = c(1,2))
-  graphics::plot(sorted.distances)
-  graphics::hist(sorted.distances)
 }

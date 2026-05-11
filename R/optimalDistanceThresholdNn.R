@@ -53,9 +53,10 @@ optimalDistanceThresholdNn <- function(env.data = NULL,
   nearest.neighbors.distance <- FNN::knn.dist(env.data.cleaned[dimensions],
                                               k = num.neighbors) %>%
     as.vector()
-  sorted.nearest.neighbor.distances <- sort(nearest.neighbors.distance,
-                                            decreasing=TRUE)
-  distance.threshold <- sorted.nearest.neighbor.distances[2] / 2
+  # Partial sort: we only need the `index.for.cutof`-th largest distance, so avoid
+  # a full O(n log n) sort over what may be a length-(n * num.neighbors) vector.
+  top.cutoff <- -sort(-nearest.neighbors.distance, partial = index.for.cutof)[index.for.cutof]
+  distance.threshold <- top.cutoff / 2
   return(distance.threshold)
 }
 

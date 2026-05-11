@@ -73,12 +73,15 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
 
   # burn in
   if(burnIn > 0) {
-    cat("Burn in\n")
+    if (verbose) cat("Burn in\n")
     points.accepted <- 0
     burnin.cycle <- 0
     if (verbose){
       pb.burnin <- utils::txtProgressBar(min = 0, max = burnIn, style = 3)
     }
+    # Throttle per-iteration progress output to keep stdout cheap, especially
+    # under parallel::mclapply where each cat is serialized through a pipe.
+    progress.stride <- max(1L, as.integer(burnIn %/% 100L))
    while (points.accepted / burnIn < 0.21 | points.accepted / burnIn > 0.25) {
       # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
       burnin.cycle <- burnin.cycle + 1
@@ -103,7 +106,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
           points.accepted <- points.accepted + 1
         }
 
-        if (verbose){
+        if (verbose && (i %% progress.stride == 0L || i == burnIn)){
           cat("\rCurrent acceptance ratio: ", points.accepted / i)
           utils::setTxtProgressBar(pb.burnin, i)
         }
@@ -112,9 +115,9 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       if (points.accepted / burnIn > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
     }
   }
-  else cat("Burn in skipped")
+  else if (verbose) cat("Burn in skipped")
 
-  cat("\nThe final covariance correction is ", covariance.correction, "\n")
+  if (verbose) cat("\nThe final covariance correction is ", covariance.correction, "\n")
   # Pre-allocate output matrix (dimensions + density)
   n.cols <- n.dim + 1
   sampled.points <- matrix(NA_real_, nrow = n.sample.points, ncol = n.cols)
@@ -124,6 +127,7 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if (verbose) {
     pb <- utils::txtProgressBar(min = 0, max = n.sample.points, style = 3)
   }
+  sampling.stride <- max(1L, as.integer(n.sample.points %/% 100L))
 
   while (iteration < n.sample.points) {
     proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
@@ -137,12 +141,12 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
       points.rejected <- points.rejected + 1
     }
     sampled.points[iteration, ] <- c(current.point, current.density)
-    if (verbose){
+    if (verbose && (iteration %% sampling.stride == 0L || iteration == n.sample.points)){
       cat("\rPoints rejected:", points.rejected, "Points sampled:", iteration)
       utils::setTxtProgressBar(pb, iteration)
     }
   }
-  cat("\nPoints rejected: ", points.rejected)
+  if (verbose) cat("\nPoints rejected: ", points.rejected)
 
   # Convert output matrix to data.frame
   sampled.points <- as.data.frame(sampled.points)

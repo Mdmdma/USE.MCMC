@@ -99,10 +99,12 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   env.data <- env.rast %>%
     as.data.frame(xy = TRUE)
 
-  env.with.pc <- rpc$PCs  %>%
-    as.data.frame(env.with.pc, xy = TRUE) %>%
+  env.with.pc <- rpc$PCs %>%
+    as.data.frame(xy = TRUE) %>%
     na.omit() %>%
     cbind(env.data)
+
+  check_columns_exist(env.with.pc, dimensions, "env.with.pc", "dimensions")
 
   env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions)
 
@@ -115,14 +117,17 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   # repeat the grid so to get the desired number of points per cell
   grid.repeated <- do.call(rbind, replicate(n.tr, grid, simplify = FALSE))
 
-  # add uniform noise to simulate sampling a random location in each cell
+  # add uniform noise to simulate sampling a random location in each cell.
+  # Use the grid extent + resolution to derive the per-axis cell spacing; this is
+  # robust to st_make_grid's cell ordering (column-major vs row-major).
   step.scaling = 1
-  step.x <- (grid[1,2] - grid[1,1]) / step.scaling
-  step.y <- (grid[2,1] - grid[1,1]) / step.scaling
+  step.x <- (diff(range(grid[, 1])) / max(1, grid.res - 1)) / step.scaling
+  step.y <- (diff(range(grid[, 2])) / max(1, grid.res - 1)) / step.scaling
 
   noise.x <- stats::runif(nrow(grid.repeated), -step.x, step.x)
   noise.y <- stats::runif(nrow(grid.repeated), -step.y, step.y)
-  noise <- data.frame(noise.y, noise.x)
+  noise <- data.frame(noise.x, noise.y)
+  names(noise) <- dimensions
   grid.noisy <- grid.repeated + noise
 
   # map the sampled points to real points in the environments
@@ -133,70 +138,76 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   if (data.based.distance.threshold) {
     distance.threshold <- optimalDistanceThresholdNn(env.data = env.with.pc,
                                                      dimensions = dimensions)
+  } else {
+    distance.threshold <- max(step.y, step.x) / 2
   }
-
-  distance.threshold <- max(step.y, step.x) / 2
   mapped.sampled.points.filtered <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
   # Remove points that are located in the region that is associated with the target species
   # Analog to the paper the convex hull is computed, but the we just remove the points that layed in this area, instead of
   # excluding them from the possible dataset. This is done as it could happen that the maximal grid resolution could change excluding this area.
-  if (!is.null(pres))
+  if (!is.null(pres)) {
     # use distance to the 100 closest other presence locations as a proxy for density instead of the kernel.
     if (nn.based.presence.exclusion) {
-      message("nearest neigbor based presence exclusion")
-      virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc, virtual.presence.points, bind = TRUE) %>%
+      if (verbose) message("nearest neigbor based presence exclusion")
+      virtual.presence.points.pc <- terra::extract(rpc$PCs, occ.vec, bind = TRUE) %>%
         sf::st_as_sf()
-      virtual.presence.points.pc <- cbind(sf::st_drop_geometry(virtual.presence.points.pc), sf::st_coordinates(virtual.presence.points.pc))
+      virtual.presence.points.pc <- cbind(sf::st_drop_geometry(virtual.presence.points.pc),
+                                          sf::st_coordinates(virtual.presence.points.pc))
+      check_columns_exist(virtual.presence.points.pc, dimensions,
+                          "virtual.presence.points.pc", "dimensions")
 
-      get.nearest.ten.neighbors <- FNN::get.knnx(virtual.presence.points.pc[dimensions], virtual.presence.points.pc[dimensions], k =100)
-      average.distance.to.neighbors <- rowMeans(get.nearest.ten.neighbors$nn.dist)
-      idx <- which(average.distance.to.neighbors <= quantile(average.distance.to.neighbors, 1-thres))
+      k.neighbors <- min(100, nrow(virtual.presence.points.pc))
+      get.nearest.neighbors <- FNN::get.knnx(virtual.presence.points.pc[dimensions],
+                                             virtual.presence.points.pc[dimensions],
+                                             k = k.neighbors)
+      average.distance.to.neighbors <- rowMeans(get.nearest.neighbors$nn.dist)
+      idx <- which(average.distance.to.neighbors <= quantile(average.distance.to.neighbors, 1 - thres))
       points.with.closest.neighbors <- virtual.presence.points.pc[idx, ]
-      convex.hull <- sf::st_as_sf(points.with.closest.neighbors, coords = c("PC1", "PC2")) %>%
+      convex.hull <- sf::st_as_sf(points.with.closest.neighbors, coords = dimensions) %>%
         sf::st_union() %>%
         sf::st_convex_hull()
-      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
+      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords = dimensions)
       outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, convex.hull, sparse = FALSE), ]
       sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
-      colnames(sampled.points) <- c("PC1", "PC2")
+      colnames(sampled.points) <- dimensions
+      sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+    } else {
+      if (verbose) message("kernel based presence exclusion")
+      id_rast <- terra::rast(vals = 1:terra::ncell(env.rast),
+                             names = "myID",
+                             extent = terra::ext(env.rast),
+                             nrows = terra::nrow(env.rast),
+                             ncols = terra::ncol(env.rast),
+                             crs = terra::crs(env.rast))
+      abio.st <- terra::as.data.frame(c(id_rast, env.rast))
+      dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[dimensions]]), xy = TRUE)
+      PC12occ <- terra::extract(id_rast, occ.vec, cells = FALSE, df = FALSE, ID = FALSE)[, 1]
+      PC12ex <- na.omit(data.frame(dt, PA = ifelse(dt$myID %in% PC12occ, 1, 0)))
+      if (is.null(H)) {
+        H <- ks::Hpi(x = PC12ex[, dimensions])
+      }
+
+      estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, dimensions],
+                                           eval.points = PC12ex[PC12ex$PA == 1, dimensions],
+                                           h = H)$estimate,
+                             PC12ex[PC12ex$PA == 1, c(dimensions, "myID", "PA")])
+
+      quantP <- quantile(estimate[, "KDE"], thres)
+      estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
+      point.data <- merge(x = PC12ex, y = estimate[estimate$PA == 1, c("myID", "percP")],
+                          by = "myID", all.x = TRUE)
+      point.data$percP <- ifelse(is.na(point.data$percP), "pabs", point.data$percP)
+      chull <- sf::st_as_sf(subset(point.data, point.data$percP == "in", select = dimensions),
+                            coords = dimensions)
+      chull <- sf::st_union(chull)
+      chull <- sf::st_convex_hull(chull)
+      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords = dimensions)
+      outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
+      sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
+      colnames(sampled.points) <- dimensions
       sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
     }
-
-    else {
-      message("kernel based presence exclusion")
-    id_rast <- terra::rast(vals= 1:terra::ncell(env.rast),
-                           names ="myID",
-                           extent = terra::ext(env.rast),
-                           nrows = terra::nrow(env.rast),
-                           ncols = terra::ncol(env.rast),
-                           crs = terra::crs(env.rast)
-    )
-    abio.st <- terra::as.data.frame(c(id_rast, env.rast))
-    dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[c("PC1", "PC2")]]), xy = TRUE)
-    PC12occ <- terra::extract(id_rast,  occ.vec, cells = FALSE, df = FALSE, ID=FALSE)[,1]
-    PC12ex <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
-    if (is.null(H)) {
-      H <- ks::Hpi(x = PC12ex[, c("PC1", "PC2")])
-    }
-
-    estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, c("PC1", "PC2")],
-                                         eval.points = PC12ex[PC12ex$PA ==1, c("PC1", "PC2")], h = H)$estimate,
-                           PC12ex[PC12ex$PA == 1, c("PC1", "PC2", "myID", "PA")])
-
-    quantP <- quantile(estimate[, "KDE"], thres)
-    estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
-    point.data <- merge(x = PC12ex, y = estimate[estimate$PA == 1,c("myID","percP")],
-                      by = "myID", all.x = TRUE)
-    point.data$percP <- ifelse(is.na(point.data$percP), "pabs",point.data$percP)
-    chull <- sf::st_as_sf(subset(point.data, point.data$percP=="in", select=c( "PC1","PC2" )), coords=c( "PC1","PC2" ))
-    chull <- sf::st_union(chull)
-    chull <- sf::st_convex_hull(chull)
-    point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords=c( "PC1","PC2" ))
-    outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
-    sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
-    colnames(sampled.points) <- c("PC1", "PC2")
-    sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
   } else {
     sampled.points <- mapped.sampled.points.filtered
   }

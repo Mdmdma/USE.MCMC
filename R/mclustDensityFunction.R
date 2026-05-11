@@ -103,3 +103,30 @@ fast_gmm_density <- function(x, pre) {
   max_log <- max(log_densities)
   exp(max_log + log(sum(exp(log_densities - max_log))))
 }
+
+#' Batched GMM density evaluation using precomputed parameters
+#'
+#' Vectorized variant of \code{fast_gmm_density} for evaluating many points at
+#' once. Operates per component on the whole batch of points, then combines via
+#' log-sum-exp. Substantially faster than looping single-point evaluations when
+#' the caller already has all query points in hand (e.g. plotting density rasters,
+#' threshold sweeps, or sweep-style diagnostics in the vignettes).
+#'
+#' @param X Numeric matrix (n x d) or data.frame coercible to one — query points
+#'   in rows, dimensions in columns.
+#' @param pre List of precomputed parameters from \code{precompute_gmm_params}.
+#' @returns Numeric vector of length n with the density at each row of X.
+#' @keywords internal
+fast_gmm_density_batch <- function(X, pre) {
+  if (is.data.frame(X)) X <- as.matrix(X)
+  if (!is.matrix(X)) X <- matrix(X, ncol = pre$d)
+  n <- nrow(X)
+  log_densities <- matrix(NA_real_, nrow = n, ncol = pre$G)
+  for (k in seq_len(pre$G)) {
+    diffs <- sweep(X, 2L, pre$mean[, k], FUN = "-")              # n x d
+    # quadratic form: rowSums(diffs * (diffs %*% inv_sigma)) gives diff^T A diff per row.
+    log_densities[, k] <- pre$log_norm[k] - 0.5 * rowSums(diffs * (diffs %*% pre$inv_sigma[, , k]))
+  }
+  max_log <- do.call(pmax, as.data.frame(log_densities))
+  exp(max_log + log(rowSums(exp(log_densities - max_log))))
+}
