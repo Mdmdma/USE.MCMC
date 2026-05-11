@@ -833,8 +833,8 @@ panel.d <- ggplot() +
               aes(x = PC1, y = PC2, fill = density)) +
   scale_fill_continuous(guide = "none") +
   geom_path(data = chain.df, aes(PC1, PC2, colour = step),
-            linewidth = 0.35) +
-  scale_color_viridis_c(name = "Step", option = "magma") +
+            linewidth = 0.1) +
+  scale_color_viridis_c(name = "Step", option = "viridis") +
   coord_cartesian(xlim = chain.range.pc1, ylim = chain.range.pc2,
                   expand = FALSE) +
   theme_minimal(base_size = 9) +

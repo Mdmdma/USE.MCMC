@@ -10,3 +10,5 @@
 ^Meta$
 ^development_scripts/
 ^\.github$
+^\.positai$
+^\.claude$
