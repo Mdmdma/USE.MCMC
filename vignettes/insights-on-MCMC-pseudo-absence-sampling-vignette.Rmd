@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 This vignette gives insights into how MCMC works and how it can be used to sample pseudo-absences. It builds on the idea of nearest neighbor mapping. This concept is explained in detail in the [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html).
 ```{r setup, message=FALSE}
 library(USE.MCMC)
+library(magrittr)
 library(terra)
 library(virtualspecies)
 library(sf)
