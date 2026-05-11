@@ -11,7 +11,9 @@ inst/doc
 docs
 tests/testthat/Rplots.pdf
 .positai
+.claude
 development_scripts/benchmark_results.csv
 src/*.o
 src/*.so
 src/*.dll
+texput.log
