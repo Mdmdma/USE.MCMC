@@ -156,6 +156,14 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
                                           sf::st_coordinates(virtual.presence.points.pc))
       check_columns_exist(virtual.presence.points.pc, dimensions,
                           "virtual.presence.points.pc", "dimensions")
+      # Drop presence points that fell on no-data cells; FNN::get.knnx refuses NAs.
+      virtual.presence.points.pc <- virtual.presence.points.pc[
+        stats::complete.cases(virtual.presence.points.pc[, dimensions, drop = FALSE]), ,
+        drop = FALSE]
+      if (nrow(virtual.presence.points.pc) < 2) {
+        stop("Too few non-NA presence points to compute a presence-density convex hull",
+             call. = FALSE)
+      }
 
       k.neighbors <- min(100, nrow(virtual.presence.points.pc))
       get.nearest.neighbors <- FNN::get.knnx(virtual.presence.points.pc[dimensions],
