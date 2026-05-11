@@ -1,3 +1,6 @@
+# Minimum proposal-scale floor; keep in sync with MIN_COV_CORRECTION in src/mcmc_loop.cpp.
+MIN_COV_CORRECTION <- 1e-10
+
 #' MCMC sampling from a given dataset
 #'
 #' @param dataset sf dataframe from which the points are sampled
@@ -12,10 +15,6 @@
 #' @param engine One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++ inner loop when both `densityFunction` and `proposalFunction` are built by `mclustDensityFunction()` and `addHighDimGaussian()` (they carry the required `rcpp_spec` attribute) and falls back to the R loop otherwise. `"cpp"` forces the C++ path and errors if a custom closure is supplied. `"R"` forces the pure-R reference loop.
 #' @returns A data.frame containing the sampled points with dimension columns and a density column
 #' @export
-#'
-# Minimum proposal-scale floor; keep in sync with MIN_COV_CORRECTION in src/mcmc_loop.cpp.
-MIN_COV_CORRECTION <- 1e-10
-
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
                          proposalFunction = addHighDimGaussian(dim = length(dimensions)),
                          n.sample.points = 0, burnIn = 1000, verbose = TRUE,
