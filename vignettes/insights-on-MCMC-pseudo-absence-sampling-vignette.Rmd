@@ -7,6 +7,12 @@ vignette: >
   %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+resource_files:
+  - gif_example_chain.gif
+  - gif_example_chain_gaussian.gif
+  - gif_example_chain_gaussian_long.gif
+  - chain.naive.density.gif
+  - chain.ps.density.gif
 ---
 
 ```{r, include = FALSE}
@@ -50,6 +56,7 @@ sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                n.sample.points = 100,
                                verbose = FALSE)
 ```
+yes
 ```{r animate-sample-chain, eval=FALSE, echo=FALSE}
 starting.point$density <- 1
 sampled.points <- rbind(starting.point, sampled.points)
@@ -71,7 +78,9 @@ a.example.chain <- p.example.chain +
 gif.example.chain <- gganimate::animate(a.example.chain, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 4)
 anim_save("gif_example_chain.gif", gif.example.chain)
 ```
-![](gif_example_chain.gif)
+```{r show-gif-example-chain, echo=FALSE}
+knitr::include_graphics("gif_example_chain.gif")
+```
 
 In practical cases a Markov chain does not perform a completely random walk. The chain tries to replicate some kind of target function. In the case above this function is one everywhere. Therefore the chain explores in all directions and without limit. In this unbounded case the chain does not converge to a stationary state. 
 
@@ -115,7 +124,9 @@ gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifsk
 anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ```
 
-![](gif_example_chain_gaussian.gif)
+```{r show-gif-gaussian, echo=FALSE}
+knitr::include_graphics("gif_example_chain_gaussian.gif")
+```
 As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the Metropolis–Hastings algorithm.
 $$
 
@@ -181,7 +192,9 @@ a.example.chain.gaussian <- p.example.chain.gaussian +
 gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 6)
 anim_save("gif_example_chain_gaussian_long.gif", gif.example.chain.gaussian)
 ```
-![](gif_example_chain_gaussian_long.gif)
+```{r show-gif-gaussian-long, echo=FALSE}
+knitr::include_graphics("gif_example_chain_gaussian_long.gif")
+```
 ```{r gaussian-posterior-plot-more-samples, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
 p.gaussian.posterior.x.limited.samplesize <- ggplot(sampled.points.gaussian) +
   geom_density(aes(x=x)) +
@@ -386,7 +399,9 @@ a.chain.naive.density <- p.chain.naive.density +
 gif.chain.naive.density <- animate(a.chain.naive.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.naive.density.gif", gif.chain.naive.density)
 ```
-![](chain.naive.density.gif)
+```{r show-gif-naive-density, echo=FALSE}
+knitr::include_graphics("chain.naive.density.gif")
+```
 
 We can now sample our environmental space uniformly. pseudo-absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that
 
@@ -585,7 +600,7 @@ ggplot(curves, aes(PC1, f, color = q)) +
 sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
-                                      n.sample.points = 5000,
+                                      n.sample.points = 20000,
                                       burnIn = 100,
                                       covariance.correction = 20)
 ```
@@ -609,7 +624,9 @@ a.chain.ps.density <- p.chain.ps.density +
 gif.chain.ps.density <- animate(a.chain.ps.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.ps.density.gif", gif.chain.ps.density)
 ```
-![](chain.ps.density.gif)
+```{r show-gif-ps-density, echo=FALSE}
+knitr::include_graphics("chain.ps.density.gif")
+```
 
 So far the sample points are real points in the environment. They only have values for the dimension we wanted to sample. To get real points again we use the nearest neighbor search. The technique is further described in [insights on nearest neighbor search](Insights-on-nearest-neighbor-search.html). The core of the idea is that we can compute the distance from a sample point to other points in the dataset and choose the point with the shortest distance to represent our sample point. 
 
@@ -623,7 +640,7 @@ mapped.sampled.points$density <- sampled.points$density
 mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 ```
 
-The figure below visualises the remapping step on a random subset of the chain: each arrow points from a sampled chain point to its nearest real environmental point, coloured by the distance travelled.
+The figure below visualizes the remapping step on a random subset of the chain: each arrow points from a sampled chain point to its nearest real environmental point, coloured by the distance travelled.
 
 ```{r plot-remapping-arrows, echo=FALSE, fig.height=4, fig.width=7}
 arrow.subsample.size <- min(1000, nrow(sampled.points))
