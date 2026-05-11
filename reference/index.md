@@ -4,6 +4,10 @@
 
 - [`SpatialProba()`](https://mdmdma.github.io/USE.MCMC/reference/SpatialProba.md)
   : Virtual species probability of occurrence
+- [`USE.MCMC`](https://mdmdma.github.io/USE.MCMC/reference/USE.MCMC-package.md)
+  [`USE.MCMC-package`](https://mdmdma.github.io/USE.MCMC/reference/USE.MCMC-package.md)
+  : USE (Uniform Sampling of the Environmental space) An R package to
+  perform uniform sampling in the environmental space
 - [`Worldclim_tmp`](https://mdmdma.github.io/USE.MCMC/reference/Worldclim_tmp.md)
   : A subset of WorldClim bioclimatic variables
 - [`addHighDimGaussian()`](https://mdmdma.github.io/USE.MCMC/reference/addHighDimGaussian.md)
@@ -13,9 +17,6 @@
 - [`getVirtualSpeciesPresencePoints()`](https://mdmdma.github.io/USE.MCMC/reference/getVirtualSpeciesPresencePoints.md)
   : Function to streamline the generation and sampling of a virtual
   species
-- [`mapBackOnRealPoints()`](https://mdmdma.github.io/USE.MCMC/reference/mapBackOnRealPoints.md)
-  : Map Back on Real Points searches the closest point in the dataset
-  regarding the given point and the dimensions given
 - [`maxResNn()`](https://mdmdma.github.io/USE.MCMC/reference/maxResNn.md)
   : maxResNN is a function that can be used to compute a reasonable grid
   resolution for nearest neighbor based uniform sampling. The core idea

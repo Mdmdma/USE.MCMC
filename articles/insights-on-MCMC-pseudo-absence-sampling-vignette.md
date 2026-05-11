@@ -7,7 +7,9 @@ neighbor
 search](https://mdmdma.github.io/USE.MCMC/articles/Insights-on-nearest-neighbor-search.md).
 
 ``` r
+
 library(USE.MCMC)
+library(magrittr)
 library(terra)
 library(virtualspecies)
 library(sf)
@@ -21,7 +23,7 @@ library(tcltk)
 library(viridis)
 library(cowplot)
 library(entropy)
-set.seed(40)
+set.seed(42)
 ```
 
 Before we can understand why Markov chains are useful, we have to
@@ -35,6 +37,7 @@ if it wants to accept this proposed point. In this first example we
 accept all points.
 
 ``` r
+
 starting.point <- data.frame(x=0, y=0)
 sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                dimensions = c("x", "y"),
@@ -45,6 +48,8 @@ sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                n.sample.points = 100,
                                verbose = FALSE)
 ```
+
+yes
 
 ![](gif_example_chain.gif)
 
@@ -61,6 +66,7 @@ distribution we want to replicate.
 Lets make an example and create samples from a two dimensional Gaussian.
 
 ``` r
+
 densityFunctionGaussian <- function(point, lengthscale=5){
   density <- exp(-(point[["x"]] ** 2 + point[["y"]] ** 2) / lengthscale)
 }
@@ -82,18 +88,21 @@ probability gets that the proposed point gets rejected.
 completely random. The algorithm now decides if it wants to accept the
 proposed next point using the Metropolis–Hastings algorithm. \$\$
 
-= , p\_{n+1} = $$\begin{cases}
-{p\prime} & {\alpha > n,n \sim \mathcal{U}(0,1)} \\
-p_{n} & \text{otherwise}
-\end{cases}$$
+= , p\_{n+1} =
+``` math
+\begin{cases}
+        p' & \alpha >n, n\sim \mathcal{U}(0,1)  \\
+        p_n & \text{otherwise}
+    \end{cases}
+```
 
-\$\$ Given a point $p_{n}$ we calculate a proposed point $p\prime$. The
-function $d(p)$ guides our chain. If the value of $d(p\prime)$ is higher
-at the new location, the chain always continues. If the value of $d(p)$
-is lower at the new location the chain sometimes transitions. This
-guarantees that the whole space is eventually sampled. This assumption
-only holds up if we sample for enough steps and the sampled function is
-compact, in addition to probably other things.
+\$\$ Given a point $`p_n`$ we calculate a proposed point $`p'`$. The
+function $`d(p)`$ guides our chain. If the value of $`d(p')`$ is higher
+at the new location, the chain always continues. If the value of
+$`d(p)`$ is lower at the new location the chain sometimes transitions.
+This guarantees that the whole space is eventually sampled. This
+assumption only holds up if we sample for enough steps and the sampled
+function is compact, in addition to probably other things.
 
 Looking at the posterior of our sampled points, the distribution of x
 and y values of our points, we see that they resemble Gaussian, but our
@@ -102,6 +111,7 @@ sample size was too small.
 Increasing the sample size results in a better approximation.
 
 ``` r
+
 sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
                                   dimensions = c("x", "y"),
                                   densityFunction = densityFunctionGaussian,
@@ -109,10 +119,6 @@ sampled.points.gaussian <- mcmcSampling(dataset=starting.point,
                                   burnIn = 0, 
                                   n.sample.points = 10000,
                                   verbose = FALSE)
-#> Burn in skipped
-#> The final covariance correction is  1 
-#> 
-#> Points rejected:  3020
 ```
 
 ![](gif_example_chain_gaussian_long.gif)![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/gaussian-posterior-plot-more-samples-1.png)
@@ -156,10 +162,12 @@ In a first step, we have to decide which dimensions we want to sample
 uniformly.
 
 ``` r
+
 dimensions <- c("PC1", "PC2")
 ```
 
 ``` r
+
 env.data.raster <- USE.MCMC::Worldclim_tmp %>%
   terra::rast(type="xyz") %>%
   round(2) 
@@ -196,6 +204,7 @@ keep the chain in bound. Other techniques are later used to exclude
 parts of the chain that are too far from the real data.
 
 ``` r
+
 env.with.pc.sf.subsampled <- env.with.pc.sf[
   stats::runif(min(nrow(env.with.pc.sf), 2000) , 1, nrow(env.with.pc.sf)),]
 env.data.cleaned.subsampled <- sf::st_drop_geometry(
@@ -217,6 +226,7 @@ The model density at the points in the environment can be used to find
 the threshold under which no points are expected any more.
 
 ``` r
+
 environmental.densities <- mclust::predict.densityMclust(
   environmental.data.model, env.data.cleaned)
 environmental.threshold <- stats::quantile(environmental.densities, 0.01)
@@ -226,6 +236,7 @@ We can now start to construct the function that our chain tries to
 sample from.
 
 ``` r
+
 densityFunctionNaive <- function(env.model, env.threshold, dimensions){
   densityFunction <- function(point){
     if (is.data.frame(point)) {
@@ -251,10 +262,22 @@ As we are in the two dimensional case we can plot the function.
 
 ![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-simple-denisty-1.png)
 
+The cutoff is controlled by a single quantile of the per-point
+environmental densities. To see how the accepted region shrinks as we
+become stricter, we sweep the quantile from “exclude only the single
+lowest-density point” (`1/N`) up to the lowest few percent, and stack
+the resulting masks onto a single plot. Since a stricter mask is always
+contained in a looser one, painting them in increasing order of
+strictness produces nested shells that show exactly which slivers are
+cut off as the quantile grows.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-density-threshold-sweep-1.png)
+
 We can now use the Markov chain algorithm from before to generate
 samples from this function.
 
 ``` r
+
 sampled.points.naive.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
@@ -271,6 +294,7 @@ under which the species we try to model flourishes. We have to extend
 the function from above to reflect that
 
 ``` r
+
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
   env.data = env.data.raster.with.pc, n.samples = 300)
 #> Reading raster values. If it fails for very large rasters, use arguments 'sample.points = TRUE' and define a number of points to sample with 'nb.point'.
@@ -284,7 +308,7 @@ virtual.presence.data <- getVirtualSpeciesPresencePoints(
 #>               
 #> - beta = 0.55
 #> - alpha = -0.05
-#> - species prevalence =0.237957051654092
+#> - species prevalence =0.177861024639899
 virtual.presence.points <- virtual.presence.data$sample.points
 virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
                                              virtual.presence.points,
@@ -296,6 +320,7 @@ As before we can fit a Gaussian mixture to the given data points of the
 model species.
 
 ``` r
+
 species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]))
 species.densities <- species.model$density
 species.cutoff.threshold <- stats::quantile(species.densities, 0.9)
@@ -314,6 +339,7 @@ former function value, we now get values below zero in these areas,
 meaning we will never visit them with the chain.
 
 ``` r
+
 densityFunctionPseudoAbsences <- function(env.model, env.threshold,
                                   pres.model, pres.threshold,
                                   dimensions){
@@ -346,16 +372,51 @@ As before we can plot the function we want to sample from.
 
 ![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-pseudo-absence-density-1.png)
 
+The species term `1 - pres.density(x) / pres.threshold` is a linear
+rescale of `pres.density(x)` followed by a clip at zero, so a naive
+small-multiples sweep over `pres.threshold` would mostly differ in
+contrast and in where the zero-frontier sits. Two complementary views
+capture the sweep more honestly: a 2D heatmap of `f(x)` itself at one
+strong species threshold, with the rest of the threshold sweep encoded
+as contour rings; and a 1D slice along PC1 at fixed PC2 showing how the
+resulting `f(x; q)` curves rescale with `q`.
+
+The first view plots the pseudo-absence function itself, `f(x) = 0`
+where the env model is below threshold and
+`f(x) = max(0, 1 - pres.density(x)/pres.threshold)` otherwise, evaluated
+at one strong species threshold (`q = 0.95`). Contour rings drawn at the
+species thresholds for every `q` in the sweep show where the
+zero-frontier sits at each setting.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/pseudo-absence-sweep-contours-1.png)
+
+The four density figures introduced in this section — the naive
+environmental density, the environmental threshold sweep, the
+species-quantile sweep with contours, and the full pseudo-absence
+density — together describe how the sampling function is built up step
+by step. The following compound figure assembles them at a glance.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-methods-overview-1.png)
+
+The second view fixes `PC2 = 0.5` (a slice through the more variable
+axis) and plots `f(x; q)` along `PC1`. The curves share shape and only
+differ in how strongly the species penalty is rescaled and where the
+zero-clip kicks in.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/pseudo-absence-sweep-ridge-1.png)
+
 ``` r
+
 sampled.points.ps.density <- mcmcSampling(dataset = env.with.pc.sf,
                                       dimensions = dimensions,
                                       densityFunction = densityFunction,
-                                      n.sample.points = 5000,
+                                      n.sample.points = 20000,
                                       burnIn = 100,
                                       covariance.correction = 20)
 ```
 
 ``` r
+
 
 sampled.points.ps.density$step <- 1:nrow(sampled.points.ps.density)
 p.chain.ps.density <- ggplot(sampled.points.ps.density) + 
@@ -387,6 +448,7 @@ point to other points in the dataset and choose the point with the
 shortest distance to represent our sample point.
 
 ``` r
+
 sampled.points <- sampled.points.ps.density
 mapped.sampled.point.locations <- FNN::get.knnx(
   env.data.cleaned[dimensions], sampled.points[dimensions],k = 1)
@@ -395,6 +457,12 @@ mapped.sampled.points <- env.with.pc.sf[
 mapped.sampled.points$density <- sampled.points$density
 mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 ```
+
+The figure below visualizes the remapping step on a random subset of the
+chain: each arrow points from a sampled chain point to its nearest real
+environmental point, coloured by the distance travelled.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-remapping-arrows-1.png)
 
 Now we have real points in our environment with a geographical location.
 The model of our environment is not perfect. The distance to the
@@ -405,6 +473,7 @@ between a point and its origin should never be more than half the
 maximal distance between points in the dataset.
 
 ``` r
+
 nearest.neighbors.distance<- FNN::knn.dist(env.data.cleaned[dimensions],
                                            k=3) %>%
   as.vector()
@@ -421,6 +490,7 @@ In a last step we can select the desired number of points from our
 chain.
 
 ``` r
+
 n.samples <- 300
 mapped.sampled.points.selected <- mapped.sampled.points.filtered[
   runif(n.samples, 0, nrow(mapped.sampled.points.filtered)), ]
@@ -441,6 +511,12 @@ the environment.
 The sampled points can also be plotted in the geographical space.
 ![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-in-geo-1.png)
 
+The compound figure below summarises the six steps of the pipeline at a
+glance, assembled from the data objects produced earlier in this
+vignette.
+
+![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-pipeline-scheme-1.png)
+
 So far we did nothing revolutionary. All of the given can be done using
 existing techniques.The advantage emerges when we want to increase the
 dimensions included. The only thing that has to change is the vector
@@ -451,7 +527,21 @@ results of such computations.
 The function paSamplingMcmc wraps what we did so far in this vignette
 into one single concise function to efficiently create pseudo-absences.
 
+Since USE.MCMC 0.0.2 the MCMC inner loop runs in C++ whenever the
+density and proposal functions are produced by
+[`mclustDensityFunction()`](https://mdmdma.github.io/USE.MCMC/reference/mclustDensityFunction.md)
+and
+[`addHighDimGaussian()`](https://mdmdma.github.io/USE.MCMC/reference/addHighDimGaussian.md)
+— which is what
+[`paSamplingMcmc()`](https://mdmdma.github.io/USE.MCMC/reference/paSamplingMcmc.md)
+does internally. No code change is required: the default
+`engine = "auto"` picks the C++ path automatically. Pass `engine = "R"`
+to force the reference implementation if you want to compare. Calls with
+custom density closures (as in the earlier chunks of this vignette)
+continue to use the R loop unchanged.
+
 ``` r
+
 # One core is used for rendering the vignette, for interactive use this can be set higher
 sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
                                       pres = virtual.presence.points,
@@ -478,6 +568,7 @@ many chains we should combine to get satisfying results.
 To evaluate these issues let’s first generate some long chains.
 
 ``` r
+
 dimensions <- c("PC1", "PC2", "PC3")
 # Environmental model in 3 dimensions
 env.with.pc.sf.subsampled <- env.with.pc.sf[
@@ -492,6 +583,7 @@ environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled)
 
 ``` r
 
+
 env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
 
 environmental.densities <- mclust::predict.densityMclust(
@@ -505,6 +597,7 @@ species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.poin
 ![](insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/highe-dim-convergence-2.png)
 
 ``` r
+
 species.densities <- species.model$density
 species.cutoff.threshold <- stats::quantile(species.densities, 0.9)
 
@@ -544,6 +637,7 @@ longer. The needed runtime depends on how complex the environmental
 space is and on the number of dimensions included.
 
 ``` r
+
 coda::gelman.plot(coda.chain.list)
 ```
 
@@ -572,6 +666,7 @@ three has a large range at pc1 = 1, we expect the density of pc1 to be
 higher at pc1 = 1
 
 ``` r
+
 sampled.points.uniform.p <- paSampling(env.rast = env.data.raster,
                                        pres = virtual.presence.points, 
                                        grid.res = 10)
@@ -585,6 +680,7 @@ sampled.points.uniform.paper <- terra::extract(
 ```
 
 ``` r
+
 n.sample.points <- 300
 sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
                                           pres = virtual.presence.points,
@@ -593,6 +689,7 @@ sampled.points.uniform.nn <- paSamplingNn(env.rast = env.data.raster,
 ```
 
 ``` r
+
 sampled.points.random.geo <- env.with.pc.sf[
   stats::runif(min(nrow(env.with.pc.sf), n.sample.points) , 1, nrow(env.with.pc.sf)),]
 ```

@@ -17,13 +17,13 @@ Source:
 [`DESCRIPTION`](https://github.com/mdmdma/USE.MCMC/blob/main/DESCRIPTION)
 
 Erler M, Da Re D, Tordoni E, Bazzichetto M (2026). *USE.MCMC: MCMC
-sampling of the environment space*. R package version 0.0.1,
+sampling of the environment space*. R package version 0.0.2,
 <https://mdmdma.github.io/USE.MCMC/>.
 
     @Manual{,
       title = {USE.MCMC: MCMC sampling of the environment space},
       author = {Mathis Erler and Daniele {Da Re} and Enrico Tordoni and Manuele Bazzichetto},
       year = {2026},
-      note = {R package version 0.0.1},
+      note = {R package version 0.0.2},
       url = {https://mdmdma.github.io/USE.MCMC/},
     }

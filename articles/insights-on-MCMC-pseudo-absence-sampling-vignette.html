@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">USE.MCMC</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,8 +33,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
+<li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
     <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul>
@@ -74,6 +73,7 @@ neighbor mapping. This concept is explained in detail in the <a href="Insights-o
 neighbor search</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mdmdma.github.io/USE.MCMC/">USE.MCMC</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://magrittr.tidyverse.org" class="external-link">magrittr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://borisleroy.com/virtualspecies/" class="external-link">virtualspecies</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
@@ -87,7 +87,7 @@ neighbor search</a>.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://wilkelab.org/cowplot/" class="external-link">cowplot</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://strimmerlab.github.io/software/entropy/" class="external-link">entropy</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">40</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span></code></pre></div>
 <p>Before we can understand why Markov chains are useful, we have to
 understand how they work.</p>
 <p>For our use-case, Markov chains can be understood as a random walk.
@@ -106,7 +106,8 @@ accept all points.</p>
 <span>                               covariance.correction <span class="op">=</span> <span class="fl">1</span>, </span>
 <span>                               n.sample.points <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>                               verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="gif_example_chain.gif"></p>
+<p>yes</p>
+<p><img src="gif_example_chain.gif"><!-- --></p>
 <p>In practical cases a Markov chain does not perform a completely
 random walk. The chain tries to replicate some kind of target function.
 In the case above this function is one everywhere. Therefore the chain
@@ -132,25 +133,25 @@ Gaussian.</p>
 <span>                                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>The further the chain wanders away from the origin the higher the
 probability gets that the proposed point gets rejected.</p>
-<p><img src="gif_example_chain_gaussian.gif"> As before the proposal
-step is completely random. The algorithm now decides if it wants to
-accept the proposed next point using the Metropolis–Hastings algorithm.
-$$</p>
+<p><img src="gif_example_chain_gaussian.gif"><!-- --> As before the
+proposal step is completely random. The algorithm now decides if it
+wants to accept the proposed next point using the Metropolis–Hastings
+algorithm. $$</p>
 = , p_{n+1} =
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">{</mo><mtable><mtr><mtd columnalign="left" style="text-align: left"><mi>p</mi><mi>′</mi></mtd><mtd columnalign="left" style="text-align: left"><mi>α</mi><mo>&gt;</mo><mi>n</mi><mo>,</mo><mi>n</mi><mo>∼</mo><mi>𝒰</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="left" style="text-align: left"><msub><mi>p</mi><mi>n</mi></msub></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">otherwise</mtext></mtd></mtr></mtable></mrow><annotation encoding="application/x-tex">\begin{cases}
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">{</mo><mtable><mtr><mtd columnalign="left" style="text-align: left"><msup><mi>p</mi><mo>′</mo></msup></mtd><mtd columnalign="left" style="text-align: left"><mi>α</mi><mo>&gt;</mo><mi>n</mi><mo>,</mo><mi>n</mi><mo>∼</mo><mi>𝒰</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="left" style="text-align: left"><msub><mi>p</mi><mi>n</mi></msub></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">otherwise</mtext></mtd></mtr></mtable></mrow><annotation encoding="application/x-tex">\begin{cases}
         p' &amp; \alpha &gt;n, n\sim \mathcal{U}(0,1)  \\
         p_n &amp; \text{otherwise}
     \end{cases}</annotation></semantics></math><p>$$ Given a point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mi>n</mi></msub><annotation encoding="application/x-tex">p_n</annotation></semantics></math>
 we calculate a proposed point
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>′</mi></mrow><annotation encoding="application/x-tex">p'</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>p</mi><mo>′</mo></msup><annotation encoding="application/x-tex">p'</annotation></semantics></math>.
 The function
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>p</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d(p)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">d(p)</annotation></semantics></math>
 guides our chain. If the value of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>p</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d(p')</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>p</mi><mo>′</mo></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">d(p')</annotation></semantics></math>
 is higher at the new location, the chain always continues. If the value
 of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>p</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d(p)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">d(p)</annotation></semantics></math>
 is lower at the new location the chain sometimes transitions. This
 guarantees that the whole space is eventually sampled. This assumption
 only holds up if we sample for enough steps and the sampled function is
@@ -167,12 +168,8 @@ Increasing the sample size results in a better approximation.</p>
 <span>                                  proposalFunction <span class="op">=</span> <span class="fu"><a href="../reference/addHighDimGaussian.html">addHighDimGaussian</a></span><span class="op">(</span>dim<span class="op">=</span><span class="fl">2</span><span class="op">)</span>,</span>
 <span>                                  burnIn <span class="op">=</span> <span class="fl">0</span>, </span>
 <span>                                  n.sample.points <span class="op">=</span> <span class="fl">10000</span>,</span>
-<span>                                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Burn in skipped</span></span>
-<span><span class="co">#&gt; The final covariance correction is  1 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Points rejected:  3020</span></span></code></pre></div>
-<p><img src="gif_example_chain_gaussian_long.gif"><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/gaussian-posterior-plot-more-samples-1.png" class="r-plt" alt="" width="672"></p>
+<span>                                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="gif_example_chain_gaussian_long.gif"><!-- --><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/gaussian-posterior-plot-more-samples-1.png" class="r-plt" alt="" width="672"></p>
 <p>In this low dimensional case with a simple function there are more
 simple ways to generate samples. The case where MCMC gets useful for
 sample generation is if the function is very complicated and expensive
@@ -282,6 +279,15 @@ sample from.</p>
 <span>                                        <span class="va">dimensions</span><span class="op">)</span></span></code></pre></div>
 <p>As we are in the two dimensional case we can plot the function.</p>
 <p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-simple-denisty-1.png" class="r-plt" alt="" width="672"></p>
+<p>The cutoff is controlled by a single quantile of the per-point
+environmental densities. To see how the accepted region shrinks as we
+become stricter, we sweep the quantile from “exclude only the single
+lowest-density point” (<code>1/N</code>) up to the lowest few percent,
+and stack the resulting masks onto a single plot. Since a stricter mask
+is always contained in a looser one, painting them in increasing order
+of strictness produces nested shells that show exactly which slivers are
+cut off as the quantile grows.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-density-threshold-sweep-1.png" class="r-plt" alt="" width="672"></p>
 <p>We can now use the Markov chain algorithm from before to generate
 samples from this function.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -291,7 +297,7 @@ samples from this function.</p>
 <span>                                      n.sample.points <span class="op">=</span> <span class="fl">5000</span>,</span>
 <span>                                      burnIn <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>                                      covariance.correction <span class="op">=</span> <span class="fl">13</span><span class="op">)</span></span></code></pre></div>
-<p><img src="chain.naive.density.gif"></p>
+<p><img src="chain.naive.density.gif"><!-- --></p>
 <p>We can now sample our environmental space uniformly. pseudo-absences
 should not only be uniformly distributed but also evade the conditions
 under which the species we try to model flourishes. We have to extend
@@ -310,7 +316,7 @@ the function from above to reflect that</p>
 <span><span class="co">#&gt;               </span></span>
 <span><span class="co">#&gt; - beta = 0.55</span></span>
 <span><span class="co">#&gt; - alpha = -0.05</span></span>
-<span><span class="co">#&gt; - species prevalence =0.237957051654092</span></span>
+<span><span class="co">#&gt; - species prevalence =0.177861024639899</span></span>
 <span><span class="va">virtual.presence.points</span> <span class="op">&lt;-</span> <span class="va">virtual.presence.data</span><span class="op">$</span><span class="va">sample.points</span></span>
 <span><span class="va">virtual.presence.points.pc</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span><span class="va">env.data.raster.with.pc</span>,</span>
 <span>                                             <span class="va">virtual.presence.points</span>,</span>
@@ -361,11 +367,39 @@ meaning we will never visit them with the chain.</p>
 <span>                                                 <span class="va">dimensions</span><span class="op">)</span></span></code></pre></div>
 <p>As before we can plot the function we want to sample from.</p>
 <p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-pseudo-absence-density-1.png" class="r-plt" alt="" width="672"></p>
+<p>The species term <code>1 - pres.density(x) / pres.threshold</code> is
+a linear rescale of <code>pres.density(x)</code> followed by a clip at
+zero, so a naive small-multiples sweep over <code>pres.threshold</code>
+would mostly differ in contrast and in where the zero-frontier sits. Two
+complementary views capture the sweep more honestly: a 2D heatmap of
+<code>f(x)</code> itself at one strong species threshold, with the rest
+of the threshold sweep encoded as contour rings; and a 1D slice along
+PC1 at fixed PC2 showing how the resulting <code>f(x; q)</code> curves
+rescale with <code>q</code>.</p>
+<p>The first view plots the pseudo-absence function itself,
+<code>f(x) = 0</code> where the env model is below threshold and
+<code>f(x) = max(0, 1 - pres.density(x)/pres.threshold)</code>
+otherwise, evaluated at one strong species threshold
+(<code>q = 0.95</code>). Contour rings drawn at the species thresholds
+for every <code>q</code> in the sweep show where the zero-frontier sits
+at each setting.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/pseudo-absence-sweep-contours-1.png" class="r-plt" alt="" width="672"></p>
+<p>The four density figures introduced in this section — the naive
+environmental density, the environmental threshold sweep, the
+species-quantile sweep with contours, and the full pseudo-absence
+density — together describe how the sampling function is built up step
+by step. The following compound figure assembles them at a glance.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-methods-overview-1.png" class="r-plt" alt="" width="960"></p>
+<p>The second view fixes <code>PC2 = 0.5</code> (a slice through the
+more variable axis) and plots <code>f(x; q)</code> along
+<code>PC1</code>. The curves share shape and only differ in how strongly
+the species penalty is rescaled and where the zero-clip kicks in.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/pseudo-absence-sweep-ridge-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sampled.points.ps.density</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mcmcSampling.html">mcmcSampling</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="va">env.with.pc.sf</span>,</span>
 <span>                                      dimensions <span class="op">=</span> <span class="va">dimensions</span>,</span>
 <span>                                      densityFunction <span class="op">=</span> <span class="va">densityFunction</span>,</span>
-<span>                                      n.sample.points <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span>                                      n.sample.points <span class="op">=</span> <span class="fl">20000</span>,</span>
 <span>                                      burnIn <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>                                      covariance.correction <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
@@ -386,7 +420,7 @@ meaning we will never visit them with the chain.</p>
 <span></span>
 <span><span class="va">gif.chain.ps.density</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/animate.html" class="external-link">animate</a></span><span class="op">(</span><span class="va">a.chain.ps.density</span>, renderer <span class="op">=</span> <span class="fu"><a href="https://gganimate.com/reference/renderers.html" class="external-link">gifski_renderer</a></span><span class="op">(</span><span class="op">)</span>, width <span class="op">=</span> <span class="fl">700</span>, height <span class="op">=</span> <span class="fl">400</span>, fps <span class="op">=</span> <span class="fl">10</span>, duration <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://gganimate.com/reference/anim_save.html" class="external-link">anim_save</a></span><span class="op">(</span><span class="st">"chain.ps.density.gif"</span>, <span class="va">gif.chain.ps.density</span><span class="op">)</span></span></code></pre></div>
-<p><img src="chain.ps.density.gif"></p>
+<p><img src="chain.ps.density.gif"><!-- --></p>
 <p>So far the sample points are real points in the environment. They
 only have values for the dimension we wanted to sample. To get real
 points again we use the nearest neighbor search. The technique is
@@ -402,6 +436,10 @@ the point with the shortest distance to represent our sample point.</p>
 <span>  <span class="va">mapped.sampled.point.locations</span><span class="op">$</span><span class="va">nn.index</span>,<span class="op">]</span></span>
 <span><span class="va">mapped.sampled.points</span><span class="op">$</span><span class="va">density</span> <span class="op">&lt;-</span> <span class="va">sampled.points</span><span class="op">$</span><span class="va">density</span></span>
 <span><span class="va">mapped.sampled.points</span><span class="op">$</span><span class="va">distance</span> <span class="op">&lt;-</span> <span class="va">mapped.sampled.point.locations</span><span class="op">$</span><span class="va">nn.dist</span></span></code></pre></div>
+<p>The figure below visualizes the remapping step on a random subset of
+the chain: each arrow points from a sampled chain point to its nearest
+real environmental point, coloured by the distance travelled.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-remapping-arrows-1.png" class="r-plt" alt="" width="672"></p>
 <p>Now we have real points in our environment with a geographical
 location. The model of our environment is not perfect. The distance to
 the remapped point gives an indication on how far the chain wandered off
@@ -436,6 +474,10 @@ ones, in this case principal component three, the distribution follows
 the environment.</p>
 <p>The sampled points can also be plotted in the geographical space.
 <img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-in-geo-1.png" class="r-plt" alt="" width="672"></p>
+<p>The compound figure below summarises the six steps of the pipeline at
+a glance, assembled from the data objects produced earlier in this
+vignette.</p>
+<p><img src="insights-on-MCMC-pseudo-absence-sampling-vignette_files/figure-html/plot-pipeline-scheme-1.png" class="r-plt" alt="" width="960"></p>
 <p>So far we did nothing revolutionary. All of the given can be done
 using existing techniques.The advantage emerges when we want to increase
 the dimensions included. The only thing that has to change is the vector
@@ -445,6 +487,16 @@ results of such computations.</p>
 <p>The function paSamplingMcmc wraps what we did so far in this vignette
 into one single concise function to efficiently create
 pseudo-absences.</p>
+<p>Since USE.MCMC 0.0.2 the MCMC inner loop runs in C++ whenever the
+density and proposal functions are produced by
+<code><a href="../reference/mclustDensityFunction.html">mclustDensityFunction()</a></code> and
+<code><a href="../reference/addHighDimGaussian.html">addHighDimGaussian()</a></code> — which is what
+<code><a href="../reference/paSamplingMcmc.html">paSamplingMcmc()</a></code> does internally. No code change is
+required: the default <code>engine = "auto"</code> picks the C++ path
+automatically. Pass <code>engine = "R"</code> to force the reference
+implementation if you want to compare. Calls with custom density
+closures (as in the earlier chunks of this vignette) continue to use the
+R loop unchanged.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># One core is used for rendering the vignette, for interactive use this can be set higher</span></span>
 <span><span class="va">sampled.points.mcmc.higher.dim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/paSamplingMcmc.html">paSamplingMcmc</a></span><span class="op">(</span>env.data.raster <span class="op">=</span> <span class="va">env.data.raster</span>,</span>

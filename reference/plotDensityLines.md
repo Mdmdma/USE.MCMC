@@ -66,8 +66,8 @@ plotDensityLines(
 
 - densityFunction:
 
-  a function that can take a dataframe with the columns given in cols
-  and retruns the density at that point
+  a function that takes a named numeric vector and returns the density
+  at that point
 
 - resolution:
 

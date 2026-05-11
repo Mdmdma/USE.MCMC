@@ -14,7 +14,8 @@ mcmcSampling(
   burnIn = 1000,
   verbose = TRUE,
   covariance.correction = 1,
-  max.burnin.cycles = 50
+  max.burnin.cycles = 50,
+  engine = c("auto", "R", "cpp")
 )
 ```
 
@@ -46,8 +47,11 @@ mcmcSampling(
 
 - burnIn:
 
-  Integer, sets the number of samples per adaptive burn in step. If set
-  to 0, burn in is skipped
+  Integer, number of Robbins-Monro burn-in adaptation steps performed
+  before sampling. During each step the proposal scale is adjusted
+  toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to
+  skip adaptation and start sampling immediately at the user-supplied
+  `covariance.correction`.
 
 - verbose:
 
@@ -59,9 +63,20 @@ mcmcSampling(
 
 - max.burnin.cycles:
 
-  Integer, maximum number of burn-in adaptation cycles before stopping
-  with a warning. Prevents infinite loops when the target acceptance
-  rate cannot be reached.
+  Deprecated. Retained for backwards compatibility; ignored by the
+  current Robbins-Monro burn-in.
+
+- engine:
+
+  One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++
+  inner loop when both `densityFunction` and `proposalFunction` are
+  built by
+  [`mclustDensityFunction()`](https://mdmdma.github.io/USE.MCMC/reference/mclustDensityFunction.md)
+  and
+  [`addHighDimGaussian()`](https://mdmdma.github.io/USE.MCMC/reference/addHighDimGaussian.md)
+  (they carry the required `rcpp_spec` attribute) and falls back to the
+  R loop otherwise. `"cpp"` forces the C++ path and errors if a custom
+  closure is supplied. `"R"` forces the pure-R reference loop.
 
 ## Value
 

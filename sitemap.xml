@@ -1,15 +1,16 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://mdmdma.github.io/USE.MCMC/404.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/CLAUDE.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/LICENSE.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/Insights-on-nearest-neighbor-search.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/USE_vignette.html</loc></url>
-<url><loc>https://mdmdma.github.io/USE.MCMC/articles/development_vignette.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/index.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/authors.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/index.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/news/index.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/SpatialProba.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/USE.MCMC-package.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/Worldclim_tmp.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/acceptNextPoint.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/addHighDimGaussian.html</loc></url>
@@ -19,11 +20,10 @@
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_positive_integer.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_raster_input.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/check_spatial_points.html</loc></url>
-<url><loc>https://mdmdma.github.io/USE.MCMC/reference/euclidianMetric.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/fast_gmm_density.html</loc></url>
+<url><loc>https://mdmdma.github.io/USE.MCMC/reference/fast_gmm_density_batch.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/getVirtualSpeciesPresencePoints.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/index.html</loc></url>
-<url><loc>https://mdmdma.github.io/USE.MCMC/reference/mapBackOnRealPoints.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/maxResNn.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/mclustDensityFunction.html</loc></url>
 <url><loc>https://mdmdma.github.io/USE.MCMC/reference/mcmcSampling.html</loc></url>

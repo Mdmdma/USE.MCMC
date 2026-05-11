@@ -4,6 +4,7 @@ This vignette shows the different functionalities, as well as related
 practical examples, of the `USE` package.
 
 ``` r
+
 library(USE.MCMC)
 library(terra)
 library(virtualspecies)
@@ -12,6 +13,7 @@ library(ggplot2)
 ```
 
 ``` r
+
 dataDir <- getwd()
 Worldclim <- geodata::worldclim_global(var = 'bio', res = 2.5, path = dataDir)
 names(Worldclim) <- paste0("bio", 1:length(names(Worldclim)))
@@ -23,6 +25,7 @@ First, download the bioclimatic variables from WorldClim and crop them
 to the European extent.
 
 ``` r
+
 Worldclim <- geodata::worldclim_global(var='bio', res=10, path=getwd()) 
 envData <- terra::crop(Worldclim, terra::ext(-12, 25, 36, 60))
 ```
@@ -34,12 +37,14 @@ to create a virtual species, see the
 of the `virtualspecies` R package.
 
 ``` r
+
 #create virtual species
 myRandNum <- sample(1:19,size=5, replace = FALSE)
 envData <- envData[[myRandNum]]
 ```
 
 ``` r
+
 set.seed(123)
 random.sp <- virtualspecies::generateRandomSp(envData, 
                                               convert.to.PA = FALSE, 
@@ -65,6 +70,7 @@ presence.points <- virtualspecies::sampleOccurrences(new.pres,
 Generate a presence-only data set.
 
 ``` r
+
 myPres <- presence.points$sample.points[which(presence.points$sample.points$Observed==1), c( "x", "y",  "Observed")]
 myPres <- st_as_sf(myPres, coords=c("x", "y"), crs=4326)
 ```
@@ -97,12 +103,14 @@ environmental space) of the sampling grid that will be used to collect
 the pseudo-absences within the environmental space (see below).
 
 ``` r
+
 rpc <- rastPCA(envData, stand = TRUE)
 dt <- na.omit(as.data.frame(rpc$PCs[[c("PC1", "PC2")]], xy = TRUE))
 dt <- sf::st_as_sf(dt, coords = c("PC1", "PC2"))
 ```
 
 ``` r
+
 myRes <- USE.MCMC::optimRes(sdf=dt,
                     grid.res=c(1:10),
                     perc.thr = 20,
@@ -113,6 +121,7 @@ myRes <- USE.MCMC::optimRes(sdf=dt,
 ![](myOptRes.png)
 
 ``` r
+
 myRes$Opt_res
 ```
 
@@ -139,6 +148,7 @@ function will be internally called by
 exclusively focusing on sampling pseudo-absences.
 
 ``` r
+
 myObs <- USE.MCMC::uniformSampling(sdf=dt, 
                               grid.res=myRes$Opt_res,
                               n.tr = 5,
@@ -169,6 +179,7 @@ Have a look at the observations sampled using
 [`USE.MCMC::uniformSampling`](https://mdmdma.github.io/USE.MCMC/reference/uniformSampling.md)
 
 ``` r
+
 head(myObs$obs.tr)
 ```
 
@@ -199,6 +210,7 @@ of sample location bias, leading to a more comprehensive understanding
 of environmental variations.
 
 ``` r
+
 env_pca <- c(rpc$PCs$PC1, rpc$PCs$PC2)
 env_pca <- na.omit(as.data.frame(env_pca))
 
@@ -219,6 +231,7 @@ ggplot(env_pca, aes(x=PC1))+
 ![](USE_vignette_files/figure-html/unnamed-chunk-14-1.png)
 
 ``` r
+
 ggplot(env_pca, aes(x=PC2))+
   geom_density(aes(color="Environment"), linewidth=1 )+
   geom_density(data=data.frame(st_coordinates(myObs$obs.tr)), 
@@ -277,6 +290,7 @@ environmental space through a 2-step procedure:
   grid mentioned in the previous section.
 
 ``` r
+
 myGrid.psAbs <- USE.MCMC::paSampling(env.rast=envData,
                                 pres=myPres,
                                 thres=0.75,
@@ -335,6 +349,7 @@ in the environmental space using
 [`USE.MCMC::paSampling`](https://mdmdma.github.io/USE.MCMC/reference/paSampling.md)
 
 ``` r
+
 ggplot(env_pca, aes(x=PC1))+
   geom_density(aes(color="Environment"), linewidth=1 )+
   geom_density(data=data.frame(st_coordinates(myGrid.psAbs$obs.tr)), 
@@ -354,6 +369,7 @@ ggplot(env_pca, aes(x=PC1))+
 ![](USE_vignette_files/figure-html/unnamed-chunk-16-1.png)
 
 ``` r
+
 ggplot(env_pca, aes(x=PC2))+
   geom_density(aes(color="Environment"), linewidth=1 )+
   geom_density(data=data.frame(st_coordinates(myGrid.psAbs$obs.tr)), 
@@ -377,6 +393,7 @@ the environmental space using
 [`USE.MCMC::paSampling`](https://mdmdma.github.io/USE.MCMC/reference/paSampling.md)
 
 ``` r
+
 ggplot()+
   tidyterra::geom_spatraster(data = new.pres$pa.raster)+
   scale_fill_viridis_c(na.value = "transparent", breaks=c(0,1)) +
@@ -429,6 +446,7 @@ sampling under diverse ecological scenarios, such as those involving
 generalist or specialist species or sink populations.
 
 ``` r
+
 USE.MCMC::thresh.inspect(env.rast=envData,
                     pres=myPres,
                     thres=c(0.1, 0.25, 0.5, 0.75, 0.9),

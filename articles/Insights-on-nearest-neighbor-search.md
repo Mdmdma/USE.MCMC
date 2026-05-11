@@ -4,6 +4,7 @@ This vignette gives some insights on the concept of nearest neighbor
 search in the context of uniform sampling.
 
 ``` r
+
 library(USE.MCMC)
 library(ggplot2)
 library(rnaturalearth)
@@ -53,6 +54,7 @@ Lets look at a example of our test points when performing a principle
 component analysis on five bioclim variables(3, 4, 9, 14, 15).
 
 ``` r
+
 set.seed(42)
 rpc <- rastPCA(env.data.raster,  stand = TRUE)
 env.data.raster.with.pc <- c(rpc$PCs , env.data.raster)
@@ -72,6 +74,7 @@ without measurement devices on the ground. At a resolution of 2.5 arc
 minutes there are over 18’000 data points in western Europe.
 
 ``` r
+
 dimensions <- c("PC1", "PC2")
 env.data.sf <- env.data.raster %>%
   as.data.frame(xy = TRUE) %>%
@@ -111,6 +114,7 @@ its hood to understand how it works.
 In a first step we need to provide the parameters we want to control.
 
 ``` r
+
 grid.res <- 15
 num.samples.per.cell <- 3
 dimensions <- c("PC1", "PC2")
@@ -120,6 +124,7 @@ We now compute a uniformly spaced grid that covers the whole
 environmental range.
 
 ``` r
+
 # compute the grid cells
 grid <- sf::st_make_grid(env.with.pc.sf, n = c(grid.res)) %>%
   sf::st_centroid() %>%
@@ -134,6 +139,7 @@ As we may want multiple points sampled from the same grid cell, we
 repeat the grid the respective number of times.
 
 ``` r
+
 grid.repeated <- do.call(rbind, replicate(num.samples.per.cell,
                                           grid,
                                           simplify = FALSE))
@@ -151,6 +157,7 @@ multiple points from the same grid cell, as the noise is different for
 each point.
 
 ``` r
+
 step.scaling = 2
 step.x <- (grid[1,2] - grid[1,1]) / step.scaling
 step.y <- (grid[2,1] - grid[1,1]) / step.scaling
@@ -170,6 +177,7 @@ environmental space. This is implement with the FNN package. By using a
 KD-tree, it can handle large data sets in higher dimensions quickly.
 
 ``` r
+
 mapped.sampled.point.data <- FNN::get.knnx(env.with.pc[dimensions], 
                                            grid.noisy, k = 1)
 mapped.sampled.points <- env.with.pc[mapped.sampled.point.data$nn.index,]
@@ -202,6 +210,7 @@ issue emerges in areas with a high point density. Here there will be no
 empty cells. Thus at the low limit these areas will be oversampled.
 
 ``` r
+
 distance.threshold <- max(step.y, step.x) / 2
 mapped.sampled.points.filtered <- mapped.sampled.points[
   mapped.sampled.points$distance < distance.threshold, ]
@@ -214,6 +223,7 @@ neighbors, we can compute a histogramm of the distance between points in
 the original data
 
 ``` r
+
 nearest.neighbors.distance<- FNN::knn.dist(env.with.pc[dimensions],
                                            k=num.samples.per.cell) %>%
   as.vector()
@@ -229,6 +239,7 @@ the vector containing the distances and take a value with some safty
 threshold from the extreme values.
 
 ``` r
+
 sorted.nearest.neighbor.distances <- sort(nearest.neighbors.distance, 
                                           decreasing=TRUE)
 distance.threshold <- sorted.nearest.neighbor.distances[2] / 2
@@ -250,6 +261,7 @@ nearest neighbor can be found. This leads to some oversampling. It is
 not trivial how to eliminate this issue.
 
 ``` r
+
 mapped.sampled.points.filtered.unique <- mapped.sampled.points.filtered[
   !duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
 ```
@@ -278,6 +290,7 @@ species.
 We can generate a sample species:
 
 ``` r
+
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
   env.data = env.data.raster, n.samples = 300)
 #> [1] 300
@@ -285,6 +298,7 @@ virtual.presence.points <- virtual.presence.data$sample.points
 ```
 
 ``` r
+
 occ.vec <- virtual.presence.points
 thres = 0.7
 id_rast <- terra::rast(vals= 1:terra::ncell(env.data.raster),
@@ -333,6 +347,7 @@ sampled.points.without.points.not.assosiated.with.the.species <- cbind(
 ```
 
 ``` r
+
 virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc,
                                              virtual.presence.points,
                                              bind = TRUE) %>%

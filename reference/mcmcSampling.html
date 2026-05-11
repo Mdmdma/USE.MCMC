@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">USE.MCMC</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,8 +18,7 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/development_vignette.html">Development Vignette</a></li>
-    <li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/insights-on-MCMC-pseudo-absence-sampling-vignette.html">Insights on Markov chain based pseudo-absence sampling</a></li>
     <li><a class="dropdown-item" href="../articles/Insights-on-nearest-neighbor-search.html">Insights on nearest neighbor search</a></li>
     <li><a class="dropdown-item" href="../articles/USE_vignette.html">USE vignette</a></li>
   </ul></li>
@@ -55,7 +54,8 @@
 <span>  burnIn <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  covariance.correction <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  max.burnin.cycles <span class="op">=</span> <span class="fl">50</span></span>
+<span>  max.burnin.cycles <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  engine <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"R"</span>, <span class="st">"cpp"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,7 +84,7 @@
 
 
 <dt id="arg-burnin">burnIn<a class="anchor" aria-label="anchor" href="#arg-burnin"></a></dt>
-<dd><p>Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped</p></dd>
+<dd><p>Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied <code>covariance.correction</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -96,7 +96,11 @@
 
 
 <dt id="arg-max-burnin-cycles">max.burnin.cycles<a class="anchor" aria-label="anchor" href="#arg-max-burnin-cycles"></a></dt>
-<dd><p>Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.</p></dd>
+<dd><p>Deprecated. Retained for backwards compatibility; ignored by the current Robbins-Monro burn-in.</p></dd>
+
+
+<dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
+<dd><p>One of <code>"auto"</code> (default), <code>"R"</code>, or <code>"cpp"</code>. <code>"auto"</code> picks the C++ inner loop when both <code>densityFunction</code> and <code>proposalFunction</code> are built by <code><a href="mclustDensityFunction.html">mclustDensityFunction()</a></code> and <code><a href="addHighDimGaussian.html">addHighDimGaussian()</a></code> (they carry the required <code>rcpp_spec</code> attribute) and falls back to the R loop otherwise. <code>"cpp"</code> forces the C++ path and errors if a custom closure is supplied. <code>"R"</code> forces the pure-R reference loop.</p></dd>
 
 </dl></div>
     <div class="section level2">

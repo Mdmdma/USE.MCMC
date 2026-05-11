@@ -66,7 +66,7 @@ paSamplingNn(
   space associated with environmental conditions likely suitable for the
   species. It can be either defined by the user or automatically
   estimated by `paSampling` via
-  [`ks::Hpi`](https://rdrr.io/pkg/ks/man/Hpi.html).
+  [`ks::Hpi`](https://mvstat.net/ks/reference/Hpi.html).
 
 - grid.res:
 
