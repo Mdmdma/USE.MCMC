@@ -45,19 +45,17 @@ test_that("paSamplingNn rejects non-positive n.samples", {
                "'n.samples' must be NULL or a positive number")
 })
 
-# --- Bug documentation ---
+# --- Regression: nn-based presence exclusion (previously broken by undefined symbols) ---
 
-test_that("paSamplingNn nn.based.presence.exclusion=TRUE errors due to undefined vars (known bug)", {
-  # Known bug at line 126: references 'env.data.raster.with.pc' and
-  # 'virtual.presence.points' which are not defined in function scope
+test_that("paSamplingNn nn.based.presence.exclusion=TRUE returns an sf object", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
-  expect_error(
-    paSamplingNn(env.rast = r, pres = pres, grid.res = 5,
-                 nn.based.presence.exclusion = TRUE,
-                 data.based.distance.threshold = FALSE),
-    "env.data.raster.with.pc"
-  )
+  result <- paSamplingNn(env.rast = r, pres = pres, grid.res = 5, n.tr = 2,
+                         nn.based.presence.exclusion = TRUE,
+                         data.based.distance.threshold = FALSE,
+                         n.samples = 10, verbose = FALSE, plot_proc = FALSE)
+  expect_true(inherits(result, "sf"))
+  expect_true(nrow(result) <= 10)
 })
 
 # --- Positive tests ---

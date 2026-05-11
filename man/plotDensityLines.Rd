@@ -39,7 +39,7 @@ plotDensityLines(
 
 \item{species}{dataframe containing the simulated species, it has to contain the column names of cols}
 
-\item{densityFunction}{a function that can take a dataframe with the columns given in cols and retruns the density at that point}
+\item{densityFunction}{a function that takes a named numeric vector and returns the density at that point}
 
 \item{resolution}{int sets the resolution of the denisity grid}
 
