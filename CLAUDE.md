@@ -4,10 +4,23 @@
 
 R package implementing pseudo-absence sampling for species distribution models, with two sampling backends:
 
-- **MCMC** — `R/mcmcSampling.R`, `R/paSamplingMcmc.R`, `R/acceptNextPoint.R`
-- **Nearest-neighbor** — `R/paSamplingNn.R`
+- **MCMC** — `R/mcmcSampling.R`, `R/paSamplingMcmc.R`, `R/acceptNextPoint.R`. Inner loop has a C++ implementation in `src/mcmc_loop.cpp` (Rcpp + RcppArmadillo) reached via `R/RcppExports.R`. Source installs therefore need a C++ toolchain.
+- **Nearest-neighbor** — `R/paSamplingNn.R`, with helpers in `R/maxResNn.R` / `R/optimalDistanceThresholdNn.R`.
 
-Density estimation helpers live in `R/gaussianMixureDensityFunction.R` and `R/mclustDensityFunction.R`. User-facing documentation is in `vignettes/` (the MCMC insights vignette is the canonical narrative). Tests are in `tests/testthat/`.
+Density estimation lives in `R/mclustDensityFunction.R` (mclust-backed GMM, with a vectorized `fast_gmm_density_batch` helper). User-facing documentation is in `vignettes/` (the MCMC insights vignette is the canonical narrative). Tests are in `tests/testthat/`.
+
+### Engine dispatch (MCMC backend)
+
+`mcmcSampling()` and `paSamplingMcmc()` take `engine = c("auto", "R", "cpp")`. `"auto"` (the default) picks the C++ path whenever both the density and proposal closures carry an `rcpp_spec` attribute. The attribute is attached by:
+
+- `mclustDensityFunction()` (`R/mclustDensityFunction.R`) — `type = "mclust_density"` with the precomputed GMM parameters.
+- `addHighDimGaussian()` (`R/addHighDimGaussian.R`) — `type = "gaussian_proposal"` with the proposal mean and covariance.
+
+Custom user closures lack the attribute and stay on the R reference loop. `engine = "cpp"` errors when called with a closure that lacks `rcpp_spec`. Burn-in on both engines is single-pass Robbins-Monro adaptation (target acceptance 0.234, γ_t = 1/(t+1)^0.6); `max.burnin.cycles` is accepted but ignored with a soft deprecation warning. If you change the C++ entry point in `src/mcmc_loop.cpp`, regenerate `R/RcppExports.R` and `src/RcppExports.cpp` via `Rcpp::compileAttributes()` (and then `devtools::document()` for the man pages).
+
+### Gotcha: roxygen export tag and `MIN_COV_CORRECTION`
+
+`R/mcmcSampling.R` defines a top-level constant `MIN_COV_CORRECTION <- 1e-10`. It must stay **above** the `mcmcSampling()` roxygen block — if it lands between the `#' @export` tag and the function definition, roxygen2 binds the export to the constant and silently drops `mcmcSampling` from `NAMESPACE`. Keep the constant above the `#'` block (with its own one-line comment) when editing this file.
 
 ## Sister repositories
 
@@ -22,7 +35,7 @@ Key files:
 - `1_developing_framework.R` — pipeline development script.
 - `2_testing_wrapper_function.R` — wrapper validation.
 
-When you change an exported function signature, default argument, return shape, or sampler behavior in USE.MCMC, check call-sites in these three files and update them in lockstep.
+When you change an exported function signature, default argument, return shape, or sampler behavior in USE.MCMC, check call-sites in these three files and update them in lockstep. The recent `engine = c("auto", "R", "cpp")` argument on `paSamplingMcmc()` / `mcmcSampling()` defaults to `"auto"`, so existing GaussNiche callers keep working without changes; only mention `engine` to GaussNiche when intentionally forcing the R path for comparison.
 
 ### `../markov-chain-sampler-paper/` — methodology writeup
 
@@ -56,3 +69,16 @@ Paper figure name == knitr chunk-output name (`<chunk-label>-1.png`). The other 
 - Keep edits scoped to what the current task requires — no opportunistic refactors in sister repos.
 - After non-trivial R changes here, run `tests/testthat/`. After API-shape changes, also grep `../GaussNiche/` for the symbol.
 - Vignettes in `vignettes/` must stay consistent with the current API; update them alongside breaking changes.
+
+## Keeping this guide up to date
+
+This file is part of the working surface — treat it like code, not like prose that lives forever. As you work in the repo, keep it accurate:
+
+- If you delete or rename a file path mentioned here (e.g. an `R/*.R` file, a vignette, a chunk label, a sister-repo file), update or remove the corresponding line in the same change.
+- If you add a new sampling backend, a new engine knob, a new on-disk contract between repos, or a load-bearing convention (something a future agent could break with a "routine" edit), add a short note here — lead with the rule, then a one-line *why*.
+- If you discover a gotcha by hitting it (e.g. the `MIN_COV_CORRECTION` / roxygen export issue), record it here so the next agent doesn't have to rediscover it.
+- Conversely, prune entries that have become wrong or stale. Outdated guidance is worse than missing guidance.
+- The bar for inclusion is *non-obvious from reading the code*. Don't restate what well-named functions or directory structure already convey.
+- Don't add a "Changelog" or "Recent changes" section here — `git log` and `NEWS.md` already cover that. This guide describes the *current* state.
+
+Cross-session preferences and one-off feedback (e.g. "the package is unpublished, skip migration prose") belong in the `memory/` system under `~/.claude/projects/.../memory/`, not here. Use this file for facts that travel with the codebase and apply to every agent that opens it.
