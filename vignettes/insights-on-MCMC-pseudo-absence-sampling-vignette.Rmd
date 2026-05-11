@@ -488,7 +488,7 @@ contour.data <- data.frame(
   pres.density = grid.pres.density
 )
 
-ggplot(heat, aes(PC1, PC2)) +
+p.density.sweep.contours <- ggplot(heat, aes(PC1, PC2)) +
   geom_raster(aes(fill = f)) +
   geom_contour(data = contour.data,
                aes(z = pres.density,
@@ -505,6 +505,47 @@ ggplot(heat, aes(PC1, PC2)) +
                         name = "species threshold") +
   theme_minimal() +
   labs(title = "Pseudo-absence sampling function")
+p.density.sweep.contours
+```
+
+The four density figures introduced in this section — the naive environmental density, the environmental threshold sweep, the species-quantile sweep with contours, and the full pseudo-absence density — together describe how the sampling function is built up step by step. The following compound figure assembles them at a glance.
+
+```{r plot-methods-overview, echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10}
+# Badge style mirrors plot-pipeline-scheme: italic letter in a circle, with a
+# short title set to its right; the pair is centered above the panel.
+overview.badge <- function(plot, letter, title) {
+  badge.y   <- 0.95
+  plot.y    <- 0
+  plot.h    <- 0.90
+  title.x   <- 0.5
+  badge.r   <- 0.025
+  badge.gap <- 0.02
+  approx.title.halfwidth <- nchar(title) * 0.006
+  badge.x   <- title.x - approx.title.halfwidth - badge.r - badge.gap
+  cowplot::ggdraw() +
+    cowplot::draw_plot(plot, x = 0, y = plot.y, width = 1, height = plot.h) +
+    cowplot::draw_grob(grid::circleGrob(
+      x  = badge.x, y = badge.y, r = badge.r,
+      gp = grid::gpar(col = "grey15", fill = NA, lwd = 1.2))) +
+    cowplot::draw_label(letter, x = badge.x, y = badge.y, fontface = "italic",
+                        size = 12, hjust = 0.5, vjust = 0.5, colour = "grey15") +
+    cowplot::draw_label(title, x = badge.x + badge.r + badge.gap, y = badge.y,
+                        hjust = 0, size = 12, colour = "grey15")
+}
+
+strip.title <- function(p) p + labs(title = NULL) +
+  theme(plot.margin = margin(4, 4, 4, 4))
+
+methods.overview <- cowplot::plot_grid(
+  overview.badge(strip.title(p.density.naive),          "a", "Naive density"),
+  overview.badge(strip.title(p.density.sweep),          "b", "Environmental threshold sweep"),
+  overview.badge(strip.title(p.density.sweep.contours), "c", "Species threshold sweep"),
+  overview.badge(strip.title(p.density.pseudo.absence), "d", "Pseudo-absence density"),
+  ncol  = 2,
+  align = "hv",
+  axis  = "tblr"
+)
+methods.overview
 ```
 
 The second view fixes `PC2 = 0.5` (a slice through the more variable axis) and plots `f(x; q)` along `PC1`. The curves share shape and only differ in how strongly the species penalty is rescaled and where the zero-clip kicks in.
