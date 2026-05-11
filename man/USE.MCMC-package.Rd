@@ -4,10 +4,20 @@
 \name{USE.MCMC-package}
 \alias{USE.MCMC}
 \alias{USE.MCMC-package}
-\title{USE (Uniform Sampling of the Environmental space)
-An R package to perform uniform sampling in the environmental space}
+\title{USE.MCMC: pseudo-absence sampling in environmental space}
 \description{
-USE.MCMC performs MCMC sampling of the environmental space.
+Forks the original USE package to support pseudo-absence sampling in
+higher-dimensional environmental spaces. Two backends are exposed: a
+Metropolis MCMC sampler (\code{paSamplingMcmc()}, with the underlying
+\code{mcmcSampling()} engine) and a nearest-neighbor sampler (\code{paSamplingNn()}).
+}
+\details{
+The MCMC inner loop is implemented in C++ via Rcpp + RcppArmadillo and is
+dispatched automatically whenever the density and proposal closures are
+built by the package's own factories (\code{mclustDensityFunction()} and
+\code{addHighDimGaussian()}). User-supplied closures continue to run on the R
+reference loop. Engine selection is controlled by the \code{engine} argument
+and defaults to \code{"auto"}.
 }
 \seealso{
 Useful links:

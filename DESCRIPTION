@@ -1,13 +1,17 @@
 Package: USE.MCMC
 Title: MCMC sampling of the environment space
-Version: 0.0.2
+Version: 0.0.3
 Authors@R: c(
     person("Mathis", "Erler", email = "m.erler@gmx.ch", role = c("aut","cre")),
     person("Daniele", "Da Re", email = "dare.daniele@gmail.com",  comment=c(ORCID = "0000-0002-3398-9295"), role = "aut"),
     person("Enrico", "Tordoni", email = "e.tordoni@gmail.com", comment=c(ORCID = "0000-0002-9722-6692"), role = "aut"), 
     person("Manuele", "Bazzichetto", email = "manuele.bazzichetto@gmail.com", comment=c(ORCID= "0000-0002-9874-5064"),  role = "aut")
     )
-Description: USE.MCMC performs MCMC sampling of the environmental space.
+Description: USE.MCMC performs pseudo-absence sampling in higher-dimensional
+    environmental space via Metropolis MCMC, with an optional C++ inner loop
+    (Rcpp + RcppArmadillo) that is dispatched automatically when the built-in
+    density and proposal factories are used. A nearest-neighbor sampler is
+    included for comparison.
 Depends: R (>= 3.6.0)
 Imports:
     sf,
