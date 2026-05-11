@@ -5,17 +5,22 @@
 #' @param densityFunction Function that can take a point given as a numeric vector as input and returns the target density at that location.
 #' @param proposalFunction Function that can take a point given as a numeric vector and a covariance adjuster as input and returns a new proposed point as a numeric vector.
 #' @param n.sample.points Number of points to be sampled
-#' @param burnIn Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped
+#' @param burnIn Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied `covariance.correction`.
 #' @param verbose Boolean to toggle progress updates
 #' @param covariance.correction Integer, initial value of the covariance correction.
-#' @param max.burnin.cycles Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.
+#' @param max.burnin.cycles Deprecated. Retained for backwards compatibility; ignored by the current Robbins-Monro burn-in.
+#' @param engine One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++ inner loop when both `densityFunction` and `proposalFunction` are built by `mclustDensityFunction()` and `addHighDimGaussian()` (they carry the required `rcpp_spec` attribute) and falls back to the R loop otherwise. `"cpp"` forces the C++ path and errors if a custom closure is supplied. `"R"` forces the pure-R reference loop.
 #' @returns A data.frame containing the sampled points with dimension columns and a density column
 #' @export
 #'
+# Minimum proposal-scale floor; keep in sync with MIN_COV_CORRECTION in src/mcmc_loop.cpp.
+MIN_COV_CORRECTION <- 1e-10
+
 mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction = alwaysOne,
                          proposalFunction = addHighDimGaussian(dim = length(dimensions)),
                          n.sample.points = 0, burnIn = 1000, verbose = TRUE,
-                         covariance.correction = 1, max.burnin.cycles = 50){
+                         covariance.correction = 1, max.burnin.cycles = 50,
+                         engine = c("auto", "R", "cpp")){
   # Input validation
   if (is.null(dataset)) {
     stop("'dataset' must be provided (got NULL)", call. = FALSE)
@@ -60,8 +65,25 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   if (!is.numeric(covariance.correction) || length(covariance.correction) != 1 || covariance.correction <= 0) {
     stop(paste0("'covariance.correction' must be a positive number, got ", deparse(covariance.correction)), call. = FALSE)
   }
-  if (!is.numeric(max.burnin.cycles) || length(max.burnin.cycles) != 1 || max.burnin.cycles < 1) {
-    stop(paste0("'max.burnin.cycles' must be a positive integer, got ", deparse(max.burnin.cycles)), call. = FALSE)
+  if (!missing(max.burnin.cycles) && !identical(max.burnin.cycles, 50)) {
+    warning("'max.burnin.cycles' is deprecated and ignored; burn-in now uses single-pass Robbins-Monro adaptation.", call. = FALSE)
+  }
+  engine <- match.arg(engine)
+
+  density.spec <- attr(densityFunction, "rcpp_spec")
+  proposal.spec <- attr(proposalFunction, "rcpp_spec")
+  cpp.eligible <- !is.null(density.spec) &&
+                  !is.null(proposal.spec) &&
+                  identical(density.spec$type, "mclust_density") &&
+                  identical(proposal.spec$type, "gaussian_proposal")
+
+  if (engine == "cpp" && !cpp.eligible) {
+    stop("engine = 'cpp' requires densityFunction from mclustDensityFunction() and proposalFunction from addHighDimGaussian(). Use engine = 'R' or 'auto' for custom closures.", call. = FALSE)
+  }
+  if (engine == "auto" && cpp.eligible) {
+    engine <- "cpp"
+  } else if (engine == "auto") {
+    engine <- "R"
   }
 
   n.dim <- length(dimensions)
@@ -69,51 +91,77 @@ mcmcSampling <- function(dataset = NULL, dimensions= list(""), densityFunction =
   start.row <- sf::st_drop_geometry(dataset[starting.index, ])
   current.point <- as.numeric(start.row[, dimensions])
   names(current.point) <- dimensions
+
+  if (engine == "cpp") {
+    if (verbose) cat("Running C++ inner loop (Rcpp)\n")
+    tryCatch(
+      chol(proposal.spec$cov),
+      error = function(e) {
+        stop("proposal covariance must be positive-definite for engine = 'cpp'; ",
+             "got a matrix that failed Cholesky decomposition. ",
+             "Check the 'cov.mat' argument to addHighDimGaussian().",
+             call. = FALSE)
+      }
+    )
+    res <- mcmc_loop_cpp(
+      start_point = current.point,
+      n_sample_points = as.integer(n.sample.points),
+      burn_in = as.integer(burnIn),
+      covariance_correction = covariance.correction,
+      env_inv_sigma = density.spec$env$inv_sigma,
+      env_log_norm = density.spec$env$log_norm,
+      env_means = density.spec$env$mean,
+      env_threshold = density.spec$threshold,
+      sp_inv_sigma = density.spec$species$inv_sigma,
+      sp_log_norm = density.spec$species$log_norm,
+      sp_means = density.spec$species$mean,
+      sp_cutoff = density.spec$species_cutoff,
+      floor_value = density.spec$floor,
+      proposal_mean = as.numeric(proposal.spec$mean),
+      proposal_cov = proposal.spec$cov
+    )
+    sampled.points <- as.data.frame(res$samples)
+    colnames(sampled.points) <- c(dimensions, "density")
+    if (verbose) {
+      cat(sprintf("\nFinal covariance.correction: %g; sampling rejected: %d\n",
+                  res$covariance_correction, res$sampling_rejected))
+    }
+    return(sampled.points)
+  }
+
   current.density <- densityFunction(current.point)
 
-  # burn in
+  # Burn-in: single-pass Robbins-Monro adaptation on log(covariance.correction).
+  # After each step, log(c) += gamma_t * (accept - target), gamma_t = 1/(t+1)^0.6.
+  # Target acceptance 0.234 (Roberts/Rosenthal 2009 optimal for high-d random-walk MH).
   if(burnIn > 0) {
-    if (verbose) cat("Burn in\n")
+    if (verbose) cat("Burn in (Robbins-Monro)\n")
+    target.acceptance <- 0.234
+    rm.exponent <- 0.6
+    log.cov.correction <- log(covariance.correction)
     points.accepted <- 0
-    burnin.cycle <- 0
     if (verbose){
       pb.burnin <- utils::txtProgressBar(min = 0, max = burnIn, style = 3)
     }
-    # Throttle per-iteration progress output to keep stdout cheap, especially
-    # under parallel::mclapply where each cat is serialized through a pipe.
     progress.stride <- max(1L, as.integer(burnIn %/% 100L))
-   while (points.accepted / burnIn < 0.21 | points.accepted / burnIn > 0.25) {
-      # the numbers of the condition depend on the exact threshold, Gelman, Roberts, and Gilks (1996) proposes 0.23 was optimal
-      burnin.cycle <- burnin.cycle + 1
-      if (burnin.cycle > max.burnin.cycles) {
-        warning(paste0("Burn-in did not converge after ", max.burnin.cycles,
-                       " cycles (last acceptance rate: ", round(points.accepted / burnIn, 3),
-                       "). Proceeding with current covariance.correction = ",
-                       round(covariance.correction, 6)), call. = FALSE)
-        break
+    for (t in seq_len(burnIn)) {
+      proposed.point <- proposalFunction(current.point, covariance.adjuster = exp(log.cov.correction), dim = dimensions)
+      proposed.density <- densityFunction(proposed.point)
+      accepted <- acceptNextPoint(current.density, proposed.density)
+      if (accepted){
+        current.point <- proposed.point
+        current.density <- proposed.density
+        points.accepted <- points.accepted + 1
       }
+      gamma_t <- 1 / (t + 1)^rm.exponent
+      log.cov.correction <- log.cov.correction + gamma_t * ((if (accepted) 1 else 0) - target.acceptance)
 
-      if (verbose){
-            cat("\rThe current acceptance rate is", points.accepted /burnIn, ", the currend covariance adjustment factor is ", covariance.correction, "\n")
+      if (verbose && (t %% progress.stride == 0L || t == burnIn)){
+        cat("\rCurrent acceptance ratio: ", points.accepted / t, " covariance.correction: ", exp(log.cov.correction))
+        utils::setTxtProgressBar(pb.burnin, t)
       }
-      points.accepted <- 0
-      for (i in 1:burnIn) {
-        proposed.point <- proposalFunction(current.point, covariance.adjuster = covariance.correction, dim = dimensions)
-        proposed.density <- densityFunction(proposed.point)
-        if (acceptNextPoint(current.density, proposed.density)){
-          current.point <- proposed.point
-          current.density <- proposed.density
-          points.accepted <- points.accepted + 1
-        }
-
-        if (verbose && (i %% progress.stride == 0L || i == burnIn)){
-          cat("\rCurrent acceptance ratio: ", points.accepted / i)
-          utils::setTxtProgressBar(pb.burnin, i)
-        }
-      }
-      if (points.accepted / burnIn < 0.21) covariance.correction <- max(1e-10, covariance.correction * stats::rnorm(1, mean = 0.7, sd = 0.1))
-      if (points.accepted / burnIn > 0.25) covariance.correction <- covariance.correction * stats::rnorm(1, mean = 1.3, sd = 0.1)
     }
+    covariance.correction <- max(MIN_COV_CORRECTION, exp(log.cov.correction))
   }
   else if (verbose) cat("Burn in skipped")
 

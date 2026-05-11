@@ -17,12 +17,22 @@ test_that("acceptNextPoint mostly rejects much lower density", {
   expect_true(sum(results) < 10)
 })
 
-test_that("acceptNextPoint accepts when current density is zero", {
-  # ratio = 1/0 = Inf, Inf > 1 is TRUE
-  expect_true(USE.MCMC:::acceptNextPoint(0, 1))
+test_that("acceptNextPoint rejects when current density is zero (degenerate)", {
+  # Non-positive current density signals an unreachable starting point;
+  # any proposal is rejected to keep R and C++ engines in lockstep.
+  expect_false(USE.MCMC:::acceptNextPoint(0, 1))
 })
 
-test_that("acceptNextPoint rejects when both densities are zero (NaN ratio)", {
-  # ratio = 0/0 = NaN, handled gracefully by rejecting the proposal
+test_that("acceptNextPoint rejects when proposed density is zero or negative", {
+  expect_false(USE.MCMC:::acceptNextPoint(1, 0))
+  expect_false(USE.MCMC:::acceptNextPoint(1, -0.5))
+})
+
+test_that("acceptNextPoint rejects when both densities are zero", {
   expect_false(USE.MCMC:::acceptNextPoint(0, 0))
+})
+
+test_that("acceptNextPoint rejects on NA densities", {
+  expect_false(USE.MCMC:::acceptNextPoint(NA_real_, 1))
+  expect_false(USE.MCMC:::acceptNextPoint(1, NA_real_))
 })

@@ -45,6 +45,16 @@ mclustDensityFunction <- function(env.model = NULL, species.model = NULL, dim = 
     if (density < threshold) return(threshold.floor)
     return(max(threshold.floor, 1 - fast_gmm_density(point, species.pre) / species.cutoff.threshold))
     }
+  # Attach a spec for the Rcpp inner loop. The C++ side reads these arrays
+  # directly; if the spec is absent (custom user closure), the R loop runs.
+  attr(densityAtPointEstimator, "rcpp_spec") <- list(
+    type = "mclust_density",
+    env = env.pre,
+    species = species.pre,
+    threshold = unname(threshold),
+    species_cutoff = unname(species.cutoff.threshold),
+    floor = threshold.floor
+  )
   return(densityAtPointEstimator)
 }
 

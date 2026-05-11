@@ -84,3 +84,24 @@ test_that("paSamplingMcmc returns sf object with small params", {
   expect_true(inherits(result, "sf"))
   expect_true(nrow(result) <= 10)
 })
+
+test_that("paSamplingMcmc with engine = 'cpp' returns sf with density column", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 30)
+  result <- paSamplingMcmc(
+    env.data.raster = r,
+    pres = pres,
+    n.samples = 50,
+    chain.length = 1000,
+    burnIn = 200,
+    num.chains = 1,
+    num.cores = 1,
+    verbose = FALSE,
+    plot_proc = FALSE,
+    covariance.correction = 1,
+    engine = "cpp"
+  )
+  expect_true(inherits(result, "sf"))
+  expect_true(nrow(result) <= 50)
+  expect_true("density" %in% names(result))
+})

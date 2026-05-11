@@ -32,7 +32,7 @@ library(tcltk)
 library(viridis)
 library(cowplot)
 library(entropy)
-set.seed(40)
+set.seed(42)
 ```
 
 Before we can understand why Markov chains are useful, we have to understand how they work. 
@@ -914,6 +914,8 @@ scheme
 So far we did nothing revolutionary. All of the given can be done using existing techniques.The advantage emerges when we want to increase the dimensions included. The only thing that has to change is the vector from the beginning in which we stated the dimensions to include. As the results are getting difficult to represent in 2d plots, we focus on the results of such computations. 
 
 The function paSamplingMcmc wraps what we did so far in this vignette into one single concise function to efficiently create pseudo-absences.
+
+Since USE.MCMC 0.0.2 the MCMC inner loop runs in C++ whenever the density and proposal functions are produced by `mclustDensityFunction()` and `addHighDimGaussian()` — which is what `paSamplingMcmc()` does internally. No code change is required: the default `engine = "auto"` picks the C++ path automatically. Pass `engine = "R"` to force the reference implementation if you want to compare. Calls with custom density closures (as in the earlier chunks of this vignette) continue to use the R loop unchanged.
 
 ```{r sample-in-higher-dim, message=FALSE, results="hide"}
 # One core is used for rendering the vignette, for interactive use this can be set higher

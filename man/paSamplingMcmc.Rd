@@ -25,7 +25,8 @@ paSamplingMcmc(
   species.cutoff.threshold = 0.95,
   plot_proc = FALSE,
   num.chains = 1,
-  num.cores = 1
+  num.cores = 1,
+  engine = c("auto", "R", "cpp")
 )
 }
 \arguments{
@@ -41,7 +42,7 @@ paSamplingMcmc(
 
 \item{dimensions}{vector containg the names of the dimensions that should be included}
 
-\item{burnIn}{Integer, sets the number of steps per adaptive burnin cycle. If 0 the burnin is skipped}
+\item{burnIn}{Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied \code{covariance.correction}.}
 
 \item{covariance.correction}{Integer, sets the inital value of the covariance correction}
 
@@ -64,6 +65,8 @@ paSamplingMcmc(
 \item{num.chains}{Number of chains from which samples should be picked}
 
 \item{num.cores}{Number of cores available for parallelization of the multi-chain computation}
+
+\item{engine}{One of \code{"auto"} (default), \code{"R"}, or \code{"cpp"}. \code{"auto"} picks the C++ inner loop when both the internal density and proposal functions are built by \code{mclustDensityFunction()} and \code{addHighDimGaussian()} (which is the case here) and falls back to the R loop otherwise. \code{"cpp"} forces the C++ path. \code{"R"} forces the pure-R reference loop.}
 }
 \value{
 dataframe containing the sampled points

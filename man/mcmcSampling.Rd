@@ -13,7 +13,8 @@ mcmcSampling(
   burnIn = 1000,
   verbose = TRUE,
   covariance.correction = 1,
-  max.burnin.cycles = 50
+  max.burnin.cycles = 50,
+  engine = c("auto", "R", "cpp")
 )
 }
 \arguments{
@@ -27,13 +28,15 @@ mcmcSampling(
 
 \item{n.sample.points}{Number of points to be sampled}
 
-\item{burnIn}{Integer, sets the number of samples per adaptive burn in step. If set to 0, burn in is skipped}
+\item{burnIn}{Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied \code{covariance.correction}.}
 
 \item{verbose}{Boolean to toggle progress updates}
 
 \item{covariance.correction}{Integer, initial value of the covariance correction.}
 
-\item{max.burnin.cycles}{Integer, maximum number of burn-in adaptation cycles before stopping with a warning. Prevents infinite loops when the target acceptance rate cannot be reached.}
+\item{max.burnin.cycles}{Deprecated. Retained for backwards compatibility; ignored by the current Robbins-Monro burn-in.}
+
+\item{engine}{One of \code{"auto"} (default), \code{"R"}, or \code{"cpp"}. \code{"auto"} picks the C++ inner loop when both \code{densityFunction} and \code{proposalFunction} are built by \code{mclustDensityFunction()} and \code{addHighDimGaussian()} (they carry the required \code{rcpp_spec} attribute) and falls back to the R loop otherwise. \code{"cpp"} forces the C++ path and errors if a custom closure is supplied. \code{"R"} forces the pure-R reference loop.}
 }
 \value{
 A data.frame containing the sampled points with dimension columns and a density column

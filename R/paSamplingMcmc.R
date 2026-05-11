@@ -9,7 +9,7 @@
 #' @param chain.length number of points that are sampled for the chain
 #' @param verbose If true the function gives updates on the current state of the chain
 #' @param dimensions vector containg the names of the dimensions that should be included
-#' @param burnIn Integer, sets the number of steps per adaptive burnin cycle. If 0 the burnin is skipped
+#' @param burnIn Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied `covariance.correction`.
 #' @param covariance.correction Integer, sets the inital value of the covariance correction
 #' @param precomputed.pca If rastPCA has already been evoked, it the result of it can be passed here to not recompute
 #' @param seed.number seednumber used to get repeatable results
@@ -21,6 +21,7 @@
 #' @param plot_proc If true the function returns plots the progress
 #' @param num.chains Number of chains from which samples should be picked
 #' @param num.cores Number of cores available for parallelization of the multi-chain computation
+#' @param engine One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++ inner loop when both the internal density and proposal functions are built by `mclustDensityFunction()` and `addHighDimGaussian()` (which is the case here) and falls back to the R loop otherwise. `"cpp"` forces the C++ path. `"R"` forces the pure-R reference loop.
 #'
 #' @returns dataframe containing the sampled points
 #' @export
@@ -35,7 +36,9 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           environmental.cutof.percentile = 0.001,
                           species.cutoff.threshold = 0.95,
                           plot_proc = FALSE,
-                          num.chains = 1, num.cores = 1) {
+                          num.chains = 1, num.cores = 1,
+                          engine = c("auto", "R", "cpp")) {
+  engine <- match.arg(engine)
   # Input validation
   check_raster_input(env.data.raster, "env.data.raster")
   check_spatial_points(pres, "pres")
@@ -152,7 +155,8 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                    densityFunction = densityFunction,
                                    burnIn = burnIn,
                                    covariance.correction = covariance.correction,
-                                   verbose = verbose)
+                                   verbose = verbose,
+                                   engine = engine)
   }, mc.cores = min(num.chains, num.cores))
 
   sampled.points <- do.call(rbind, results.computation)

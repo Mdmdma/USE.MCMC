@@ -31,18 +31,25 @@ addHighDimGaussian <- function(dim = 0, mean.vec = matrix(0, ncol = dim), cov.ma
   }
 
   mean.vec <- as.numeric(mean.vec)
+  # Pre-draw the batch from N(0, cov.mat). Each call scales by sqrt(adj) and
+  # adds mean.vec, so changing covariance.adjuster does NOT invalidate the
+  # batch -- critical for adaptive burn-in where adj changes every step.
   batch <- NULL
   batch.idx <- 0L
-  batch.adjuster <- NULL
 
   addedHighDimGaussian <- function(point, covariance.adjuster = 1, dim = ""){
-    if (is.null(batch) || batch.idx >= nrow(batch) || !identical(covariance.adjuster, batch.adjuster)) {
-      batch <<- mvtnorm::rmvnorm(batch.size, mean = mean.vec, sigma = covariance.adjuster * cov.mat)
+    if (is.null(batch) || batch.idx >= nrow(batch)) {
+      batch <<- mvtnorm::rmvnorm(batch.size, mean = rep(0, length(mean.vec)), sigma = cov.mat)
       batch.idx <<- 0L
-      batch.adjuster <<- covariance.adjuster
     }
     batch.idx <<- batch.idx + 1L
-    point + batch[batch.idx, ]
+    point + mean.vec + sqrt(covariance.adjuster) * batch[batch.idx, ]
   }
-
+  attr(addedHighDimGaussian, "rcpp_spec") <- list(
+    type = "gaussian_proposal",
+    mean = mean.vec,
+    cov = cov.mat,
+    dim = dim
+  )
+  addedHighDimGaussian
 }
