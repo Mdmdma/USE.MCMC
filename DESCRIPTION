@@ -1,6 +1,6 @@
 Package: USE.MCMC
 Title: MCMC sampling of the environment space
-Version: 0.0.3
+Version: 0.0.4
 Authors@R: c(
     person("Mathis", "Erler", email = "m.erler@gmx.ch", role = c("aut","cre")),
     person("Daniele", "Da Re", email = "dare.daniele@gmail.com",  comment=c(ORCID = "0000-0002-3398-9295"), role = "aut"),

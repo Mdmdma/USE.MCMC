@@ -1,3 +1,10 @@
+# USE.MCMC 0.0.4
+
+## Data
+* New `Worldclim_tem_a` dataset, a mirror of `USE::Worldclim_tmp` from the
+  upstream USE package (cols `bio1, bio3, bio9, bio12, bio13, bio15`). Lets
+  examples and tests reproduce the upstream demos without depending on USE.
+
 # USE.MCMC 0.0.3
 
 ## MCMC backend
