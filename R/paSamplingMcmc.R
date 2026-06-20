@@ -3,7 +3,7 @@
 #' absence sampling using a markov. In a first step a density function is constructed using a GMM fitted to the environment as a
 #' limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.
 #'
-#' @param env.data.raster Terra raster containing the environment
+#' @param env.data.raster Terra raster containing the environment. Required unless a `precomputed.env` bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).
 #' @param pres Sf dataframe containing the presence locations
 #' @param n.samples number of samples that should be put out
 #' @param chain.length number of points that are sampled for the chain
@@ -12,6 +12,7 @@
 #' @param burnIn Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied `covariance.correction`.
 #' @param covariance.correction Integer, sets the inital value of the covariance correction
 #' @param precomputed.pca If rastPCA has already been evoked, it the result of it can be passed here to not recompute
+#' @param precomputed.env Optional environment bundle returned by [precomputeMcmcEnvironment()]. The environment fit and PCA are constant across presence sets, so when sampling many species on the same environment they can be computed once and passed here to skip the PCA, the environmental GMM fit/density evaluation, the proposal covariance and the distance-threshold computation. The bundle is `saveRDS()`-safe and can be reused across R sessions / batch jobs. When supplied it takes precedence over `precomputed.pca`; its captured RNG state is restored so results match the inline (uncached) path exactly.
 #' @param seed.number seednumber used to get repeatable results
 #' @param n.neighbors.for.statistics number of neighbors used to calculate the maximal sensible distance to real points that should be included
 #' @param low.end.of.inclueded.points Sets the range of points included in the threshold computation
@@ -31,6 +32,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           burnIn = 1000,
                           covariance.correction = 1,
                           precomputed.pca = NULL,
+                          precomputed.env = NULL,
                           seed.number = 42,
                           n.neighbors.for.statistics = 2, low.end.of.inclueded.points = 100, high.end.of.included.points = 5,
                           environmental.cutof.percentile = 0.001,
@@ -39,8 +41,12 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           num.chains = 1, num.cores = 1,
                           engine = c("auto", "R", "cpp")) {
   engine <- match.arg(engine)
-  # Input validation
-  check_raster_input(env.data.raster, "env.data.raster")
+  # Input validation. env.data.raster is only needed to build the environment
+  # (PCA + GMM fit); when a precomputed.env bundle is supplied that work is
+  # already done and the raster is optional.
+  if (is.null(precomputed.env) || !is.null(env.data.raster)) {
+    check_raster_input(env.data.raster, "env.data.raster")
+  }
   check_spatial_points(pres, "pres")
   if (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1) {
     stop(paste0("'n.samples' must be a positive number, got ", deparse(n.samples)), call. = FALSE)
@@ -60,6 +66,24 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   if (!is.null(precomputed.pca)) {
     if (!is.list(precomputed.pca) || is.null(precomputed.pca$PCs)) {
       stop("'precomputed.pca' must be a list with a '$PCs' element (result of rastPCA), or NULL", call. = FALSE)
+    }
+  }
+  if (!is.null(precomputed.env)) {
+    # rng_state is required: without it the restore below is skipped and the
+    # species/MCMC stream would silently diverge from the uncached path.
+    required.env.fields <- c("pcs_packed", "env.with.pc.sf", "env.data.cleaned",
+                             "environmental.data.model", "environmental.densities",
+                             "covariance.matrix", "distance.threshold", "dimensions",
+                             "rng_state")
+    if (!is.list(precomputed.env) || !all(required.env.fields %in% names(precomputed.env))) {
+      stop_config("'precomputed.env' must be the list returned by precomputeMcmcEnvironment() (or NULL). Missing fields: ",
+                  paste(setdiff(required.env.fields, names(precomputed.env)), collapse = ", "))
+    }
+    if (!identical(precomputed.env$dimensions, dimensions)) {
+      stop_config("'precomputed.env' was built for dimensions (",
+                  paste(precomputed.env$dimensions, collapse = ", "),
+                  ") but 'dimensions' is (", paste(dimensions, collapse = ", "),
+                  "). Recompute the bundle for the requested dimensions.")
     }
   }
   if (!is.numeric(seed.number) || length(seed.number) != 1) {
@@ -83,44 +107,50 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   if (inherits(env.data.raster, "BasicRaster")) {
     env.data.raster <- terra::rast(env.data.raster)
   }
+  # Seeds the inline environment block below; overridden by the RNG-state restore
+  # when a precomputed.env bundle is supplied (kept as a fallback otherwise).
   set.seed(seed.number)
 
-  # Generate the environmental space using PCA
-  if (is.null(precomputed.pca)){
-    rpc <- rastPCA(env.data.raster, stand = TRUE)
-  } else {
-    rpc <- precomputed.pca
+  # Environment block (PCA + environmental GMM fit/density + proposal covariance
+  # + distance threshold). This is constant across presence sets, so it is
+  # factored into precomputeMcmcEnvironment(): computed inline here when no cache
+  # is supplied, or reused verbatim from `precomputed.env`. Sharing the one code
+  # path guarantees the cached and uncached results are identical.
+  if (is.null(precomputed.env)) {
+    precomputed.env <- precomputeMcmcEnvironment(env.data.raster = env.data.raster,
+                                                 dimensions = dimensions,
+                                                 seed.number = seed.number,
+                                                 precomputed.pca = precomputed.pca,
+                                                 plot_proc = plot_proc,
+                                                 verbose = verbose)
   }
 
-  # Combine environment and PCA layers on the shared raster grid; avoids the
-  # expensive sf::st_join over tens-of-thousands of point geometries that the
-  # earlier pipeline performed.
-  env.with.pc.sf <- terra::as.data.frame(c(env.data.raster, rpc$PCs), xy = TRUE) %>%
-    na.omit() %>%
-    sf::st_as_sf(coords = c("x", "y"))
+  # Restore the RNG state captured right after the environment block so the
+  # species model and MCMC chains draw the same random stream whether the
+  # environment was computed inline (above) or loaded from a cached bundle. For
+  # the inline path this is a no-op (state is already there).
+  if (!is.null(precomputed.env$rng_state)) {
+    assign(".Random.seed", precomputed.env$rng_state, envir = .GlobalEnv)
+  }
 
-  # subsample env space to speed up the process
-  env.with.pc.sf.subsampled <- env.with.pc.sf[stats::runif(min(nrow(env.with.pc.sf), 2000) , 1, nrow(env.with.pc.sf)),]
-
-  # clean data
-  env.data.cleaned <- sf::st_drop_geometry(env.with.pc.sf[dimensions])
-  env.data.cleaned.subsampled <- sf::st_drop_geometry(env.with.pc.sf.subsampled[dimensions])
-
-  # environment model
-  if (verbose) cat("Fit environmental model \n")
-  environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled,
-                                                    plot = plot_proc,
-                                                    verbose = verbose )
-  summary(environmental.data.model)
-  environmental.densities <- mclust::predict.densityMclust(environmental.data.model, env.data.cleaned)
+  rpc <- list(PCs = terra::unwrap(precomputed.env$pcs_packed))
+  env.with.pc.sf <- precomputed.env$env.with.pc.sf
+  env.data.cleaned <- precomputed.env$env.data.cleaned
+  environmental.data.model <- precomputed.env$environmental.data.model
+  environmental.densities <- precomputed.env$environmental.densities
+  covariance.matrix <- precomputed.env$covariance.matrix
+  distance.threshold <- precomputed.env$distance.threshold
+  # Threshold stays a live tunable: cheap quantile over the cached densities.
   environment.threshold <- stats::quantile(environmental.densities, environmental.cutof.percentile)
 
   # sample species model
 
   virtual.presence.points <- pres
 
-  env.data.raster.with.pc <- c(env.data.raster, rpc$PCs)
-  virtual.presence.points.pc <- terra::extract(env.data.raster.with.pc, virtual.presence.points, bind = TRUE) %>%
+  # Presence PC scores come from the (cached or freshly computed) PC rasters
+  # alone; the original env layers are not needed here, so env.data.raster is
+  # optional once a precomputed.env bundle is supplied.
+  virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%
     sf::st_as_sf()
   if (verbose) cat("Fit presence model \n")
   species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
@@ -138,9 +168,8 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                            species.cutoff.threshold = species.cutoff.threshold)
 
 
-  # # set sampling parameters
+  # # set sampling parameters (covariance.matrix comes from precomputed.env)
   covariance.scaling <-0.075
-  covariance.matrix <- stats::cov(sf::st_drop_geometry(env.with.pc.sf)[dimensions])
   proposalFunction <- addHighDimGaussian(cov.mat =covariance.scaling * covariance.matrix,
                                          dim = length(dimensions))
 
@@ -166,8 +195,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   mapped.sampled.points$density <- sampled.points$density
   mapped.sampled.points$distance <- mapped.sampled.point.locations$nn.dist
 
-  distance.threshold <- optimalDistanceThresholdNn(env.data = env.with.pc.sf,
-                                                   dimensions = dimensions)
+  # distance.threshold comes from precomputed.env (env-only quantity)
   filtered.mapped.sampled.points <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
   sample.indexes <- floor(seq(1, nrow(filtered.mapped.sampled.points), length.out = min(n.samples * 2, nrow(filtered.mapped.sampled.points))))

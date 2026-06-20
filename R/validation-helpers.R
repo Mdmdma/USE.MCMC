@@ -107,3 +107,19 @@ check_in_range <- function(x, arg_name, min_val = 0, max_val = 1) {
          call. = FALSE)
   }
 }
+
+#' Signal a configuration error (bad arguments / incompatible cache)
+#'
+#' Raises a condition of class \code{"USE.MCMC_config_error"} (in addition to the
+#' usual \code{"error"}). Callers that wrap paSamplingMcmc() in a tryCatch and
+#' fall back to another sampler on failure can detect this class and re-raise it,
+#' so that a misconfiguration (e.g. an incompatible \code{precomputed.env}) fails
+#' loudly instead of being silently downgraded to a different sampler.
+#' @param ... Parts of the error message, pasted together.
+#' @keywords internal
+stop_config <- function(...) {
+  stop(structure(
+    class = c("USE.MCMC_config_error", "error", "condition"),
+    list(message = paste0(...), call = NULL)
+  ))
+}

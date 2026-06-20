@@ -17,6 +17,7 @@ paSamplingMcmc(
   burnIn = 1000,
   covariance.correction = 1,
   precomputed.pca = NULL,
+  precomputed.env = NULL,
   seed.number = 42,
   n.neighbors.for.statistics = 2,
   low.end.of.inclueded.points = 100,
@@ -30,7 +31,7 @@ paSamplingMcmc(
 )
 }
 \arguments{
-\item{env.data.raster}{Terra raster containing the environment}
+\item{env.data.raster}{Terra raster containing the environment. Required unless a \code{precomputed.env} bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).}
 
 \item{pres}{Sf dataframe containing the presence locations}
 
@@ -47,6 +48,8 @@ paSamplingMcmc(
 \item{covariance.correction}{Integer, sets the inital value of the covariance correction}
 
 \item{precomputed.pca}{If rastPCA has already been evoked, it the result of it can be passed here to not recompute}
+
+\item{precomputed.env}{Optional environment bundle returned by \code{\link[=precomputeMcmcEnvironment]{precomputeMcmcEnvironment()}}. The environment fit and PCA are constant across presence sets, so when sampling many species on the same environment they can be computed once and passed here to skip the PCA, the environmental GMM fit/density evaluation, the proposal covariance and the distance-threshold computation. The bundle is \code{saveRDS()}-safe and can be reused across R sessions / batch jobs. When supplied it takes precedence over \code{precomputed.pca}; its captured RNG state is restored so results match the inline (uncached) path exactly.}
 
 \item{seed.number}{seednumber used to get repeatable results}
 
