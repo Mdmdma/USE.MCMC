@@ -56,7 +56,6 @@ sampled.points <- USE.MCMC::mcmcSampling(dataset=starting.point,
                                n.sample.points = 100,
                                verbose = FALSE)
 ```
-yes
 ```{r animate-sample-chain, eval=FALSE, echo=FALSE}
 starting.point$density <- 1
 sampled.points <- rbind(starting.point, sampled.points)
@@ -86,7 +85,7 @@ In practical cases a Markov chain does not perform a completely random walk. The
 
 In a real use case we want to generate samples from a target density. We can supply the MCMC algorithm with this function that represents the distribution we want to replicate. 
 
-Lets make an example and create samples from a two dimensional Gaussian.
+Let's make an example and create samples from a two dimensional Gaussian.
 
 ```{r generate-sample-gaussian-chain, results="hide"}
 densityFunctionGaussian <- function(point, lengthscale=5){
@@ -127,7 +126,7 @@ anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ```{r show-gif-gaussian, echo=FALSE}
 knitr::include_graphics("gif_example_chain_gaussian.gif")
 ```
-As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the Metropolis–Hastings algorithm.
+As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the Metropolis-Hastings algorithm.
 $$
 
 \alpha = \frac{d(p')}{d(p)}, \quad p_{n+1} = \begin{cases}
@@ -215,7 +214,7 @@ ggdraw() +
 
 In this low dimensional case with a simple function there are more simple ways to generate samples. The case where MCMC gets useful for sample generation is if the function is very complicated and expensive to compute and in case our problem lives in high dimensions. 
 
-Lets explore the dimensionality issue first. If we compute the value of our function on a grid with 100 cells per dimension—a moderate resolution—this results in 10,000 points in the two-dimensional case. In the five-dimensional case, this results in 10 billion points. Computational and memory requirements become limiting factors for application of such approaches.
+Let's explore the dimensionality issue first. If we compute the value of our function on a grid with 100 cells per dimension (a moderate resolution) this results in 10,000 points in the two-dimensional case. In the five-dimensional case, this results in 10 billion points. Computational and memory requirements become limiting factors for application of such approaches.
 
 In case of MCMC sampling the computational complexity increases, but less fast. The function that we have to evaluate to decide if we want to accept a new point becomes more complex and we have to run the chain for longer until we have good convergence. 
 
@@ -223,7 +222,7 @@ In case of MCMC sampling the computational complexity increases, but less fast. 
 
 If we want to use MCMC to generate pseudo-absences we first have to construct the function that represents the density of our pseudo-absences in the environmental space. 
 
-Here we demonstrate an approach using Gaussian mixtures. As the example above shows we can generate sample points from a Gaussian distribution.We can also use sample points to find the Gaussian that explains the given data best. In a Gaussian mixture model we do not only fit one Gaussian, but can find the number of Gaussian that approximates the given point distribution. 
+Here we demonstrate an approach using Gaussian mixtures. As the example above shows we can generate sample points from a Gaussian distribution. We can also use sample points to find the Gaussian that explains the given data best. In a Gaussian mixture model we do not only fit one Gaussian, but can find the number of Gaussian that approximates the given point distribution. 
 
 For the Gaussian mixture model to fit the data well it has to resemble a multi-modal Gaussian. The environment does not necessarily have this structure. We therefore perform a PCA to have a more simple structure in our data and reduce its dimensionality.
 
@@ -263,7 +262,7 @@ p.points.in.the.environment <- ggplot() +
              aes(x=PC1, y=PC2),
              color = "black", 
              size=0.2) + 
-  labs(title = "Points of the environmeltal dataset",
+  labs(title = "Points of the environmental dataset",
        )
 p.points.in.the.environment
 ```
@@ -403,7 +402,7 @@ anim_save("chain.naive.density.gif", gif.chain.naive.density)
 knitr::include_graphics("chain.naive.density.gif")
 ```
 
-We can now sample our environmental space uniformly. pseudo-absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that
+We can now sample our environmental space uniformly. Pseudo-absences should not only be uniformly distributed but also evade the conditions under which the species we try to model flourishes. We have to extend the function from above to reflect that.
 
 ```{r generate-virtual-species, results="hide"}
 virtual.presence.data <- getVirtualSpeciesPresencePoints(
@@ -523,7 +522,7 @@ p.density.sweep.contours <- ggplot(heat, aes(PC1, PC2)) +
 p.density.sweep.contours
 ```
 
-The four density figures introduced in this section — the naive environmental density, the environmental threshold sweep, the species-quantile sweep with contours, and the full pseudo-absence density — together describe how the sampling function is built up step by step. The following compound figure assembles them at a glance.
+The four density figures introduced in this section (the naive environmental density, the environmental threshold sweep, the species-quantile sweep with contours, and the full pseudo-absence density) together describe how the sampling function is built up step by step. The following compound figure assembles them at a glance.
 
 ```{r plot-methods-overview, echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10}
 # Badge style mirrors plot-pipeline-scheme: italic letter in a circle, with a
@@ -748,7 +747,7 @@ ggdraw() +
                    p.mcmc.posterior.pc3,
                    ncol = 1),
             height = 0.9) +
-  draw_label("Posterior of compared to Presence and environment", 
+  draw_label("Posterior compared to Presence and environment",
              x = 0.5, y = 0.95, size = 16)
 
 
@@ -969,11 +968,11 @@ scheme <- cowplot::plot_grid(
 scheme
 ```
 
-So far we did nothing revolutionary. All of the given can be done using existing techniques.The advantage emerges when we want to increase the dimensions included. The only thing that has to change is the vector from the beginning in which we stated the dimensions to include. As the results are getting difficult to represent in 2d plots, we focus on the results of such computations. 
+So far we did nothing revolutionary. All of the given can be done using existing techniques. The advantage emerges when we want to increase the dimensions included. The only thing that has to change is the vector from the beginning in which we stated the dimensions to include. As the results are getting difficult to represent in 2d plots, we focus on the results of such computations. 
 
 The function paSamplingMcmc wraps what we did so far in this vignette into one single concise function to efficiently create pseudo-absences.
 
-Since USE.MCMC 0.0.2 the MCMC inner loop runs in C++ whenever the density and proposal functions are produced by `mclustDensityFunction()` and `addHighDimGaussian()` — which is what `paSamplingMcmc()` does internally. No code change is required: the default `engine = "auto"` picks the C++ path automatically. Pass `engine = "R"` to force the reference implementation if you want to compare. Calls with custom density closures (as in the earlier chunks of this vignette) continue to use the R loop unchanged.
+Since USE.MCMC 0.0.3 the MCMC inner loop runs in C++ whenever the density and proposal functions are produced by `mclustDensityFunction()` and `addHighDimGaussian()`, which is what `paSamplingMcmc()` does internally. No code change is required: the default `engine = "auto"` picks the C++ path automatically. Pass `engine = "R"` to force the reference implementation if you want to compare. Calls with custom density closures (as in the earlier chunks of this vignette) continue to use the R loop unchanged.
 
 ```{r sample-in-higher-dim, message=FALSE, results="hide"}
 # One core is used for rendering the vignette, for interactive use this can be set higher
@@ -1019,11 +1018,11 @@ ggdraw() +
                    p.mcmc.posterior.pc3,
                    ncol = 1),
             height = 0.9) +
-  draw_label("Posterior of compared to Presence and environment", 
+  draw_label("Posterior compared to Presence and environment",
              x = 0.5, y = 0.95, size = 16)
 ```
-# Conververnce
-A topic not cover so far is convergence. The reason why we use MCMC is to reduce computational complexity of our problem. Therefore we have to know how long we have to run the algorithm and how many chains we should combine to get satisfying results. 
+# Convergence
+A topic not covered so far is convergence. The reason why we use MCMC is to reduce computational complexity of our problem. Therefore we have to know how long we have to run the algorithm and how many chains we should combine to get satisfying results. 
 
 To evaluate these issues let's first generate some long chains. 
 
@@ -1078,11 +1077,11 @@ chain.list <- mclapply(1:4, function(i) {
 coda.chain.list <- coda::mcmc.list(chain.list)
 ```  
 
-We can now look at the Gelman-Rubin plot of the chain ensemble. For the second and third principle component convergence is reached, looking at the first principle component it seems like the chain should run for longer. The needed runtime depends on how complex the environmental space is and on the number of dimensions included.
+We can now look at the Gelman-Rubin plot of the chain ensemble. For the second and third principal component convergence is reached, looking at the first principal component it seems like the chain should run for longer. The needed runtime depends on how complex the environmental space is and on the number of dimensions included.
 ```{r gelman-plot, fig.height=5, fig.width=7}
 coda::gelman.plot(coda.chain.list)
 ```
-\n Entropy is a measure for information. The higher the entropy, the more information a dataset contains. We can plot how the entropy of a chain evolves over time
+Entropy is a measure for information. The higher the entropy, the more information a dataset contains. We can plot how the entropy of a chain evolves over time
 ```{r entropy-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
 plot_entropy <- function(chain.list){
   interval <-  floor(seq(1,nrow(chain.list[[1]]), length.out = 100))
@@ -1101,7 +1100,7 @@ plot_entropy <- function(chain.list){
   plot <- ggplot(results, aes(x = interval, y = H, color = as.factor(chain_id))) +
     geom_line() +
     labs(color = "Chain",
-         y = "Entopy",
+         y = "Entropy",
          x = "Points included until",
          title = paste0("Entropy along the Chain in ",dim(as.matrix(chain.list[1]))[2]," dimensions"))+
     theme_minimal() +
@@ -1116,7 +1115,7 @@ The entropy stabilizes and is similar, indicating that they are well mixed. Look
 ```{r autocorreltation-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
 autocorr.plot(coda.chain.list[1], lag.max = 50)
 ```
-We can now compare our newly introduced method to other sampling approaches. Here we compare it to other approaches that sample uniformly in the environmental space. We see that if we only use uniform sampling on two dimensions, the new method performs as the old methods, if we extend the sampling to 3 dimensions, we also sample the third dimension uniformly. This comes at the cost of having less uniform sampling along the first two dimensions. While looking like an issue, it probably represents more uniform samples, as we want to sample the environmental volume uniformly, not the single components them self. If component three has a large range at pc1 = 1, we expect the density of pc1 to be higher at pc1 = 1
+We can now compare our newly introduced method to other sampling approaches. Here we compare it to other approaches that sample uniformly in the environmental space. We see that if we only use uniform sampling on two dimensions, the new method performs as the old methods, if we extend the sampling to 3 dimensions, we also sample the third dimension uniformly. This comes at the cost of having less uniform sampling along the first two dimensions. While looking like an issue, it probably represents more uniform samples, as we want to sample the environmental volume uniformly, not the single components themselves. If component three has a large range at pc1 = 1, we expect the density of pc1 to be higher at pc1 = 1
 
 ```{r uniform.paper, message=FALSE, results='hide'}
 sampled.points.uniform.p <- paSampling(env.rast = env.data.raster,

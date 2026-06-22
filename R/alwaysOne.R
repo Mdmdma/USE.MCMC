@@ -1,7 +1,6 @@
 #' AlwaysOne
 #'
-#' As the name implies, this function returns always 1, no matter the input. It can be used as a dummy desity function to perform uniform sampling of higher dimensional space. As it works with any Input, it can also be used as a placeholder to evade errors.
-#' always
+#' As the name implies, this function returns always 1, no matter the input. It can be used as a dummy density function to perform uniform sampling of higher dimensional space. As it works with any Input, it can also be used as a placeholder to evade errors.
 #' @param ... Any input is possible, as it does not have any effect
 #'
 #' @returns 1, always

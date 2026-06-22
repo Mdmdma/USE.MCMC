@@ -5,7 +5,7 @@ output: github_document
 
 # TLDR
 
-We can use markov chains to sample pseudo absences in moderate dimensions. In the process we overcome limitations of the original paper, especially those related to a sampling grid, only two dimensions in the PCA space, and the hard cutoff threshold to exclude the presence species. The figure below shows an overview of the proposed method.
+We can use Markov chains to sample pseudo absences in moderate dimensions. In the process we overcome limitations of the original paper, especially those related to a sampling grid, only two dimensions in the PCA space, and the hard cutoff threshold to exclude the presence species. The figure below shows an overview of the proposed method.
 
 ![scheme of the proposed method](man/figures/plot-pipeline-scheme-1.png)
 
@@ -30,15 +30,15 @@ The vignette [Insights on Markov chain based pseudo-absence sampling](https://md
 
 # Basic principle and result
 
-We fit Gaussian mixture models (GMMs) to both the points of the environment and the model species in the PCA space of their environmental variables. From these GMMs we construct a function on which we run a markov chain. The figure below displays the sampled function, the sample species points as well as the sampled points in the space spanned by the first two principle components.
+We fit Gaussian mixture models (GMMs) to both the points of the environment and the model species in the PCA space of their environmental variables. From these GMMs we construct a function on which we run a Markov chain. The figure below displays the sampled function, the sampled species points as well as the sampled points in the space spanned by the first two principal components.
 
-![sampled points in the pc space overlayd over the sampled function](man/figures/points-in-the-environment-1.png)
+![sampled points in the pc space overlaid over the sampled function](man/figures/points-in-the-environment-1.png)
 
 We can show the sampled points in the geographic space.
 
 ![Sampled points in the geographical space](man/figures/plot-in-geo-1.png)
 
-Looking at the density of the pc scores, we can see that our newly developed method enables the user to sample more dimensions uniformly. If this is beneficial to the downstream model depends on the amount of variability explained by the first two components.
+Looking at the density of the pc scores, we can see that our newly developed method enables the user to sample more dimensions uniformly. Whether this is beneficial to the downstream model depends on the amount of variability explained by the first two components.
 
 ![posterior density of the first three principal components](man/figures/compare2dvs3d.png)
 

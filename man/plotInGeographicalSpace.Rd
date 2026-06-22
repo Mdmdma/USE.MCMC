@@ -14,9 +14,9 @@ plotInGeographicalSpace(
 \arguments{
 \item{presence.distribution.raster}{Raster containing the target distribution}
 
-\item{presence.points}{Dataframe or list containing a geometry cloumn that contains points to be plotted}
+\item{presence.points}{Dataframe or list containing a geometry column that contains points to be plotted}
 
-\item{absence.points}{Dataframe or list containing a geometry cloumn that contains points to be plotted}
+\item{absence.points}{Dataframe or list containing a geometry column that contains points to be plotted}
 
 \item{minimal}{Boolean if TRUE removes the labels legend and title}
 }

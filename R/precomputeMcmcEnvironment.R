@@ -3,7 +3,7 @@
 #' Runs the *environment-only* portion of [paSamplingMcmc()] once and returns a
 #' reusable, serialisable bundle. Everything this function computes depends only
 #' on the environmental raster (plus `dimensions`, `seed.number` and the
-#' subsampling), and is therefore **constant across presence sets** — so when the
+#' subsampling), and is therefore **constant across presence sets**, so when the
 #' same environment is sampled for many species / presence draws, this work can
 #' be done a single time and handed back to [paSamplingMcmc()] via its
 #' `precomputed.env` argument.

@@ -1,7 +1,7 @@
 #' WorldClim bioclimatic variables from the original USE package
 #'
 #' A subset of WorldClim bioclimatic variables cropped on Central and Western
-#' Europe. Identical to \code{USE::Worldclim_tmp} from the upstream
+#' Europe. Mirrors \code{USE::Worldclim_tmp} from the upstream
 #' \href{https://github.com/danddr/USE}{USE} package, included here so this
 #' package's examples and tests can reproduce the upstream demos without
 #' requiring \pkg{USE} to be installed.

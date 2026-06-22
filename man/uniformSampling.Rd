@@ -20,7 +20,7 @@ uniformSampling(
 
 \item{grid.res}{(integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes()} function.}
 
-\item{n.tr}{(integer; optional) number of expected points given a certain prevalence threshold for the training dataset.}
+\item{n.tr}{(integer) number of points for the training dataset to sample in each cell of the sampling grid}
 
 \item{n.prev}{(double) sample prevalence}
 

@@ -2,11 +2,11 @@
 #'
 #' @param env.model mclust gaussian mixture that uses points
 #' @param species.model mclust gaussian mixture that uses points
-#' @param dim string vector specifing the names of the dimensions
+#' @param dim string vector specifying the names of the dimensions
 #' @param threshold sets the cutoff density from the environment
 #' @param species.cutoff.threshold set the scaling factor with which the species model gets scaled before subtraction.
 #'
-#' @returns Function that can calculates the density at a point
+#' @returns Function that calculates the density at a point
 #' @export
 #'
 mclustDensityFunction <- function(env.model = NULL, species.model = NULL, dim = "", threshold = 0.01, species.cutoff.threshold = 0.1){
@@ -122,7 +122,7 @@ fast_gmm_density <- function(x, pre) {
 #' the caller already has all query points in hand (e.g. plotting density rasters,
 #' threshold sweeps, or sweep-style diagnostics in the vignettes).
 #'
-#' @param X Numeric matrix (n x d) or data.frame coercible to one — query points
+#' @param X Numeric matrix (n x d) or data.frame coercible to one - query points
 #'   in rows, dimensions in columns.
 #' @param pre List of precomputed parameters from \code{precompute_gmm_params}.
 #' @returns Numeric vector of length n with the density at each row of X.

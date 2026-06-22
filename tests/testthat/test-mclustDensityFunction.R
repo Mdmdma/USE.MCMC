@@ -88,7 +88,7 @@ test_that("density function returns low value for far-out points", {
   sp_model <- mclust::densityMclust(env_data, plot = FALSE, verbose = FALSE)
   fn <- mclustDensityFunction(env.model = env_model, species.model = sp_model,
                               dim = c("x", "y"), threshold = 0.01)
-  # Point very far from the data center — should be below threshold
+  # Point very far from the data center, should be below threshold
   far_point <- c(100, 100)
   result <- fn(far_point)
   expect_true(result <= 0.01)

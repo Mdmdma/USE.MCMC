@@ -13,8 +13,7 @@ alwaysOne(...)
 1, always
 }
 \description{
-As the name implies, this function returns always 1, no matter the input. It can be used as a dummy desity function to perform uniform sampling of higher dimensional space. As it works with any Input, it can also be used as a placeholder to evade errors.
-always
+As the name implies, this function returns always 1, no matter the input. It can be used as a dummy density function to perform uniform sampling of higher dimensional space. As it works with any Input, it can also be used as a placeholder to evade errors.
 }
 \examples{
 alwaysOne(stop("even this input is fine"))

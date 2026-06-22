@@ -33,7 +33,7 @@ plotDensityLines(
 
 \item{cols}{specifies the columns of the dataframe that are used for the density computation. It has to match to the columns used to build the density model.}
 
-\item{lines}{boolean that tells the function if the lines should be plotted. If false the dataset will be ploted as points}
+\item{lines}{boolean that tells the function if the lines should be plotted. If false the dataset will be plotted as points}
 
 \item{density}{boolean that tells the function if the density should be plotted}
 
@@ -41,12 +41,12 @@ plotDensityLines(
 
 \item{densityFunction}{a function that takes a named numeric vector and returns the density at that point}
 
-\item{resolution}{int sets the resolution of the denisity grid}
+\item{resolution}{int sets the resolution of the density grid}
 
-\item{minimal}{boolean if true removes titel, label, legend and axis}
+\item{minimal}{boolean if true removes title, label, legend and axis}
 }
 \value{
-the greated plot
+the created plot
 }
 \description{
 plotDensityLines

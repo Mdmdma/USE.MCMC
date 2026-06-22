@@ -9,16 +9,16 @@
 #' @param xlim x-limit of the plot
 #' @param ylim y-limit of the plot
 #' @param title title of the plot
-#' @param lines boolean that tells the function if the lines should be plotted. If false the dataset will be ploted as points
+#' @param lines boolean that tells the function if the lines should be plotted. If false the dataset will be plotted as points
 #' @param cols specifies the columns of the dataframe that are used for the density computation. It has to match to the columns used to build the density model.
 #' @param density boolean that tells the function if the density should be plotted
 #' @param species dataframe containing the simulated species, it has to contain the column names of cols
 #' @param densityFunction a function that takes a named numeric vector and returns the density at that point
-#' @param resolution int sets the resolution of the denisity grid
-#' @param minimal boolean if true removes titel, label, legend and axis
+#' @param resolution int sets the resolution of the density grid
+#' @param minimal boolean if true removes title, label, legend and axis
 #'
 #' @importFrom rlang .data
-#' @returns the greated plot
+#' @returns the created plot
 #' @export
 #'
 #

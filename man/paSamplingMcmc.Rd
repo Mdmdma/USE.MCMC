@@ -4,7 +4,7 @@
 \alias{paSamplingMcmc}
 \title{paSamplingMcmc
 is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo
-absence sampling using a markov. In a first step a density function is constructed using a GMM fitted to the environment as a
+absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
 limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.}
 \usage{
 paSamplingMcmc(
@@ -41,13 +41,13 @@ paSamplingMcmc(
 
 \item{verbose}{If true the function gives updates on the current state of the chain}
 
-\item{dimensions}{vector containg the names of the dimensions that should be included}
+\item{dimensions}{vector containing the names of the dimensions that should be included}
 
 \item{burnIn}{Integer, number of Robbins-Monro burn-in adaptation steps performed before sampling. During each step the proposal scale is adjusted toward target acceptance 0.234 (Roberts/Rosenthal 2009). Set to 0 to skip adaptation and start sampling immediately at the user-supplied \code{covariance.correction}.}
 
-\item{covariance.correction}{Integer, sets the inital value of the covariance correction}
+\item{covariance.correction}{Integer, sets the initial value of the covariance correction}
 
-\item{precomputed.pca}{If rastPCA has already been evoked, it the result of it can be passed here to not recompute}
+\item{precomputed.pca}{If rastPCA has already been invoked, its result can be passed here to not recompute}
 
 \item{precomputed.env}{Optional environment bundle returned by \code{\link[=precomputeMcmcEnvironment]{precomputeMcmcEnvironment()}}. The environment fit and PCA are constant across presence sets, so when sampling many species on the same environment they can be computed once and passed here to skip the PCA, the environmental GMM fit/density evaluation, the proposal covariance and the distance-threshold computation. The bundle is \code{saveRDS()}-safe and can be reused across R sessions / batch jobs. When supplied it takes precedence over \code{precomputed.pca}; its captured RNG state is restored so results match the inline (uncached) path exactly.}
 
@@ -63,7 +63,7 @@ paSamplingMcmc(
 
 \item{species.cutoff.threshold}{sets the percentile of the species presence GMM that is included in the space that can be visited by the chain}
 
-\item{plot_proc}{If true the function returns plots the progress}
+\item{plot_proc}{If true the function plots the progress}
 
 \item{num.chains}{Number of chains from which samples should be picked}
 
@@ -77,6 +77,6 @@ dataframe containing the sampled points
 \description{
 paSamplingMcmc
 is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo
-absence sampling using a markov. In a first step a density function is constructed using a GMM fitted to the environment as a
+absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
 limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.
 }

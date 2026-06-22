@@ -1,6 +1,6 @@
 ---
 title: "Insights on nearest neighbor search"
-autor: "Mathis Erler"
+author: "Mathis Erler"
 output:
   rmarkdown::html_vignette:
     self_contained: false
@@ -154,7 +154,7 @@ combined.plot.real.space <- suppressWarnings(
 plot(combined.plot.real.space)
 ```
 
-In this case Venice is closest to the test point. If we want to get a real point from our test point using geographical distance as out metric we would therefore choose Venice. 
+In this case Venice is closest to the test point. If we want to get a real point from our test point using geographical distance as our metric we would therefore choose Venice. 
 
 We can now do the same thing in the environmental space. To start lets build an example with just two dimensions. As an example we can look at bioclimatical variables 14 and 15. Bioclim 14 denotes the precipitation of the driest month, bioclim 15 the precipitation seasonality. 
 
@@ -246,9 +246,9 @@ combined.plot.environmental.space <- cowplot::plot_grid(
 plot(combined.plot.environmental.space)
 ```
 
-Now Naples is the closest location. In this case the term distance is still somewhat sound, as both axis have the units mm. It starts to fall apart when axis to not share the same units, as is unclear how the scales of the data compare. In this fabricated case, dimensions of similar scale were chosen, but this is not necessarily the case. As an example bioclim 4 has values ranging between 200 and 900 in Europe. How these variables are scaled to get meaningful results is not clear. One way to evade this issue is to perform a PCA. In this case the different scales of the axis are explained by the respective variability that can be explained with the axis. The unit of the "distance" loses its interpretability, as it will be a mix between temperature and precipitation. Non the less we can find environmentally similar points by selecting the point with the shortest distance to our test points. 
+Now Naples is the closest location. In this case the term distance is still somewhat sound, as both axis have the units mm. It starts to fall apart when axes do not share the same units, as it is unclear how the scales of the data compare. In this fabricated case, dimensions of similar scale were chosen, but this is not necessarily the case. As an example bioclim 4 has values ranging between 200 and 900 in Europe. How these variables are scaled to get meaningful results is not clear. One way to evade this issue is to perform a PCA. In this case the different scales of the axis are explained by the respective variability that can be explained with the axis. The unit of the "distance" loses its interpretability, as it will be a mix between temperature and precipitation. Nonetheless we can find environmentally similar points by selecting the point with the shortest distance to our test points. 
 
-Lets look at a example of our test points when performing a principle component analysis on five bioclim variables(3, 4, 9, 14, 15).
+Let's look at an example of our test points when performing a principal component analysis on five bioclim variables (3, 4, 9, 14, 15).
 
 ```{r pca-example, fig.height=10, fig.width=7}
 set.seed(42)
@@ -330,7 +330,7 @@ plot(combined.plot.environmental.space)
 
 ```
 
-Looking at the first two principal components we see that the test point is climate wise closest to Turin, while still being far. In addition we see that the distance to Naples, Milan and Venice is not much higher. The distance gives us a indication on how similar the best match is. In this case it would probably be sound to say that no good match was found. As our environmental space only contained 7 points this is no surprise. Luckily for us there are more then seven measurement stations in Europe and satellites can provide high resolution data for areas without measurement devices on the ground. At a resolution of 2.5 arc minutes there are over 18'000 data points in western Europe. 
+Looking at the first two principal components we see that the test point is climate wise closest to Turin, while still being far. In addition we see that the distance to Naples, Milan and Venice is not much higher. The distance gives us an indication on how similar the best match is. In this case it would probably be sound to say that no good match was found. As our environmental space only contained 7 points this is no surprise. Luckily for us there are more than seven measurement stations in Europe and satellites can provide high resolution data for areas without measurement devices on the ground. At a resolution of 2.5 arc minutes there are over 18'000 data points in western Europe. 
 
 ```{r handle-data, warnings=FALSE}
 dimensions <- c("PC1", "PC2")
@@ -354,18 +354,18 @@ env.with.pc.sf <- sf::st_as_sf(env.with.pc, coords = dimensions)
 p.env.space.pc <- ggplot(env.with.pc.sf) + 
   geom_sf(size=0.1) +
   theme_minimal() + 
-  labs(title = "The environment in principle components") + 
+  labs(title = "The environment in principal components") + 
   xlab("PC1") + ylab("PC2")
 
 print(p.env.space.pc)
 ```
-\n Now lets explore how we can use the nearest neighbor mapping can help us to uniformly sample points out of this environmental space.
+Now let's explore how the nearest neighbor mapping can help us to uniformly sample points out of this environmental space.
 
 If we would randomly pick points out of the set of points in the environment we would recreate the distribution of points in the environment and not get a flat, uniform, distribution. 
 
 The main principle of the proposed method is that we create a grid of uniformly spaced points, map them back to real points in the environment and then use statistics of the distances to exclude points that had their origin in a region that was too far away from the real points. This works with the assumption that the environment is made up by connected points. 
 
-The function [`paSamplingNn()`][USE.MCMC::paSamplingNn] performs this sampling given the environmental space. Lets look under its hood to understand how it works. 
+The function [`paSamplingNn()`][USE.MCMC::paSamplingNn] performs this sampling given the environmental space. Let's look under its hood to understand how it works. 
 
 In a first step we need to provide the parameters we want to control. 
 
@@ -400,9 +400,9 @@ grid.repeated <- do.call(rbind, replicate(num.samples.per.cell,
                                           simplify = FALSE))
 ```
 
-So far this would does not work, these repeated points would all map to the same nearest neighbor in the environment. In addition to that the grid adds a bias to the sampled points.
+So far this does not work, as these repeated points would all map to the same nearest neighbor in the environment. In addition to that the grid adds a bias to the sampled points.
 
-To eliminate this issue we add uniform noise in the range of the grid spacing to the points. Thereby we loose the grid bias, and sample from random location in each grid cell, while on larger scales still conserving uniform sampling. In addition to that we can now sample multiple points from the same grid cell, as the noise is different for each point. 
+To eliminate this issue we add uniform noise in the range of the grid spacing to the points. Thereby we lose the grid bias, and sample from a random location in each grid cell, while on larger scales still conserving uniform sampling. In addition to that we can now sample multiple points from the same grid cell, as the noise is different for each point. 
 
 ```{r add-noise-to-grid}
 step.scaling = 2
@@ -422,7 +422,7 @@ print(p.grid.noisy)
 
 ```
 
-We have reached the main concept of this approach. So far the points on the grid are not present in the real dataset. For each point in the repeated noisy grid we search the closest neighbor in the real environmental space. This is implement with the FNN package. By using a KD-tree, it can handle large data sets in higher dimensions quickly. 
+We have reached the main concept of this approach. So far the points on the grid are not present in the real dataset. For each point in the repeated noisy grid we search the closest neighbor in the real environmental space. This is implemented with the FNN package. By using a KD-tree, it can handle large data sets in higher dimensions quickly. 
 
 ```{r remapp-points}
 mapped.sampled.point.data <- FNN::get.knnx(env.with.pc[dimensions], 
@@ -437,13 +437,13 @@ p.grid.noisy <- ggplot(mapped.sampled.points) +
 print(p.grid.noisy)
 ```
 
-Now we have points distributed nearly uniformely in the environment. The issue remaining is that we oversampled the border regions, as even cells that did not contain any points where remapped to the closest point, even if that point was in a different grid cell. We now have different options on how to set the distance threshold at which we denote points to have originated too far away. 
+Now we have points distributed nearly uniformly in the environment. The issue remaining is that we oversampled the border regions, as even cells that did not contain any points were remapped to the closest point, even if that point was in a different grid cell. We now have different options on how to set the distance threshold at which we denote points to have originated too far away. 
 
-One option is to use the cell size as the limiting factor. By setting the distance threshold to be halve the cell size, we can eliminate points that where sampled in empty cells. This approach depends on having chosen the cell size well. We can look at the limits.
+One option is to use the cell size as the limiting factor. By setting the distance threshold to be half the cell size, we can eliminate points that were sampled in empty cells. This approach depends on having chosen the cell size well. We can look at the limits.
 
 If we set the grid size to one, we only have one cell. The distance threshold would be very large, we would not remove any points and oversample the border regions. 
 
-On the other hand if the cell size is too small, the threshold will be very small. In the areas with low point densities there will be a lot of points where the distance to the next point is too large. On first look this is no issue, as these points stem from "empty" grid sells. The issue emerges in areas with a high point density. Here there will be no empty cells. Thus at the low limit these areas will be oversampled. 
+On the other hand if the cell size is too small, the threshold will be very small. In the areas with low point densities there will be a lot of points where the distance to the next point is too large. On first look this is no issue, as these points stem from "empty" grid cells. The issue emerges in areas with a high point density. Here there will be no empty cells. Thus at the low limit these areas will be oversampled. 
 
 ```{r, naive-distance-threshold, eval = FALSE}
 distance.threshold <- max(step.y, step.x) / 2
@@ -452,7 +452,7 @@ mapped.sampled.points.filtered <- mapped.sampled.points[
 ```
 
 
-Luckly we have additional information. The original dataset itself gives us some indication what kind of distances are normal. By searching the closest few, but at least more then number of points per gridcell, neighbors, we can compute a histogramm of the distance between points in the original data
+Luckily we have additional information. The original dataset itself gives us some indication what kind of distances are normal. By searching the closest few, but at least more than the number of points per grid cell, neighbors, we can compute a histogram of the distance between points in the original data
 
 ```{r advanced-threshold, message=FALSE}
 nearest.neighbors.distance<- FNN::knn.dist(env.with.pc[dimensions],
@@ -482,7 +482,7 @@ p.neighbor.distance.histogramm <- suppressMessages(
 
 print(p.neighbor.distance.histogramm)
 ```
-We see that the distance histogram is dominated by the low distances originating in regions with high densities. If we look at the top end on the other hand, we get information on the spacing of areas with a low point density. We probably do not want to take the maximal distance as our threshold, as the dataset could contain outlayers. We can sort the the vector containing the distances and take a value with some safty threshold from the extreme values. 
+We see that the distance histogram is dominated by the low distances originating in regions with high densities. If we look at the top end on the other hand, we get information on the spacing of areas with a low point density. We probably do not want to take the maximal distance as our threshold, as the dataset could contain outliers. We can sort the vector containing the distances and take a value with some safety threshold from the extreme values. 
 
 ```{r find-advanced-threshold}
 sorted.nearest.neighbor.distances <- sort(nearest.neighbors.distance, 
@@ -501,11 +501,11 @@ mapped.sampled.points.filtered.excluded <- mapped.sampled.points[mapped.sampled.
 
 p.mapped.sampled.points.filtered.excluded <- ggplot(mapped.sampled.points.filtered.excluded) + 
   geom_point(aes(x=PC1, y=PC2, color=distance), alpha=0.5) + 
-  labs(title = "Points that where excluded")
+  labs(title = "Points that were excluded")
 cowplot::plot_grid(p.mapped.sampled.points.filtered, p.mapped.sampled.points.filtered.excluded, ncol = 1)
 ```
 
-It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated the the distance threshold. Especially at the borders of the environment the probability to map twice to the same point its high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. This leads to some oversampling. It is not trivial how to eliminate this issue. 
+It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated to the distance threshold. Especially at the borders of the environment the probability to map twice to the same point is high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. This leads to some oversampling. It is not trivial how to eliminate this issue. 
 
 ```{r remove-dublicates}
 mapped.sampled.points.filtered.unique <- mapped.sampled.points.filtered[
@@ -517,14 +517,14 @@ sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampl
 removed.points <- mapped.sampled.points.filtered[duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
 p.removed.points <- ggplot(removed.points) + 
   geom_point(aes(x=PC1, y=PC2)) +
-  labs(title = "Duplicated points that where removed")
+  labs(title = "Duplicated points that were removed")
 print(p.removed.points)
 ```
 We can see that the chosen threshold is reasonable, as it reduces the oversampling in border regions well without removing points in areas that we think to be part of the environment.
 
-This threshold method can also be used to estimate a upper bound to the useful grid resolution. A function that provides this functionality is given by [`maxresNn()`][USE.MCMC::maxResNn]. 
+This threshold method can also be used to estimate an upper bound to the useful grid resolution. A function that provides this functionality is given by [`maxResNn()`][USE.MCMC::maxResNn]. 
 
-In difference to the original [`paSampling()`][USE.MCMC::paSampling] method this approach should still converge to uniform sampling for too low grid resolutions. The issue here is that it can not be the guaranteed that the distribution is flat for small sample sizes. The deviations from uniform sampling are not expected to be at the same position as the high point density areas of the underlying distribution
+In difference to the original [`paSampling()`][USE.MCMC::paSampling] method this approach should still converge to uniform sampling for too low grid resolutions. The issue here is that it can not be guaranteed that the distribution is flat for small sample sizes. The deviations from uniform sampling are not expected to be at the same position as the high point density areas of the underlying distribution
 
 From here we can use the same approach as in the original method to exclude points that have properties that coincide with the presence species.
 
@@ -646,4 +646,4 @@ p.points.in.geographical.space <- ggplot(sampled.points.sf.geo) +
 print(p.points.in.geographical.space)
 ```
 
-We can see that the points that where uniformly sampled in the environmental space are not evenly spaced any more. Areas with large environmental gradients get sampled more often. 
+We can see that the points that were uniformly sampled in the environmental space are not evenly spaced any more. Areas with large environmental gradients get sampled more often. 

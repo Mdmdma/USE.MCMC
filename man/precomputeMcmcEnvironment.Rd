@@ -42,7 +42,7 @@ A list (S3 class \code{mcmc_environment}) with elements \code{pcs_packed},
 Runs the \emph{environment-only} portion of \code{\link[=paSamplingMcmc]{paSamplingMcmc()}} once and returns a
 reusable, serialisable bundle. Everything this function computes depends only
 on the environmental raster (plus \code{dimensions}, \code{seed.number} and the
-subsampling), and is therefore \strong{constant across presence sets} — so when the
+subsampling), and is therefore \strong{constant across presence sets}, so when the
 same environment is sampled for many species / presence draws, this work can
 be done a single time and handed back to \code{\link[=paSamplingMcmc]{paSamplingMcmc()}} via its
 \code{precomputed.env} argument.

@@ -17,14 +17,14 @@ mclustDensityFunction(
 
 \item{species.model}{mclust gaussian mixture that uses points}
 
-\item{dim}{string vector specifing the names of the dimensions}
+\item{dim}{string vector specifying the names of the dimensions}
 
 \item{threshold}{sets the cutoff density from the environment}
 
 \item{species.cutoff.threshold}{set the scaling factor with which the species model gets scaled before subtraction.}
 }
 \value{
-Function that can calculates the density at a point
+Function that calculates the density at a point
 }
 \description{
 Helper to create a Density function that uses mclust Gaussian mixtures

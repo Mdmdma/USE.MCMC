@@ -3,11 +3,11 @@
 #' The method is based on the assumption that the underlying dataset has a connected structure.
 #'  By looking at the distance between points in areas with a low density, ie large distances between points, we can determine the distance that
 #'  a realistic points could have if it originated from the observed environment to the realized data point. If we set the maximal distance to half the
-#'  distance between points in the low density region, excluding outlayers, we exclude points that originate from "empty cells" in the classical case.
+#'  distance between points in the low density region, excluding outliers, we exclude points that originate from "empty cells" in the classical case.
 #'  We still over-sample the border regions, as the possible directions in which a possible real point can lay are limited compared to points on the inside.
 #'
 #'  A possible way to eliminate this issue could be to find n neighbors in the real dataset, look at the direction in which we can find them and reject
-#'  a point with a probability of one minus the ration of the covered directions to the full hyper-sphere. In the high dimensional case this seems
+#'  a point with a probability of one minus the ratio of the covered directions to the full hyper-sphere. In the high dimensional case this seems
 #'  difficult, therefore it was not implemented.
 #'
 #'  The issue is analogue to  cells that only partially overlap with the environmental space. For the points in these cells the probability to be sampled
@@ -23,11 +23,11 @@
 #'  region uniform sampling is meant to fill. \code{dim.correction} rescales the
 #'  threshold by a factor that is \eqn{1} at \code{d = 2} (so two-dimensional
 #'  behaviour is unchanged) and tracks this growth for \code{d > 2}. The NN
-#'  \emph{remapping} itself needs no such correction — it is uniform over the
+#'  \emph{remapping} itself needs no such correction - it is uniform over the
 #'  support in every dimension.
 #'
 #' @param env.data Dataframe containing the environmental observation
-#' @param index.for.cutof Index that is supposed to describe a low density point but not an outlayer
+#' @param index.for.cutof Index that is supposed to describe a low density point but not an outlier
 #' @param dimensions Vector containing the dimensions included in the analysis
 #' @param num.neighbors Number of Neighbors
 #' @param dim.correction Dimension correction for the rejection radius. Either a

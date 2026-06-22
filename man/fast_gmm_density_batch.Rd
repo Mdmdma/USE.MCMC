@@ -7,7 +7,7 @@
 fast_gmm_density_batch(X, pre)
 }
 \arguments{
-\item{X}{Numeric matrix (n x d) or data.frame coercible to one — query points
+\item{X}{Numeric matrix (n x d) or data.frame coercible to one - query points
 in rows, dimensions in columns.}
 
 \item{pre}{List of precomputed parameters from \code{precompute_gmm_params}.}

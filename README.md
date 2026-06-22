@@ -3,7 +3,7 @@ Development Repository
 
 # TLDR
 
-We can use markov chains to sample pseudo absences in moderate
+We can use Markov chains to sample pseudo absences in moderate
 dimensions. In the process we overcome limitations of the original
 paper, especially those related to a sampling grid, only two dimensions
 in the PCA space, and the hard cutoff threshold to exclude the presence
@@ -52,14 +52,14 @@ Pages site.
 We fit Gaussian mixture models (GMMs) to both the points of the
 environment and the model species in the PCA space of their
 environmental variables. From these GMMs we construct a function on
-which we run a markov chain. The figure below displays the sampled
-function, the sample species points as well as the sampled points in the
-space spanned by the first two principle components.
+which we run a Markov chain. The figure below displays the sampled
+function, the sampled species points as well as the sampled points in the
+space spanned by the first two principal components.
 
 <figure>
 <img src="man/figures/points-in-the-environment-1.png"
-alt="sampled points in the pc space overlayd over the sampled function" />
-<figcaption aria-hidden="true">sampled points in the pc space overlayd
+alt="sampled points in the pc space overlaid over the sampled function" />
+<figcaption aria-hidden="true">sampled points in the pc space overlaid
 over the sampled function</figcaption>
 </figure>
 
@@ -74,7 +74,7 @@ space</figcaption>
 
 Looking at the density of the pc scores, we can see that our newly
 developed method enables the user to sample more dimensions uniformly.
-If this is beneficial to the downstream model depends on the amount of
+Whether this is beneficial to the downstream model depends on the amount of
 variability explained by the first two components.
 
 <figure>

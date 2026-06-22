@@ -56,7 +56,7 @@ paSamplingNn(
 
 \item{nn.based.presence.exclusion}{Boolean. If true, a candidate pseudo-absence is excluded when it lies in a neighbourhood as dense in presences as the presence core (measured by the mean distance to the nearest presence points). This metric criterion replaces the planar convex hull of the original method and works in any dimension. If false, a kernel-density criterion is used instead (limited to at most 6 dimensions).}
 
-\item{data.based.distance.threshold}{If true uses the dataset to evaluate realistic distances to the repapped points}
+\item{data.based.distance.threshold}{If true uses the dataset to evaluate realistic distances to the remapped points}
 
 \item{n.candidates}{(integer; optional) number of raw uniform proposals drawn per batch over the environmental bounding box. Defaults to \code{grid.res^2 * n.tr} (the legacy two-dimensional budget). Because the realized environment fills an exponentially smaller share of its bounding box as the number of \code{dimensions} grows, high-dimensional runs need a larger value (or a larger \code{n.tr}); the function draws additional batches up to a cap when \code{n.samples} is requested and warns if it cannot reach it.}
 
@@ -72,5 +72,5 @@ The bandwidth of the kernel can be automatically estimated from the presence obs
 }
 \details{
 Being designed with species distribution models in mind, \code{paSampling} allows collectively sampling pseudo-absences for both the training and testing dataset (optional). In both cases, the user must provide a number of observations that will be sampled in each cell of the sampling grid (\code{n.tr}: points for the training dataset; \code{n.ts}: points for the testing dataset).
-Note that the optimal resolution of the sampling grid can be found using the \code{optimRes} function. Also, note that the number of pseudo-absences eventually sampled in each cell by the internally-called \code{uniformSampling} function depends on the spatial configuration of the observations within the environmental space. Indeed, in most cases some cells of the sampling grid will be empty (i.e., those at the boundary of the environmental space). For this reason, the number of pseudo-absences returned by \code{paSampling} is likely to be lower than the product between the number of cells of the sampling gird and \code{n.tr}(or \code{n.ts}).
+Note that the optimal resolution of the sampling grid can be found using the \code{optimRes} function. Also, note that the number of pseudo-absences eventually sampled in each cell by the internally-called \code{uniformSampling} function depends on the spatial configuration of the observations within the environmental space. Indeed, in most cases some cells of the sampling grid will be empty (i.e., those at the boundary of the environmental space). For this reason, the number of pseudo-absences returned by \code{paSampling} is likely to be lower than the product between the number of cells of the sampling grid and \code{n.tr}(or \code{n.ts}).
 }

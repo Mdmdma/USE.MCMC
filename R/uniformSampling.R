@@ -6,7 +6,6 @@
 #' @param sdf an sf object having point geometry given by the PC-scores values
 #' @param grid.res (integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes()} function.
 #' @param n.tr (integer) number of points for the training dataset to sample in each cell of the sampling grid
-#' @param n.tr (integer; optional) number of expected points given a certain prevalence threshold for the training dataset.
 #' @param n.ts (integer; optional) number of  points for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.
 #' @param n.prev (double) sample prevalence
 #' @param sub.ts (logical) sample the validation points

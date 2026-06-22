@@ -1,8 +1,8 @@
 #' Function that plots the geographical location of points onto a raster
 #'
 #' @param presence.distribution.raster Raster containing the target distribution
-#' @param presence.points Dataframe or list containing a geometry cloumn that contains points to be plotted
-#' @param absence.points Dataframe or list containing a geometry cloumn that contains points to be plotted
+#' @param presence.points Dataframe or list containing a geometry column that contains points to be plotted
+#' @param absence.points Dataframe or list containing a geometry column that contains points to be plotted
 #' @param minimal Boolean if TRUE removes the labels legend and title
 #'
 #' @returns NULL, as the function just plots
