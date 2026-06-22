@@ -20,7 +20,9 @@ paSamplingNn(
   precomputed.pca = NULL,
   n.samples = NULL,
   nn.based.presence.exclusion = TRUE,
-  data.based.distance.threshold = TRUE
+  data.based.distance.threshold = TRUE,
+  n.candidates = NULL,
+  dim.correction = "voronoi"
 )
 }
 \arguments{
@@ -46,15 +48,19 @@ paSamplingNn(
 
 \item{verbose}{(logical) Print verbose}
 
-\item{dimensions}{(string vector) specify the pc components to analyse. Has to have length 2}
+\item{dimensions}{(string vector) specify the pc components to analyse. Must have length >= 2; any number of components is supported (the method is dimension-general, only the compute cost grows with dimension).}
 
 \item{precomputed.pca}{If in an other step the pca has already been calculated it can be but in here to speed up computation}
 
 \item{n.samples}{Number of sample points that are returned}
 
-\item{nn.based.presence.exclusion}{Boolean, if true uses nn to select the quantile with closest neighbors and computes the convex hull around them. All points laying inside this convex hull are excludet.}
+\item{nn.based.presence.exclusion}{Boolean. If true, a candidate pseudo-absence is excluded when it lies in a neighbourhood as dense in presences as the presence core (measured by the mean distance to the nearest presence points). This metric criterion replaces the planar convex hull of the original method and works in any dimension. If false, a kernel-density criterion is used instead (limited to at most 6 dimensions).}
 
 \item{data.based.distance.threshold}{If true uses the dataset to evaluate realistic distances to the repapped points}
+
+\item{n.candidates}{(integer; optional) number of raw uniform proposals drawn per batch over the environmental bounding box. Defaults to \code{grid.res^2 * n.tr} (the legacy two-dimensional budget). Because the realized environment fills an exponentially smaller share of its bounding box as the number of \code{dimensions} grows, high-dimensional runs need a larger value (or a larger \code{n.tr}); the function draws additional batches up to a cap when \code{n.samples} is requested and warns if it cannot reach it.}
+
+\item{dim.correction}{Dimension correction for the support-membership distance threshold, forwarded to \code{\link{optimalDistanceThresholdNn}}. One of \code{"voronoi"} (default), \code{"simplex"}, \code{"none"}, or a positive numeric multiplier. All equal 1 at two dimensions, so two-dimensional results are unchanged.}
 }
 \value{
 An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.

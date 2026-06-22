@@ -45,3 +45,12 @@ test_that("maxResNn works with PCA=TRUE and precomputed PCA", {
   expect_true(is.numeric(result))
   expect_true(result > 0)
 })
+
+test_that("maxResNn returns positive numeric in higher dimensions", {
+  r <- make_test_raster()
+  rpc <- rastPCA(r, stand = TRUE)
+  result <- maxResNn(rpc, dimensions = c("PC1", "PC2", "PC3", "PC4"), PCA = TRUE)
+  expect_true(is.numeric(result))
+  expect_length(result, 1)
+  expect_true(result > 0)
+})

@@ -83,3 +83,41 @@ test_that("paSamplingNn works without pres (uniform sampling)", {
   )
   expect_true(inherits(result, "sf"))
 })
+
+# --- Arbitrary-dimension support ---
+
+test_that("paSamplingNn rejects fewer than two dimensions", {
+  r <- make_test_raster()
+  expect_error(paSamplingNn(env.rast = r, dimensions = "PC1"),
+               "at least 2 elements")
+})
+
+test_that("paSamplingNn samples in 3D with nn-based exclusion + data threshold", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 40)
+  result <- paSamplingNn(
+    env.rast = r, pres = pres, grid.res = 6, n.tr = 3,
+    dimensions = c("PC1", "PC2", "PC3"),
+    nn.based.presence.exclusion = TRUE,
+    data.based.distance.threshold = TRUE,
+    n.samples = 10, verbose = FALSE, plot_proc = FALSE
+  )
+  expect_true(inherits(result, "sf"))
+  expect_true(nrow(result) <= 10)
+  # geometry stays geographic (2D) regardless of the PC-space dimensionality
+  expect_true(all(c("PC1", "PC2", "PC3") %in% names(result)))
+})
+
+test_that("paSamplingNn samples in 4D (compute-bound, more candidates)", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 40)
+  result <- paSamplingNn(
+    env.rast = r, pres = pres,
+    dimensions = c("PC1", "PC2", "PC3", "PC4"),
+    nn.based.presence.exclusion = TRUE,
+    data.based.distance.threshold = TRUE,
+    n.candidates = 4000, n.samples = 8, verbose = FALSE, plot_proc = FALSE
+  )
+  expect_true(inherits(result, "sf"))
+  expect_true(nrow(result) <= 8)
+})

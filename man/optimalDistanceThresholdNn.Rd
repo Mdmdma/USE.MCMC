@@ -8,7 +8,8 @@ optimalDistanceThresholdNn(
   env.data = NULL,
   index.for.cutof = 5,
   dimensions = c("PC1", "PC2"),
-  num.neighbors = 3
+  num.neighbors = 3,
+  dim.correction = "voronoi"
 )
 }
 \arguments{
@@ -19,6 +20,14 @@ optimalDistanceThresholdNn(
 \item{dimensions}{Vector containing the dimensions included in the analysis}
 
 \item{num.neighbors}{Number of Neighbors}
+
+\item{dim.correction}{Dimension correction for the rejection radius. Either a
+single positive numeric used as a literal multiplier, or one of
+\code{"voronoi"} (default; multiply by \eqn{\sqrt{d/2}}, the cubic deep-hole
+growth), \code{"simplex"} (multiply by \eqn{\sqrt{3d/(2(d+1))}}, a milder
+variant that saturates near \eqn{1.22} and is preferable if the default leaks
+pseudo-absences outside the support), or \code{"none"} (no correction, the
+legacy behaviour). All options equal \eqn{1} at \code{d = 2}.}
 }
 \value{
 maximal distance a point should be remapped from to have originated from a region inside of the environmental space.
@@ -37,4 +46,17 @@ difficult, therefore it was not implemented.
 
 The issue is analogue to  cells that only partially overlap with the environmental space. For the points in these cells the probability to be sampled
 is higher than it should be.
+
+\strong{Dimension dependence.} The bare \code{D_low / 2} rule is only correct in
+two dimensions. The deepest \emph{legitimate} interior gap of a point cloud (the
+Voronoi-cell circumradius / largest empty ball that still sits inside the
+support) grows with dimension relative to the local point spacing: for a cloud
+of spacing \eqn{a} it scales like \eqn{(\sqrt{d}/2)\,a}. Keeping the fixed
+\code{/2} factor as \code{d} grows therefore \emph{over-rejects} genuine
+low-density interior points and punches spurious holes in exactly the sparse
+region uniform sampling is meant to fill. \code{dim.correction} rescales the
+threshold by a factor that is \eqn{1} at \code{d = 2} (so two-dimensional
+behaviour is unchanged) and tracks this growth for \code{d > 2}. The NN
+\emph{remapping} itself needs no such correction — it is uniform over the
+support in every dimension.
 }

@@ -9,6 +9,7 @@
 ^doc$
 ^Meta$
 ^development_scripts/
+^tools$
 ^\.github$
 ^\.positai$
 ^\.claude$

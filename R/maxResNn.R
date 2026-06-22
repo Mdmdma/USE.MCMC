@@ -2,7 +2,7 @@
 #' is a function that can be used to compute a reasonable grid resolution for nearest neighbor based uniform sampling.
 #' The core idea behind its working principle is that we want to expect a grid cell to contain points if it overlaps with the environment.
 #' This implementation looks at the low density regions using distance to n neighbors as a proxy.
-#' The approach assumes that both coordinates have similar range, as the axes are not weighted when computing Neighbors and converting from distances to number of grid cells
+#' The approach assumes that all coordinates have similar range, as the axes are not weighted when computing Neighbors and converting from distances to number of grid cells. This holds for standardized PCA axes; with \code{stand = TRUE} in \code{rastPCA} the per-axis ranges are comparable. It works for any number of \code{dimensions} (not just two).
 #' If multiple points from the same grid cell should be sampled, the number of neighbors included in the computation should be set accordingly
 #'
 #' @param env.data.raster Raster containing the environmental parameters
@@ -64,9 +64,10 @@ maxResNn<- function(env.data.raster, dimensions = c("PC1", "PC2") , low.end.of.i
   neighbor.distance.flat <- as.vector(neighbor.distance)
   sorted.distances <- sort(neighbor.distance.flat)
   top.end.points.without.outlayers.distance <- sorted.distances[(length(sorted.distances) - low.end.of.inclueded.points):(length(sorted.distances) - high.end.of.included.points)]
-  data.ranges <- sapply(pc.df, function(col) range(col))
-  max.dim.range <- max(data.ranges[2, 1] - data.ranges[1, 1],
-                       data.ranges[2, 2] - data.ranges[1, 2])
+  # Widest per-axis extent over ALL requested dimensions (the previous version
+  # only looked at the first two columns and silently ignored axes 3..d).
+  axis.spans <- sapply(pc.df[dimensions], function(col) diff(range(col)))
+  max.dim.range <- max(axis.spans)
   max.num.of.cells <- ceiling(max.dim.range / mean(top.end.points.without.outlayers.distance))
 
   return(max.num.of.cells)

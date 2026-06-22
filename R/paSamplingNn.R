@@ -18,12 +18,14 @@
 #' @param prev (double) prevalence value to be specified instead of n.tr and n.ts
 #' @param plot_proc (logical) plot progress of the sampling, default FALSE
 #' @param verbose (logical) Print verbose
-#' @param dimensions (string vector) specify the pc components to analyse. Has to have length 2
+#' @param dimensions (string vector) specify the pc components to analyse. Must have length >= 2; any number of components is supported (the method is dimension-general, only the compute cost grows with dimension).
 #' @param precomputed.pca If in an other step the pca has already been calculated it can be but in here to speed up computation
-#' @param nn.based.presence.exclusion Boolean, if true uses nn to select the quantile with closest neighbors and computes the convex hull around them. All points laying inside this convex hull are excludet.
+#' @param nn.based.presence.exclusion Boolean. If true, a candidate pseudo-absence is excluded when it lies in a neighbourhood as dense in presences as the presence core (measured by the mean distance to the nearest presence points). This metric criterion replaces the planar convex hull of the original method and works in any dimension. If false, a kernel-density criterion is used instead (limited to at most 6 dimensions).
 #' @param data.based.distance.threshold If true uses the dataset to evaluate realistic distances to the repapped points
 #' @param n.samples Number of sample points that are returned
-#' @importFrom stats na.omit quantile
+#' @param n.candidates (integer; optional) number of raw uniform proposals drawn per batch over the environmental bounding box. Defaults to \code{grid.res^2 * n.tr} (the legacy two-dimensional budget). Because the realized environment fills an exponentially smaller share of its bounding box as the number of \code{dimensions} grows, high-dimensional runs need a larger value (or a larger \code{n.tr}); the function draws additional batches up to a cap when \code{n.samples} is requested and warns if it cannot reach it.
+#' @param dim.correction Dimension correction for the support-membership distance threshold, forwarded to \code{\link{optimalDistanceThresholdNn}}. One of \code{"voronoi"} (default), \code{"simplex"}, \code{"none"}, or a positive numeric multiplier. All equal 1 at two dimensions, so two-dimensional results are unchanged.
+#' @importFrom stats na.omit quantile complete.cases runif
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
 #' @export
 #'
@@ -33,7 +35,9 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
                         precomputed.pca = NULL,
                         n.samples = NULL,
                         nn.based.presence.exclusion = TRUE,
-                        data.based.distance.threshold = TRUE) {
+                        data.based.distance.threshold = TRUE,
+                        n.candidates = NULL,
+                        dim.correction = "voronoi") {
   # Input validation
   check_raster_input(env.rast, "env.rast")
   check_spatial_points(pres, "pres", allow_null = TRUE)
@@ -49,6 +53,9 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
   }
   if (!is.null(n.samples) && (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1)) {
     stop(paste0("'n.samples' must be NULL or a positive number, got ", deparse(n.samples)), call. = FALSE)
+  }
+  if (!is.null(n.candidates) && (!is.numeric(n.candidates) || length(n.candidates) != 1 || n.candidates < 1)) {
+    stop(paste0("'n.candidates' must be NULL or a positive number, got ", deparse(n.candidates)), call. = FALSE)
   }
   if (!is.logical(nn.based.presence.exclusion) || length(nn.based.presence.exclusion) != 1) {
     stop(paste0("'nn.based.presence.exclusion' must be a single logical value, got '",
@@ -106,125 +113,150 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
 
   check_columns_exist(env.with.pc, dimensions, "env.with.pc", "dimensions")
 
-  env.with.pc.fs <- sf::st_as_sf(env.with.pc, coords = dimensions)
+  d <- length(dimensions)
+  pc.mat <- as.matrix(env.with.pc[dimensions])
 
-  # compute the grid cells
-  grid <- sf::st_make_grid(env.with.pc.fs, n = c(grid.res)) %>%
-    sf::st_centroid() %>%
-    sf::st_coordinates() %>%
-    as.data.frame()
-  names(grid) = dimensions
-  # repeat the grid so to get the desired number of points per cell
-  grid.repeated <- do.call(rbind, replicate(n.tr, grid, simplify = FALSE))
+  # --- Uniform proposals over the environmental support (dimension-general) ------
+  # The original method built a regular sf grid (sf::st_make_grid) over PC1/PC2 and
+  # added per-axis x/y noise. Both are planar-only. We instead draw points directly
+  # and uniformly over the per-axis bounding box of the cloud, which is exactly the
+  # same proposal distribution in 2D but valid for any number of `dimensions`.
+  #
+  # Remapping these box-uniform proposals to their nearest real point yields
+  # pseudo-absences that are uniform over the SUPPORT in every dimension: a proposal
+  # selects a data point iff it lands in that point's Voronoi cell, and the expected
+  # Voronoi-cell volume equals 1 / local-density in all d, so the "denser regions
+  # hold more points" and "denser regions have smaller cells" effects cancel. The
+  # remapping therefore needs NO dimension correction. What does degrade with d is
+  # the acceptance rate (below): the cloud fills an exponentially smaller share of
+  # its bounding box, so high-dimensional runs are compute-bound by design.
+  axis.min  <- apply(pc.mat, 2, min)
+  axis.span <- apply(pc.mat, 2, function(x) diff(range(x)))
+  # notional per-axis cell spacing, kept so grid.res / n.tr retain their meaning
+  step <- axis.span / max(1, grid.res)
 
-  # add uniform noise to simulate sampling a random location in each cell.
-  # Use the grid extent + resolution to derive the per-axis cell spacing; this is
-  # robust to st_make_grid's cell ordering (column-major vs row-major).
-  step.scaling = 1
-  step.x <- (diff(range(grid[, 1])) / max(1, grid.res - 1)) / step.scaling
-  step.y <- (diff(range(grid[, 2])) / max(1, grid.res - 1)) / step.scaling
+  if (is.null(n.candidates)) {
+    n.candidates <- max(as.integer(round(grid.res^2 * n.tr)), 1L)
+  }
+  n.candidates <- as.integer(round(n.candidates))
 
-  noise.x <- stats::runif(nrow(grid.repeated), -step.x, step.x)
-  noise.y <- stats::runif(nrow(grid.repeated), -step.y, step.y)
-  noise <- data.frame(noise.x, noise.y)
-  names(noise) <- dimensions
-  grid.noisy <- grid.repeated + noise
-
-  # map the sampled points to real points in the environments
-  mapped.sampled.point.data <- FNN::get.knnx(env.with.pc[dimensions], grid.noisy, k = 1)
-  mapped.sampled.points <- env.with.pc[mapped.sampled.point.data$nn.index,]
-  mapped.sampled.points$distance <- mapped.sampled.point.data$nn.dist
-
+  # Support-membership distance threshold (dimension-corrected; see
+  # optimalDistanceThresholdNn). A proposal is kept only if its nearest real point
+  # is within this distance, which rejects proposals that landed in genuine holes
+  # outside the support. The sqrt(d/2)-type correction is a no-op at d = 2.
   if (data.based.distance.threshold) {
     distance.threshold <- optimalDistanceThresholdNn(env.data = env.with.pc,
-                                                     dimensions = dimensions)
+                                                     dimensions = dimensions,
+                                                     dim.correction = dim.correction)
   } else {
-    distance.threshold <- max(step.y, step.x) / 2
+    distance.threshold <- (max(step) / 2) * .nnThresholdDimFactor(d, dim.correction)
   }
-  mapped.sampled.points.filtered <- mapped.sampled.points[mapped.sampled.points$distance < distance.threshold, ]
 
-  # Remove points that are located in the region that is associated with the target species
-  # Analog to the paper the convex hull is computed, but the we just remove the points that layed in this area, instead of
-  # excluding them from the possible dataset. This is done as it could happen that the maximal grid resolution could change excluding this area.
+  # Draw, remap and threshold in batches until we have enough unique survivors (or
+  # the draw budget is spent). A single batch reproduces the legacy single-pass
+  # behaviour when n.samples is not requested.
+  target      <- if (!is.null(n.samples)) n.samples else NA_real_
+  max.batches <- if (!is.null(n.samples)) 25L else 1L
+  kept.index  <- integer(0)
+  kept.dist   <- numeric(0)
+  n.accepted  <- 0L
+  for (b in seq_len(max.batches)) {
+    u <- matrix(stats::runif(n.candidates * d), ncol = d)
+    u <- sweep(sweep(u, 2, axis.span, `*`), 2, axis.min, `+`)  # scale to [min, max] per axis
+    nn <- FNN::get.knnx(pc.mat, u, k = 1)
+    keep <- nn$nn.dist[, 1] < distance.threshold
+    if (any(keep)) {
+      n.accepted <- n.accepted + sum(keep)
+      kept.index <- c(kept.index, nn$nn.index[keep, 1])
+      kept.dist  <- c(kept.dist,  nn$nn.dist[keep, 1])
+      first <- !duplicated(kept.index)           # one row per distinct real point
+      kept.index <- kept.index[first]
+      kept.dist  <- kept.dist[first]
+    }
+    if (!is.na(target) && length(kept.index) >= target) break
+  }
+
+  if (length(kept.index) == 0L) {
+    warning("No proposals fell within the support distance threshold; returning an empty sample. ",
+            "In high dimensions the acceptance rate collapses (the realized environment fills an ",
+            "exponentially small fraction of its bounding box) - increase 'n.candidates' or 'n.tr'.",
+            call. = FALSE)
+    return(sf::st_as_sf(env.with.pc[0, , drop = FALSE], coords = c("x", "y")))
+  }
+  if (!is.na(target) && length(kept.index) < target) {
+    message(sprintf(paste0("Only %d unique pseudo-absences survived the support filter after %d ",
+                           "batches (requested %d). The acceptance rate falls steeply with ",
+                           "dimension; raise 'n.candidates' or 'n.tr' to draw more."),
+                    length(kept.index), max.batches, as.integer(target)))
+  }
+
+  mapped.sampled.points.filtered <- env.with.pc[kept.index, , drop = FALSE]
+  mapped.sampled.points.filtered$distance <- kept.dist
+  n.duplicate.maps <- n.accepted - length(kept.index)
+
+  # --- Remove pseudo-absences that fall in the species' presence region ---------
+  # The original method excluded points inside the convex hull of the dense presence
+  # sub-cloud (sf::st_convex_hull / st_within). A convex hull is planar-only AND, in
+  # high dimensions, statistically wrong: it is pinned by a few extreme presences yet
+  # encloses vast empty "corner" volume, so it would delete legitimate pseudo-
+  # absences far from any presence. We instead apply a local metric criterion in PC
+  # space, which reduces to "inside the dense presence blob" in 2D and is valid in
+  # any dimension.
   if (!is.null(pres)) {
-    # use distance to the 100 closest other presence locations as a proxy for density instead of the kernel.
-    if (nn.based.presence.exclusion) {
-      if (verbose) message("nearest neigbor based presence exclusion")
-      virtual.presence.points.pc <- terra::extract(rpc$PCs, occ.vec, bind = TRUE) %>%
-        sf::st_as_sf()
-      virtual.presence.points.pc <- cbind(sf::st_drop_geometry(virtual.presence.points.pc),
-                                          sf::st_coordinates(virtual.presence.points.pc))
-      check_columns_exist(virtual.presence.points.pc, dimensions,
-                          "virtual.presence.points.pc", "dimensions")
-      # Drop presence points that fell on no-data cells; FNN::get.knnx refuses NAs.
-      virtual.presence.points.pc <- virtual.presence.points.pc[
-        stats::complete.cases(virtual.presence.points.pc[, dimensions, drop = FALSE]), ,
-        drop = FALSE]
-      if (nrow(virtual.presence.points.pc) < 2) {
-        stop("Too few non-NA presence points to compute a presence-density convex hull",
-             call. = FALSE)
-      }
+    virtual.presence.points.pc <- terra::extract(rpc$PCs, occ.vec, bind = TRUE) %>%
+      sf::st_as_sf()
+    virtual.presence.points.pc <- cbind(sf::st_drop_geometry(virtual.presence.points.pc),
+                                        sf::st_coordinates(virtual.presence.points.pc))
+    check_columns_exist(virtual.presence.points.pc, dimensions,
+                        "virtual.presence.points.pc", "dimensions")
+    # Drop presence points that fell on no-data cells; FNN::get.knnx refuses NAs.
+    virtual.presence.points.pc <- virtual.presence.points.pc[
+      stats::complete.cases(virtual.presence.points.pc[, dimensions, drop = FALSE]), ,
+      drop = FALSE]
+    if (nrow(virtual.presence.points.pc) < 2) {
+      stop("Too few non-NA presence points to compute a presence-density region",
+           call. = FALSE)
+    }
+    pres.mat <- as.matrix(virtual.presence.points.pc[dimensions])
+    cand.mat <- as.matrix(mapped.sampled.points.filtered[dimensions])
 
-      k.neighbors <- min(100, nrow(virtual.presence.points.pc))
-      get.nearest.neighbors <- FNN::get.knnx(virtual.presence.points.pc[dimensions],
-                                             virtual.presence.points.pc[dimensions],
-                                             k = k.neighbors)
-      average.distance.to.neighbors <- rowMeans(get.nearest.neighbors$nn.dist)
-      idx <- which(average.distance.to.neighbors <= quantile(average.distance.to.neighbors, 1 - thres))
-      points.with.closest.neighbors <- virtual.presence.points.pc[idx, ]
-      convex.hull <- sf::st_as_sf(points.with.closest.neighbors, coords = dimensions) %>%
-        sf::st_union() %>%
-        sf::st_convex_hull()
-      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords = dimensions)
-      outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, convex.hull, sparse = FALSE), ]
-      sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
-      colnames(sampled.points) <- dimensions
-      sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+    if (nn.based.presence.exclusion) {
+      if (verbose) message("nearest neighbor based presence exclusion")
+      # Presence-density proxy: mean distance to the k nearest OTHER presences.
+      k.neighbors <- min(100L, nrow(pres.mat))
+      pres.self  <- FNN::get.knnx(pres.mat, pres.mat,
+                                  k = min(k.neighbors + 1L, nrow(pres.mat)))
+      pres.proxy <- rowMeans(pres.self$nn.dist[, -1, drop = FALSE])   # drop self (col 1)
+      # Same statistic at each candidate (distance to its k nearest presences).
+      cand.knn   <- FNN::get.knnx(pres.mat, cand.mat, k = k.neighbors)
+      cand.proxy <- rowMeans(cand.knn$nn.dist)
+      # The presence "core" is the densest (1 - thres) quantile => smallest proxies.
+      # Keep candidates that are LESS dense in presences than that core.
+      proxy.cut <- quantile(pres.proxy, 1 - thres)
+      outside   <- cand.proxy > proxy.cut
     } else {
       if (verbose) message("kernel based presence exclusion")
-      id_rast <- terra::rast(vals = 1:terra::ncell(env.rast),
-                             names = "myID",
-                             extent = terra::ext(env.rast),
-                             nrows = terra::nrow(env.rast),
-                             ncols = terra::ncol(env.rast),
-                             crs = terra::crs(env.rast))
-      abio.st <- terra::as.data.frame(c(id_rast, env.rast))
-      dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[dimensions]]), xy = TRUE)
-      PC12occ <- terra::extract(id_rast, occ.vec, cells = FALSE, df = FALSE, ID = FALSE)[, 1]
-      PC12ex <- na.omit(data.frame(dt, PA = ifelse(dt$myID %in% PC12occ, 1, 0)))
-      if (is.null(H)) {
-        H <- ks::Hpi(x = PC12ex[, dimensions])
+      if (d > 6L) {
+        stop("kernel-based presence exclusion supports at most 6 dimensions (ks::kde); ",
+             "use nn.based.presence.exclusion = TRUE for higher-dimensional spaces",
+             call. = FALSE)
       }
-
-      estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, dimensions],
-                                           eval.points = PC12ex[PC12ex$PA == 1, dimensions],
-                                           h = H)$estimate,
-                             PC12ex[PC12ex$PA == 1, c(dimensions, "myID", "PA")])
-
-      quantP <- quantile(estimate[, "KDE"], thres)
-      estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
-      point.data <- merge(x = PC12ex, y = estimate[estimate$PA == 1, c("myID", "percP")],
-                          by = "myID", all.x = TRUE)
-      point.data$percP <- ifelse(is.na(point.data$percP), "pabs", point.data$percP)
-      chull <- sf::st_as_sf(subset(point.data, point.data$percP == "in", select = dimensions),
-                            coords = dimensions)
-      chull <- sf::st_union(chull)
-      chull <- sf::st_convex_hull(chull)
-      point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered, coords = dimensions)
-      outside.of.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf, chull, sparse = FALSE), ]
-      sampled.points <- sf::st_coordinates(outside.of.the.region.with.presence)
-      colnames(sampled.points) <- dimensions
-      sampled.points <- cbind(sf::st_drop_geometry(outside.of.the.region.with.presence), sampled.points)
+      if (is.null(H)) H <- ks::Hpi(x = pres.mat)
+      pres.kde <- ks::kde(pres.mat, eval.points = pres.mat, H = H)$estimate
+      cand.kde <- ks::kde(pres.mat, eval.points = cand.mat, H = H)$estimate
+      # 'in' = KDE above the thres quantile of presence-point density; exclude those.
+      kde.cut <- quantile(pres.kde, thres)
+      outside <- cand.kde <= unname(kde.cut[1])
     }
+    sampled.points <- mapped.sampled.points.filtered[outside, , drop = FALSE]
   } else {
     sampled.points <- mapped.sampled.points.filtered
   }
-  # Reorganize the columns of the sf object so that the output is more convenient to use
 
-  # select only unique points
-  sampled.points.unique <- sampled.points[!duplicated(sampled.points[[dimensions[1]]]), ] %>%
-    sf::st_as_sf(coords = c("x", "y"))
-  message(paste("\nThere were ", nrow(sampled.points) - nrow(sampled.points.unique),
+  # Each survivor is already a distinct real point (deduplicated above), so build the
+  # output sf directly in geographic space.
+  sampled.points.unique <- sf::st_as_sf(sampled.points, coords = c("x", "y"))
+  message(paste("\nThere were ", n.duplicate.maps,
                 "points that were sampled twice. This indicates undersampling of low density regions or oversampling of the border region.\nThis occures as the probability of beeing close to the same points twice is lower in high denisty regions."))
 
   if (!is.null(n.samples)){
