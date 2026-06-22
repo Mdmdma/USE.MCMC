@@ -204,8 +204,14 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   # without duplicates. If we remove duplicatates before selecting points, we would undersample
   # low density regions
 
+  # Deduplicate on the full PC coordinate tuple (every dimension), not just the
+  # first PC. Distinct cells essentially never share an exact PC1 in continuous
+  # data, but discretized/rounded environmental layers can produce PC1 ties, in
+  # which case keying on dimensions[1] alone would wrongly merge distinct points.
+  # Keying on all dimensions is also the right env-space semantics: two cells with
+  # identical PC vectors are the same environmental point. (Matches paSamplingNn.)
   filtered.mapped.sampled.points.subselected.unique <- filtered.mapped.sampled.points.subselected[
-    !duplicated(filtered.mapped.sampled.points.subselected[dimensions[1]][]),]
+    !duplicated(sf::st_drop_geometry(filtered.mapped.sampled.points.subselected)[dimensions]), ]
   if (verbose){
     message(paste("\nThere were ", nrow(filtered.mapped.sampled.points.subselected) - nrow(filtered.mapped.sampled.points.subselected.unique),
                   "points that were sampled twice. A high number indicates undersampling in low density regions or oversampling at the border regions.
