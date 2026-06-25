@@ -38,8 +38,11 @@ library(ggplot2)
 library(parallel)
 library(FNN)
 library(coda)
-library(gganimate)
-library(tcltk)
+## gganimate is intentionally NOT loaded. Every animation chunk is eval=FALSE in
+## any case (their GIFs are pre-rendered and committed), and no paper figure uses
+## animation, so the package is never required at knit time.
+## tcltk removed: it was loaded but never used anywhere in the vignette, and the
+## container lacks the system Tcl library (libtcl8.6.so), so loading it errors.
 library(viridis)
 library(cowplot)
 library(entropy)
