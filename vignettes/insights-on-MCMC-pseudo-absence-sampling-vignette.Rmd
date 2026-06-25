@@ -18,7 +18,12 @@ resource_files:
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  ## Paper figures are vector PDFs by default (see the publication-figures skill).
+  ## cairo_pdf embeds glyphs/lines as vectors; the gif chunks render via gifski +
+  ## anim_save and are unaffected by this device. Override per-chunk
+  ## (dev = "png", dpi = 600) only if a raster output is genuinely required.
+  dev = "cairo_pdf"
 )
 ```
 
@@ -39,6 +44,27 @@ library(viridis)
 library(cowplot)
 library(entropy)
 set.seed(42)
+
+## --- Publication styling for the paper's IN-SCOPE figures only (Results
+## combined plot + appendix Gelman/autocorrelation). Register the journal body
+## font Lato from the sibling manuscript repo so cairo_pdf + base graphics can
+## render it (showtext draws each glyph as a vector outline). Fully defensive:
+## a no-op if showtext/sysfonts or the bundled fonts are absent, so the vignette
+## still knits. Scoped to the in-scope chunks via their `fig.showtext` option +
+## a local theme_set that is restored after `generate-combined-plot`; all other
+## figures are left untouched.
+.lato_dir  <- "../../markov-chain-sampler-paper/Fonts/Lato"
+.have_lato <- requireNamespace("showtext", quietly = TRUE) &&
+              requireNamespace("sysfonts", quietly = TRUE) &&
+              file.exists(file.path(.lato_dir, "Lato-Regular.ttf"))
+if (.have_lato && !("Lato" %in% sysfonts::font_families())) {
+  sysfonts::font_add("Lato",
+    regular    = file.path(.lato_dir, "Lato-Regular.ttf"),
+    bold       = file.path(.lato_dir, "Lato-Bold.ttf"),
+    italic     = file.path(.lato_dir, "Lato-Italic.ttf"),
+    bolditalic = file.path(.lato_dir, "Lato-BoldItalic.ttf"))
+}
+.pub_family <- if (.have_lato) "Lato" else ""
 ```
 
 Before we can understand why Markov chains are useful, we have to understand how they work. 
@@ -1078,7 +1104,8 @@ coda.chain.list <- coda::mcmc.list(chain.list)
 ```  
 
 We can now look at the Gelman-Rubin plot of the chain ensemble. For the second and third principal component convergence is reached, looking at the first principal component it seems like the chain should run for longer. The needed runtime depends on how complex the environmental space is and on the number of dimensions included.
-```{r gelman-plot, fig.height=5, fig.width=7}
+```{r gelman-plot, fig.height=5, fig.width=7, fig.showtext=.have_lato}
+if (nzchar(.pub_family)) par(family = .pub_family)
 coda::gelman.plot(coda.chain.list)
 ```
 Entropy is a measure for information. The higher the entropy, the more information a dataset contains. We can plot how the entropy of a chain evolves over time
@@ -1112,8 +1139,47 @@ print(p.entropy)
 ```
 The entropy stabilizes and is similar, indicating that they are well mixed. Looking at the autocorrelation we get an insight of how much thinning we have to do if we want the assumption of independently sampled points should hold. After a lag of around 30 the autocorrelation stays within the bounds of the long-running range.
 
-```{r autocorreltation-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+```{r autocorreltation-plot, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE, fig.showtext=.have_lato}
+if (nzchar(.pub_family)) par(family = .pub_family)
 autocorr.plot(coda.chain.list[1], lag.max = 50)
+```
+
+Finally, we look at the trace of the individual chains together with their marginal posterior densities. Well-mixed chains explore the same region, so their traces overlap and their posterior densities coincide.
+
+```{r trace_plots, echo=FALSE, fig.height=6, fig.width=7, message=FALSE, warning=FALSE, fig.showtext=.have_lato}
+## Trace + marginal posteriors of the chain ensemble built in `highe-dim-convergence`
+## (coda.chain.list): one facet row per sampled dimension, one colour per chain.
+## Reproduces the appendix trace figure that used to be a hand-made static PNG.
+## NOTE: this reflects coda.chain.list as built above (4 chains, 3 dimensions,
+## 5000 steps); the appendix trace caption was aligned to this ensemble. For a
+## 2-D / 50000-step version instead, change `highe-dim-convergence` and revert the
+## caption (see the publication-figures skill, "Caption / ensemble consistency").
+trace.long <- do.call(rbind, lapply(seq_along(coda.chain.list), function(ci) {
+  m <- as.matrix(coda.chain.list[[ci]])
+  do.call(rbind, lapply(colnames(m), function(d)
+    data.frame(chain = factor(ci), iteration = seq_len(nrow(m)),
+               value = m[, d], dimension = d)))
+}))
+.chain.cols <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                 "#0072B2", "#D55E00", "#CC79A7", "#999999")
+p.trace <- ggplot(trace.long, aes(iteration, value, colour = chain)) +
+  geom_line(linewidth = 0.3, alpha = 0.8) +
+  scale_colour_manual(values = .chain.cols, name = "Chain") +
+  facet_wrap(~ dimension, ncol = 1, scales = "free_y") +
+  labs(x = "Iteration", y = "Value") +
+  theme_minimal(base_size = 8, base_family = .pub_family) +
+  theme(panel.grid.minor = element_blank(), legend.position = "none")
+p.post <- ggplot(trace.long, aes(value, colour = chain)) +
+  geom_density(linewidth = 0.6) +
+  scale_colour_manual(values = .chain.cols, name = "Chain") +
+  facet_wrap(~ dimension, ncol = 1, scales = "free") +
+  labs(x = "Value", y = "Density") +
+  theme_minimal(base_size = 8, base_family = .pub_family) +
+  theme(panel.grid.minor = element_blank(), legend.position = "bottom")
+.tp.legend <- cowplot::get_legend(p.post)
+cowplot::plot_grid(
+  cowplot::plot_grid(p.trace, p.post + theme(legend.position = "none"), ncol = 2),
+  .tp.legend, ncol = 1, rel_heights = c(1, 0.07))
 ```
 We can now compare our newly introduced method to other sampling approaches. Here we compare it to other approaches that sample uniformly in the environmental space. We see that if we only use uniform sampling on two dimensions, the new method performs as the old methods, if we extend the sampling to 3 dimensions, we also sample the third dimension uniformly. This comes at the cost of having less uniform sampling along the first two dimensions. While looking like an issue, it probably represents more uniform samples, as we want to sample the environmental volume uniformly, not the single components themselves. If component three has a large range at pc1 = 1, we expect the density of pc1 to be higher at pc1 = 1
 
@@ -1144,6 +1210,12 @@ sampled.points.random.geo <- env.with.pc.sf[
 ```
 
 ```{r compare-to-uniform-models-2d, echo=FALSE, fig.height=7, fig.width=5}
+## paper figure: apply the house theme (Lato if available) as the default for
+## the combined-plot panels; restored at the end of `generate-combined-plot`.
+.old_theme <- ggplot2::theme_set(
+  ggplot2::theme_minimal(base_size = 8, base_family = .pub_family) +
+  ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                 plot.title = ggplot2::element_blank()))
 p.pc1 <- ggplot() +
   geom_density(data = mapped.sampled.points.selected, aes(x = PC1, color = "Sampled MCMC 2d")) +
   geom_density(data = sampled.points.random.geo, aes(x = PC1, color = "Sampled random geo")) +
@@ -1152,11 +1224,11 @@ p.pc1 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
       #"Sampled uniform NN" = "blue",
-      "Sampled MCMC 2d" = "red"
+      "Sampled MCMC 2d" = "#009E73"
     ),
     name = "Point type"
   ) +
@@ -1170,10 +1242,10 @@ p.pc2 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
-      "Sampled MCMC 2d" = "red"
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
+      "Sampled MCMC 2d" = "#009E73"
     ),
     name = "Point type"
   ) +
@@ -1187,11 +1259,11 @@ p.pc3 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
       #"Sampled uniform NN" = "blue",
-      "Sampled MCMC 2d" = "red"
+      "Sampled MCMC 2d" = "#009E73"
     ),
     name = ""
   ) +
@@ -1228,11 +1300,11 @@ p.pc1 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC1, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
       #"Sampled uniform NN" = "blue",
-      "Sampled MCMC 3d" = "red"
+      "Sampled MCMC 3d" = "#0072B2"
     ),
     name = "Point type"
   ) +
@@ -1246,11 +1318,11 @@ p.pc2 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC2, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
       #"Sampled uniform NN" = "blue",
-      "Sampled MCMC 3d" = "red"
+      "Sampled MCMC 3d" = "#0072B2"
     ),
     name = "Point type"
   ) +
@@ -1264,11 +1336,11 @@ p.pc3 <- ggplot() +
   #geom_density(data = sampled.points.uniform.nn, aes(x = PC3, color = "Sampled uniform NN")) +
   scale_color_manual(
     values = c(
-      "Sampled random geo" = "green",
-      "Virtual Presence" = "black",
-      "Sampled uniform" = "orange",
+      "Sampled random geo" = "#56B4E9",
+      "Virtual Presence" = "#000000",
+      "Sampled uniform" = "#E69F00",
       #"Sampled uniform NN" = "blue",
-      "Sampled MCMC 3d" = "red"
+      "Sampled MCMC 3d" = "#0072B2"
     ),
     name = ""
   ) +
@@ -1295,15 +1367,15 @@ plot.3d.comparisson <- ggdraw() +
 #+  draw_label("Comparison to other uniform PA sampling methods", x = 0.5, y = 0.95, size = 16)
 ```
 
-```{r generate-combined-plot, echo=FALSE, fig.height=9, fig.width=7}
+```{r generate-combined-plot, echo=FALSE, fig.height=9, fig.width=7, fig.showtext=.have_lato}
 library(cowplot)
 
 combined.comparrison.plot <- plot_grid(plot.2d.comparisson, plot.3d.comparisson, ncol = 2)
 
-titled_plot <- ggdraw() +
-  draw_label("Comparison to other PA sampling methods", x = 0.5, y = 0.95, size = 16)+
-  draw_plot(combined.comparrison.plot, y = 0.02, height = 1)
+## Title removed on purpose: it lives in the LaTeX \caption{} of
+## fig:posterior_comparison, not baked into the image.
+combined.comparrison.plot
 
-titled_plot
+ggplot2::theme_set(.old_theme)   # restore the theme set in compare-...-2d
 
 ```
