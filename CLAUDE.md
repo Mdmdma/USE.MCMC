@@ -53,7 +53,7 @@ When a code change affects the paper's claims (methodology, defaults, results), 
 - `plot-density-threshold-sweep` → env threshold-quantile sweep
 - `plot-pseudo-absence-density` → full pseudo-absence density
 - `pseudo-absence-sweep-contours` → species-quantile sweep with contour rings
-- `plot-methods-overview` → 2×2 compound figure assembling the four density panels (naive / env-threshold sweep / species-threshold sweep / pseudo-absence density), badge-labelled a–d (`text/methods.tex`, `\label{fig:methods overview}`)
+- `plot-methods-overview` → 2×2 compound figure assembling three sampling-function construction stages plus the sampled result (naive / env-threshold sweep / species-threshold sweep / sampled points in environmental space), badge-labelled a–d. Because panel d (`p.points.in.the.environment`) needs the full MCMC→remap→thin pipeline, this chunk lives *after* the `points-in-the-environment` chunk, not next to the density chunks (`text/methods.tex`, `\label{fig:methods overview}`)
 - `plot-in-geo` → sampled points in geographical space
 - `plot-pipeline-scheme` → six-panel workflow scheme (Fig. 1; replaces the legacy hand-drawn `scheme.png`)
 - `generate-combined-plot` → posterior comparison across sampling methods (last chunk in the vignette; combines 2D and 3D method comparisons via cowplot)
