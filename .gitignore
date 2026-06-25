@@ -17,3 +17,7 @@ src/*.o
 src/*.so
 src/*.dll
 texput.log
+
+# rmarkdown/knitr render intermediates (the figures under *_files/figure-html ARE kept)
+*.knit.md
+*.utf8.md
