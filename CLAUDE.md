@@ -47,12 +47,13 @@ Bibliography in `references.bib`; figures in `graphics/`; entry point is `main.t
 
 When a code change affects the paper's claims (methodology, defaults, results), make a surgical edit in the relevant `text/*.tex` file. Flag (don't replace) figures in `graphics/` that may now be stale. Don't recompile LaTeX, restructure sections, rewrite prose for style, or modify `references.bib` unless asked.
 
-**Vignette → paper figure pipeline.** Nine figures in `../markov-chain-sampler-paper/graphics/` are direct knitr outputs from `insights-on-MCMC-pseudo-absence-sampling-vignette.Rmd`. Chunk labels:
+**Vignette → paper figure pipeline.** Ten figures in `../markov-chain-sampler-paper/graphics/` are direct knitr outputs from `insights-on-MCMC-pseudo-absence-sampling-vignette.Rmd`. Chunk labels:
 
 - `plot-simple-denisty` → naive density figure
 - `plot-density-threshold-sweep` → env threshold-quantile sweep
 - `plot-pseudo-absence-density` → full pseudo-absence density
 - `pseudo-absence-sweep-contours` → species-quantile sweep with contour rings
+- `plot-methods-overview` → 2×2 compound figure assembling the four density panels (naive / env-threshold sweep / species-threshold sweep / pseudo-absence density), badge-labelled a–d (`text/methods.tex`, `\label{fig:methods overview}`)
 - `plot-in-geo` → sampled points in geographical space
 - `plot-pipeline-scheme` → six-panel workflow scheme (Fig. 1; replaces the legacy hand-drawn `scheme.png`)
 - `generate-combined-plot` → posterior comparison across sampling methods (last chunk in the vignette; combines 2D and 3D method comparisons via cowplot)
