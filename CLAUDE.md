@@ -47,20 +47,22 @@ Bibliography in `references.bib`; figures in `graphics/`; entry point is `main.t
 
 When a code change affects the paper's claims (methodology, defaults, results), make a surgical edit in the relevant `text/*.tex` file. Flag (don't replace) figures in `graphics/` that may now be stale. Don't recompile LaTeX, restructure sections, rewrite prose for style, or modify `references.bib` unless asked.
 
-**Vignette → paper figure pipeline.** Ten figures in `../markov-chain-sampler-paper/graphics/` are direct knitr outputs from `insights-on-MCMC-pseudo-absence-sampling-vignette.Rmd`. Chunk labels:
+**Vignette → paper figure pipeline.** This vignette (`insights-on-MCMC-pseudo-absence-sampling-vignette.Rmd`, `dev = "cairo_pdf"`) produces, as **vector PDFs**, the Methods and appendix-diagnostic figures that `../markov-chain-sampler-paper/` pulls in via `make figures` (paper figure name == `<chunk-label>-1.pdf`). Chunk labels it owns:
 
 - `plot-simple-denisty` → naive density figure
 - `plot-density-threshold-sweep` → env threshold-quantile sweep
 - `plot-pseudo-absence-density` → full pseudo-absence density
 - `pseudo-absence-sweep-contours` → species-quantile sweep with contour rings
-- `plot-methods-overview` → 2×2 compound figure assembling three sampling-function construction stages plus the sampled result (naive / env-threshold sweep / species-threshold sweep / sampled points in environmental space), badge-labelled a–d. Because panel d (`p.points.in.the.environment`) needs the full MCMC→remap→thin pipeline, this chunk lives *after* the `points-in-the-environment` chunk, not next to the density chunks (`text/methods.tex`, `\label{fig:methods overview}`)
+- `plot-methods-overview` → 2×2 compound figure (naive / env-threshold sweep / species-threshold sweep / sampled points), badge-labelled a–d. Panel d (`p.points.in.the.environment`) needs the full MCMC→remap→thin pipeline, so this chunk lives *after* `points-in-the-environment` (`text/methods.tex`, `\label{fig:methods overview}`)
 - `plot-in-geo` → sampled points in geographical space
 - `plot-pipeline-scheme` → six-panel workflow scheme (Fig. 1; replaces the legacy hand-drawn `scheme.png`)
-- `generate-combined-plot` → posterior comparison across sampling methods (last chunk in the vignette; combines 2D and 3D method comparisons via cowplot)
-- `gelman-plot` → Gelman-Rubin convergence
-- `autocorreltation-plot` → autocorrelation analysis (chunk label is misspelled; preserved on purpose)
+- `gelman-plot` → Gelman-Rubin convergence (appendix)
+- `autocorreltation-plot` → autocorrelation analysis (appendix; chunk label misspelled, preserved on purpose)
+- `trace_plots` → trace + posterior of the chains (appendix; now a real chunk producing `trace_plots-1.pdf`, no longer a static PNG)
 
-Paper figure name == knitr chunk-output name (`<chunk-label>-1.png`). The other vignette, `Insights-on-nearest-neighbor-search.Rmd`, does NOT feed any current paper figure: it documents an alternative method only mentioned in the appendix narrative. After re-knitting the MCMC vignette, run `make figures` from `../markov-chain-sampler-paper/` to copy the refreshed PNGs into the paper repo, then commit there. If you rename a chunk, also update both the matching entry in `../markov-chain-sampler-paper/Makefile` (`MCMC_FIGS`) and the `\includegraphics{graphics/<name>}` call in the relevant `text/*.tex`. `trace_plots.png` is hand-curated and stays outside this pipeline. `scheme.png` is the legacy hand-drawn workflow figure; it remains on disk for reference but is no longer referenced from the paper (replaced by `plot-pipeline-scheme-1.png`).
+After re-knitting, run `make figures` from `../markov-chain-sampler-paper/` (keep `self_contained: false`) to copy the refreshed PDFs, then commit there. If you rename a chunk, also update the matching `MCMC_FIGS` entry in the paper `Makefile` and the `\includegraphics{graphics/<name>}` call in `text/*.tex`. The other vignette, `Insights-on-nearest-neighbor-search.Rmd`, does NOT feed any paper figure (appendix narrative only).
+
+**NOT produced by this vignette.** The paper's Results figures (`sampler-comparison-boxplots.pdf` 2-D / `sampler-comparison-boxplots-5d.pdf` 5-D), the appendix per-species PC matrices (`pcmatrix-5d-sp1..4.pdf`), and the geographic grid (`geo-grid-5d.pdf`) all come from **GaussNiche** (`../GaussNiche/run_2d_experiment.R` / `run_5d_experiment.R` via `experiment_plots.R`) and are copied into the paper's `graphics/` by hand — not via this vignette or `make figures`. The former `generate-combined-plot` posterior-comparison figure was REMOVED from the paper (replaced by those GaussNiche boxplots); `scheme.png` is the legacy hand-drawn figure, now unreferenced.
 
 **Why both Rmds set `self_contained: false`** in their YAML: stock `html_vignette` defaults to `self_contained: TRUE`, which makes pandoc base64-embed images and then **delete** the `<vignette>_files/figure-html/` directory after rendering. That breaks the copy step: `make figures` would find nothing to copy. Keeping `self_contained: false` makes pandoc reference the PNGs externally, so they survive on disk for the Makefile to grab. If you ever revert this flag, the pipeline silently breaks (knit succeeds, `make figures` reports "Not found" for everything). Don't.
 
