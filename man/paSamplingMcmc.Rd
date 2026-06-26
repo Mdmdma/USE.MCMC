@@ -2,10 +2,7 @@
 % Please edit documentation in R/paSamplingMcmc.R
 \name{paSamplingMcmc}
 \alias{paSamplingMcmc}
-\title{paSamplingMcmc
-is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo
-absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
-limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.}
+\title{MCMC pseudo-absence sampling in environmental space}
 \usage{
 paSamplingMcmc(
   env.data.raster = NULL,
@@ -61,7 +58,7 @@ paSamplingMcmc(
 
 \item{environmental.cutof.percentile}{sets the percentile of the environment GMM that is excluded from the space that can be visited by the chain}
 
-\item{species.cutoff.threshold}{sets the percentile of the species presence GMM that is included in the space that can be visited by the chain}
+\item{species.cutoff.threshold}{sets the percentile of the species presence GMM that is included in the space that can be visited by the chain. Set to 1 to disable presence-based exclusion entirely: the presence GMM is not fit and the chain samples the environment uniformly (target density 1 inside the environmental support, floor outside).}
 
 \item{plot_proc}{If true the function plots the progress}
 
@@ -75,8 +72,17 @@ paSamplingMcmc(
 dataframe containing the sampled points
 }
 \description{
-paSamplingMcmc
-is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo
+A near drop-in replacement for \code{paSampling} from the original USE package that performs Gaussian-mixture-based pseudo
 absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
 limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.
+}
+\examples{
+\donttest{
+env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
+set.seed(1)
+pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
+pa <- paSamplingMcmc(env.data.raster = env, pres = pres,
+                     n.samples = 50, chain.length = 2000, burnIn = 200)
+}
 }

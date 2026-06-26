@@ -1,5 +1,6 @@
-#' paSamplingMcmc
-#' is a near drop in replacement for paSampling from the original USE package, that allows to perform a Gaussian mixture based pseudo
+#' MCMC pseudo-absence sampling in environmental space
+#'
+#' A near drop-in replacement for \code{paSampling} from the original USE package that performs Gaussian-mixture-based pseudo
 #' absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
 #' limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.
 #'
@@ -18,13 +19,22 @@
 #' @param low.end.of.inclueded.points Sets the range of points included in the threshold computation
 #' @param high.end.of.included.points Sets the range of points included in the threshold computation
 #' @param environmental.cutof.percentile sets the percentile of the environment GMM that is excluded from the space that can be visited by the chain
-#' @param species.cutoff.threshold sets the percentile of the species presence GMM that is included in the space that can be visited by the chain
+#' @param species.cutoff.threshold sets the percentile of the species presence GMM that is included in the space that can be visited by the chain. Set to 1 to disable presence-based exclusion entirely: the presence GMM is not fit and the chain samples the environment uniformly (target density 1 inside the environmental support, floor outside).
 #' @param plot_proc If true the function plots the progress
 #' @param num.chains Number of chains from which samples should be picked
 #' @param num.cores Number of cores available for parallelization of the multi-chain computation
 #' @param engine One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++ inner loop when both the internal density and proposal functions are built by `mclustDensityFunction()` and `addHighDimGaussian()` (which is the case here) and falls back to the R loop otherwise. `"cpp"` forces the C++ path. `"R"` forces the pure-R reference loop.
 #'
 #' @returns dataframe containing the sampled points
+#' @examples
+#' \donttest{
+#' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+#' df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
+#' set.seed(1)
+#' pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
+#' pa <- paSamplingMcmc(env.data.raster = env, pres = pres,
+#'                      n.samples = 50, chain.length = 2000, burnIn = 200)
+#' }
 #' @export
 
 paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, chain.length = 10000,
@@ -47,7 +57,9 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   if (is.null(precomputed.env) || !is.null(env.data.raster)) {
     check_raster_input(env.data.raster, "env.data.raster")
   }
-  check_spatial_points(pres, "pres")
+  # Uniform mode (species.cutoff.threshold = 1) never reads `pres`, so it is
+  # allowed to be NULL there; every other mode fits the presence GMM and requires it.
+  check_spatial_points(pres, "pres", allow_null = isTRUE(species.cutoff.threshold >= 1))
   if (!is.numeric(n.samples) || length(n.samples) != 1 || n.samples < 1) {
     stop(paste0("'n.samples' must be a positive number, got ", deparse(n.samples)), call. = FALSE)
   }
@@ -145,27 +157,39 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
 
   # sample species model
 
-  virtual.presence.points <- pres
+  # species.cutoff.threshold = 1 disables the presence-based exclusion entirely:
+  # skip fitting the presence GMM and sample the environment uniformly. The density
+  # function then returns 1 inside the environmental support and the floor outside
+  # (mclustDensityFunction with species.model = NULL). Any value < 1 keeps the usual
+  # behaviour: fit the presence GMM and subtract its (scaled) density.
+  if (species.cutoff.threshold >= 1) {
+    if (verbose) cat("species.cutoff.threshold = 1: skipping presence model, sampling the environment uniformly\n")
+    densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
+                                             species.model = NULL,
+                                             dim = dimensions,
+                                             threshold = environment.threshold)
+  } else {
+    # Presence PC scores come from the (cached or freshly computed) PC rasters
+    # alone; the original env layers are not needed here, so env.data.raster is
+    # optional once a precomputed.env bundle is supplied.
+    virtual.presence.points <- pres
+    virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%
+      sf::st_as_sf()
+    if (verbose) cat("Fit presence model \n")
+    species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
+                                          plot = plot_proc,
+                                          verbose = verbose)
+    summary(species.model)
+    species.densities <- species.model$density
+    species.cutoff.threshold <- stats::quantile(species.densities, species.cutoff.threshold)
 
-  # Presence PC scores come from the (cached or freshly computed) PC rasters
-  # alone; the original env layers are not needed here, so env.data.raster is
-  # optional once a precomputed.env bundle is supplied.
-  virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%
-    sf::st_as_sf()
-  if (verbose) cat("Fit presence model \n")
-  species.model = mclust::densityMclust(sf::st_drop_geometry(virtual.presence.points.pc[dimensions]),
-                                        plot = plot_proc,
-                                        verbose = verbose)
-  summary(species.model)
-  species.densities <- species.model$density
-  species.cutoff.threshold <- stats::quantile(species.densities, species.cutoff.threshold)
-
-  #density Function
-  densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
-                                           species.model = species.model,
-                                           dim = dimensions,
-                                           threshold = environment.threshold,
-                                           species.cutoff.threshold = species.cutoff.threshold)
+    #density Function
+    densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
+                                             species.model = species.model,
+                                             dim = dimensions,
+                                             threshold = environment.threshold,
+                                             species.cutoff.threshold = species.cutoff.threshold)
+  }
 
 
   # # set sampling parameters (covariance.matrix comes from precomputed.env)

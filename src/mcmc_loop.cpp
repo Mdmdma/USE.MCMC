@@ -45,6 +45,11 @@ static inline double gmm_density(const arma::vec& x, const GMMSpec& g) {
 static inline double combined_density(const arma::vec& x, const DensityConfig& cfg) {
   const double env_d = gmm_density(x, cfg.env);
   if (env_d < cfg.env_threshold) return cfg.floor_value;
+  // Uniform-sampling contract: mclustDensityFunction(species.model = NULL) sets
+  // cfg.sp_cutoff = Inf as the sentinel for "no presence exclusion". Detect it and
+  // return the in-support target 1.0 directly; the species GMM passed in that mode
+  // is dummy marshalling ballast and is never evaluated here.
+  if (std::isinf(cfg.sp_cutoff)) return 1.0;
   const double sp_d = gmm_density(x, cfg.sp);
   const double val = 1.0 - sp_d / cfg.sp_cutoff;
   return val > cfg.floor_value ? val : cfg.floor_value;

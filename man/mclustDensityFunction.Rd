@@ -15,13 +15,13 @@ mclustDensityFunction(
 \arguments{
 \item{env.model}{mclust gaussian mixture that uses points}
 
-\item{species.model}{mclust gaussian mixture that uses points}
+\item{species.model}{mclust gaussian mixture that uses points, or \code{NULL}. When \code{NULL} the function returns a "uniform environment" target: density 1 inside the environmental support (env density >= \code{threshold}) and the floor outside, with no presence GMM subtracted. This is what \code{paSamplingMcmc()} uses when \code{species.cutoff.threshold = 1}.}
 
 \item{dim}{string vector specifying the names of the dimensions}
 
 \item{threshold}{sets the cutoff density from the environment}
 
-\item{species.cutoff.threshold}{set the scaling factor with which the species model gets scaled before subtraction.}
+\item{species.cutoff.threshold}{set the scaling factor with which the species model gets scaled before subtraction. Ignored when \code{species.model = NULL}.}
 }
 \value{
 Function that calculates the density at a point

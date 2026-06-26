@@ -10,13 +10,24 @@ test_that("mclustDensityFunction rejects non-densityMclust env.model", {
                "'env.model' must be a densityMclust object")
 })
 
-test_that("mclustDensityFunction rejects NULL species.model", {
-  # Build a minimal env model
+test_that("mclustDensityFunction accepts NULL species.model (uniform mode)", {
+  # species.model = NULL is the uniform-environment target: 1 inside the support,
+  # floor outside, no presence GMM subtracted.
   set.seed(42)
   env_data <- data.frame(x = rnorm(50), y = rnorm(50))
   env_model <- mclust::densityMclust(env_data, plot = FALSE, verbose = FALSE)
-  expect_error(mclustDensityFunction(env.model = env_model, species.model = NULL),
-               "'species.model' must be provided")
+  fn <- mclustDensityFunction(env.model = env_model, species.model = NULL,
+                              dim = c("x", "y"), threshold = 0.01)
+  expect_true(is.function(fn))
+  # Inside the environmental support the uniform target is exactly 1.
+  expect_identical(fn(c(0, 0)), 1)
+  # Far outside the support it drops to the floor (threshold / 1000).
+  expect_true(fn(c(100, 100)) < 0.01)
+  # The Rcpp spec carries the infinite-cutoff sentinel so the C++ inner loop
+  # returns the same uniform target without a dedicated branch.
+  spec <- attr(fn, "rcpp_spec")
+  expect_identical(spec$type, "mclust_density")
+  expect_true(is.infinite(spec$species_cutoff))
 })
 
 test_that("mclustDensityFunction rejects non-densityMclust species.model", {

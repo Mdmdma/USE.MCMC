@@ -1,5 +1,18 @@
 # USE.MCMC 0.0.4
 
+## MCMC backend
+* `paSamplingMcmc(species.cutoff.threshold = 1)` now disables presence-based
+  exclusion entirely: the presence GMM is not fit and the chain samples the
+  environment **uniformly** (target density 1 inside the environmental support,
+  floor outside). `mclustDensityFunction()` gained a matching `species.model =
+  NULL` "uniform" mode, and uniform mode accepts `pres = NULL`. This is the
+  **continuous endpoint** of the cutoff, not a new behaviour: `species.cutoff.threshold`
+  is a percentile where **higher = weaker exclusion** (the target is
+  `1 − sp_density / quantile(sp_densities, p)`, so a high quantile excludes only
+  the densest presences); at `p = 1` only the single max-density point would be
+  excluded (a measure-zero set), so skipping the presence GMM and sampling
+  uniformly is the natural limit. Values `< 1` are byte-identical to before.
+
 ## Data
 * New `Worldclim_tem_a` dataset, a mirror of `USE::Worldclim_tmp` from the
   upstream USE package (cols `bio1, bio3, bio9, bio12, bio13, bio15`). Lets
