@@ -5,7 +5,7 @@
 #' @param absence.points Dataframe or list containing a geometry column that contains points to be plotted
 #' @param minimal Boolean if TRUE removes the labels legend and title
 #'
-#' @returns NULL, as the function just plots
+#' @returns A \pkg{ggplot2} object: the presence/absence raster with the presence and pseudo-absence points overlaid.
 #' @export
 plotInGeographicalSpace <- function(presence.distribution.raster = NULL, presence.points = NULL, absence.points = NULL, minimal = FALSE) {
   # Input validation

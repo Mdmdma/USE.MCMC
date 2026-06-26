@@ -15,4 +15,6 @@
 #' @useDynLib USE.MCMC, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @importFrom magrittr %>%
+#' @importFrom graphics abline plot
+#' @importFrom utils chkDots setTxtProgressBar txtProgressBar
 "_PACKAGE"

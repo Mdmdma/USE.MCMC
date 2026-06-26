@@ -1,5 +1,6 @@
-#' maxResNN
-#' is a function that can be used to compute a reasonable grid resolution for nearest neighbor based uniform sampling.
+#' Grid resolution for nearest-neighbor uniform sampling
+#'
+#' Computes a reasonable grid resolution for nearest neighbor based uniform sampling.
 #' The core idea behind its working principle is that we want to expect a grid cell to contain points if it overlaps with the environment.
 #' This implementation looks at the low density regions using distance to n neighbors as a proxy.
 #' The approach assumes that all coordinates have similar range, as the axes are not weighted when computing Neighbors and converting from distances to number of grid cells. This holds for standardized PCA axes; with \code{stand = TRUE} in \code{rastPCA} the per-axis ranges are comparable. It works for any number of \code{dimensions} (not just two).
@@ -53,7 +54,7 @@ maxResNn<- function(env.data.raster, dimensions = c("PC1", "PC2") , low.end.of.i
   pc.df <- rpc$PCs %>%
     as.data.frame(xy = TRUE) %>%
     na.omit() %>%
-    dplyr::select(dimensions)
+    dplyr::select(dplyr::all_of(dimensions))
 
   neighbor.data <- FNN::get.knnx(pc.df[dimensions], pc.df[dimensions], k = 1 + n.neighbors) # plus one as each point is its own closest <<neighbor>>
   neighbor.index <- neighbor.data$nn.index

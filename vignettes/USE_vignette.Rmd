@@ -31,7 +31,9 @@ library(ggplot2)
 ```
 
 
-```{r,  eval=TRUE, message=FALSE, echo=TRUE, warning=FALSE, results = FALSE}
+```{r,  eval=FALSE, message=FALSE, echo=TRUE, warning=FALSE, results = FALSE}
+# Illustrative only (eval=FALSE): this would download WorldClim at build time,
+# which CRAN forbids. The analysis below uses the bundled USE.MCMC::Worldclim_tmp.
 dataDir <- getwd()
 Worldclim <- geodata::worldclim_global(var = 'bio', res = 2.5, path = dataDir)
 names(Worldclim) <- paste0("bio", 1:length(names(Worldclim)))

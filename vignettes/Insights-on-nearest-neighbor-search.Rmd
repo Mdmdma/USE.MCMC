@@ -257,7 +257,7 @@ env.data.raster.with.pc <- c(rpc$PCs , env.data.raster)
 
 ```
 
-```{r plot-pca-example , fig.height=10, fig.width=7, echo=FALSE}
+```{r plot-pca-example, fig.height=10, fig.width=7, echo=FALSE}
 
 city.points.sf.pca <- terra::extract(rpc$PCs, city.points.sf, bind = TRUE) %>% 
   sf::st_as_sf() %>%

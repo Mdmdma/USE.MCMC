@@ -1,8 +1,9 @@
-#' plotDensityLines
-#' enables the plotting of density function as well as a trace of a chain made of points in a dataframe
+#' Plot a density surface with a chain trace or species points
+#'
+#' Enables the plotting of a density function as well as a trace of a chain made of points in a dataframe
 #' on this density surface. In addition the species that was used to generate the density model can be supplied
 #' to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-#' instead of as a chain. This function has some issues with the check of devtools
+#' instead of as a chain.
 #'
 #'
 #' @param dataset Dataframe specifying the dataset to be plotted as a line or points respectively
@@ -83,12 +84,17 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     if (is.function(densityFunction)) {
       # Convert template to named numeric vector for density function interface
       base_vec <- unlist(sf::st_drop_geometry(template))
+      # Respect R CMD check's core cap (_R_CHECK_LIMIT_CORES_) and any user
+      # mc.cores option; never blindly grab every core on the machine.
+      chk <- tolower(Sys.getenv("_R_CHECK_LIMIT_CORES_", ""))
+      n_cores <- if (nzchar(chk) && chk != "false") 2L
+                 else getOption("mc.cores", max(1L, parallel::detectCores() - 1L))
       density_values <- parallel::mcmapply(function(pc1, pc2) {
         pv <- base_vec
         pv[cols[1]] <- pc1
         pv[cols[2]] <- pc2
         densityFunction(pv)
-      }, grid[[cols[1]]], grid[[cols[2]]], mc.cores = parallel::detectCores() - 1)
+      }, grid[[cols[1]]], grid[[cols[2]]], mc.cores = n_cores)
     } else {
       stop("A density function must be provided")
     }
@@ -104,7 +110,7 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     # Add filled tiles with explicit data and aesthetics
     p <- p + ggplot2::geom_tile(mapping = ggplot2::aes(x = .data[[cols[1]]],
                                                        y = .data[[cols[2]]],
-                                                       fill = density),
+                                                       fill = .data[["density"]]),
                                 data = grid)
 
     p <- p + ggplot2::scale_fill_viridis_c(name = "Density")
@@ -112,7 +118,7 @@ plotDensityLines <- function(dataset, xlim = c(0,1), ylim = c(0,1),
     # Add contour lines with explicit data and aesthetics
     p <- p + ggplot2::geom_contour(mapping = ggplot2::aes(x = .data[[cols[1]]],
                                                           y = .data[[cols[2]]],
-                                                          z = density),
+                                                          z = .data[["density"]]),
                                    data = grid,
                                    color = "black",
                                    alpha = 0.3,

@@ -1,4 +1,4 @@
-#' Sampling pseudo-absences for the training and testing datasets.
+#' Nearest-neighbor pseudo-absence sampling in environmental space
 #'
 #' \code{paSampling} performs a two-step procedure for uniformly sampling pseudo-absences within the environmental space.
 #' In the initial step, a kernel-based filter is utilized to determine the subset of the environmental space that will be subsequently sampled. The kernel-based filter calculates the probability function based on the presence observations, enabling the identification of areas within the environmental space that likely exhibit suitable conditions for the species. To achieve this, a probability threshold value is utilized to assign observations to the corresponding portion of the environmental space. These areas, deemed to have suitable environmental conditions, are excluded from the subsequent uniform sampling process conducted in the second step using the \code{uniformSampling} function, which is internally called.
@@ -27,6 +27,14 @@
 #' @param dim.correction Dimension correction for the support-membership distance threshold, forwarded to \code{\link{optimalDistanceThresholdNn}}. One of \code{"voronoi"} (default), \code{"simplex"}, \code{"none"}, or a positive numeric multiplier. All equal 1 at two dimensions, so two-dimensional results are unchanged.
 #' @importFrom stats na.omit quantile complete.cases runif
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+#' @examples
+#' \donttest{
+#' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+#' df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
+#' set.seed(1)
+#' pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
+#' pa <- paSamplingNn(env.rast = env, pres = pres, n.samples = 50)
+#' }
 #' @export
 #'
 paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = 10,

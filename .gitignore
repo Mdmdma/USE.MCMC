@@ -18,6 +18,10 @@ src/*.so
 src/*.dll
 texput.log
 
-# rmarkdown/knitr render intermediates (the figures under *_files/figure-html ARE kept)
+# rmarkdown/knitr render intermediates
 *.knit.md
 *.utf8.md
+# rendered vignette figure dirs (regenerated at build; non-portable names broke R CMD check)
+vignettes/*_files/
+# geodata/WorldClim download cache a vignette used to write into vignettes/ (668 MB; never commit)
+vignettes/climate/

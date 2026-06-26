@@ -15,8 +15,16 @@ SpatialProba(coefs, env.rast, quadr_term, marginalPlots)
 
 \item{marginalPlots}{logical, if TRUE, returns marginal plots.}
 }
+\value{
+If \code{marginalPlots = FALSE}, a single-layer SpatRaster named "TrueProba" of presence probabilities (0-1). If \code{TRUE}, a list with \code{$rast} (that SpatRaster) and \code{$margEff} (a cowplot grid of the marginal-effect plots).
+}
 \description{
 The \code{SpatialProba}  function calculates the simulated probability of occurrence of a virtual species based on an additive model that incorporates environmental variables. The model considers both linear and quadratic relationships between the environmental factors and the species' probability of presence.
 This function uses environmental data provided as a SpatRaster object (e.g., temperature, precipitation) to compute the probability of species presence across a defined area of interest.
 The resulting probabilities are mapped to a range between 0 and 1, representing the likelihood of species occurrence in the given locations.
+}
+\examples{
+env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+coefs <- c(intercept = -1, wc2.1_10m_bio_4 = -0.5, wc2.1_10m_bio_3 = 0.3)
+p <- SpatialProba(coefs = coefs, env.rast = env, marginalPlots = FALSE)
 }

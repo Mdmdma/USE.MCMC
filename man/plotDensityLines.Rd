@@ -2,11 +2,7 @@
 % Please edit documentation in R/plotDensityLines.R
 \name{plotDensityLines}
 \alias{plotDensityLines}
-\title{plotDensityLines
-enables the plotting of density function as well as a trace of a chain made of points in a dataframe
-on this density surface. In addition the species that was used to generate the density model can be supplied
-to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-instead of as a chain. This function has some issues with the check of devtools}
+\title{Plot a density surface with a chain trace or species points}
 \usage{
 plotDensityLines(
   dataset,
@@ -49,9 +45,8 @@ plotDensityLines(
 the created plot
 }
 \description{
-plotDensityLines
-enables the plotting of density function as well as a trace of a chain made of points in a dataframe
+Enables the plotting of a density function as well as a trace of a chain made of points in a dataframe
 on this density surface. In addition the species that was used to generate the density model can be supplied
 to verify the performance of the model. If that is the case the supplied dataset will be plotted as points
-instead of as a chain. This function has some issues with the check of devtools
+instead of as a chain.
 }

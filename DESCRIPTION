@@ -1,5 +1,5 @@
 Package: USE.MCMC
-Title: MCMC sampling of the environment space
+Title: MCMC Sampling of the Environmental Space
 Version: 0.0.4
 Authors@R: c(
     person("Mathis", "Erler", email = "m.erler@gmx.ch", role = c("aut","cre")),
@@ -7,12 +7,14 @@ Authors@R: c(
     person("Enrico", "Tordoni", email = "e.tordoni@gmail.com", comment=c(ORCID = "0000-0002-9722-6692"), role = "aut"), 
     person("Manuele", "Bazzichetto", email = "manuele.bazzichetto@gmail.com", comment=c(ORCID= "0000-0002-9874-5064"),  role = "aut")
     )
-Description: USE.MCMC performs pseudo-absence sampling in higher-dimensional
-    environmental space via Metropolis MCMC, with an optional C++ inner loop
-    (Rcpp + RcppArmadillo) that is dispatched automatically when the built-in
-    density and proposal factories are used. A nearest-neighbor sampler is
-    included for comparison.
-Depends: R (>= 3.6.0)
+Description: Performs pseudo-absence sampling in higher-dimensional
+    environmental space via Metropolis Markov chain Monte Carlo, extending the
+    uniform environmental-space sampling of Da Re et al. (2023)
+    <doi:10.1111/2041-210X.14209>. An optional C++ inner loop ('Rcpp' and
+    'RcppArmadillo') is dispatched automatically when the built-in density and
+    proposal factories are used, and a nearest-neighbour sampler is included for
+    comparison.
+Depends: R (>= 4.1.0)
 Imports:
     sf,
     parallel,
@@ -28,11 +30,13 @@ Imports:
     FNN,
     tidyterra,
     Rcpp,
-    magrittr
+    magrittr,
+    graphics,
+    utils
 LinkingTo:
     Rcpp,
     RcppArmadillo
-License: Apache License (>= 2)
+License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 URL: https://mdmdma.github.io/USE.MCMC/

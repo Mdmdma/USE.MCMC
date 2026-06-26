@@ -44,15 +44,14 @@ uniformSampling <- function(sdf, grid.res, n.tr = 5, n.prev = NULL, sub.ts = FAL
   }
   grid <- sf::st_make_grid(sdf, n = grid.res)
   sdf$ID <- row.names(sdf)
-  print(sdf)
   res <- do.call(rbind, lapply(seq_len(length(grid)), function(i) {
     if(isTRUE(verbose)) message(paste("Processing tile", i, sep = " "))
     if(isTRUE(plot_proc)) {
       if(i == 1) {
-        plot(grid, border = "black")
-        plot(grid[i], col = "green", add = TRUE)
+        graphics::plot(grid, border = "black")
+        graphics::plot(grid[i], col = "green", add = TRUE)
       } else {
-        plot(grid[i], col = "green", add = TRUE)
+        graphics::plot(grid[i], col = "green", add = TRUE)
       }
     }
     subs <- sdf[grid[i], ]
@@ -118,7 +117,7 @@ uniformSampling <- function(sdf, grid.res, n.tr = 5, n.prev = NULL, sub.ts = FAL
     abs_val <- sdf[!(sdf$ID %in% res$ID), ]
     res_val <- do.call(rbind, lapply(rev(seq_len(length(grid))), function(i) {
       if(isTRUE(verbose)) message(paste("Processing tile", i, sep = " "))
-      if(isTRUE(plot_proc)) plot(grid[i], col = "red", add = TRUE)
+      if(isTRUE(plot_proc)) graphics::plot(grid[i], col = "red", add = TRUE)
       subs <- abs_val[grid[i], ]
       if(nrow(subs) <= n.ts) {
         return(subs)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/paSamplingNn.R
 \name{paSamplingNn}
 \alias{paSamplingNn}
-\title{Sampling pseudo-absences for the training and testing datasets.}
+\title{Nearest-neighbor pseudo-absence sampling in environmental space}
 \usage{
 paSamplingNn(
   env.rast = NULL,
@@ -73,4 +73,13 @@ The bandwidth of the kernel can be automatically estimated from the presence obs
 \details{
 Being designed with species distribution models in mind, \code{paSampling} allows collectively sampling pseudo-absences for both the training and testing dataset (optional). In both cases, the user must provide a number of observations that will be sampled in each cell of the sampling grid (\code{n.tr}: points for the training dataset; \code{n.ts}: points for the testing dataset).
 Note that the optimal resolution of the sampling grid can be found using the \code{optimRes} function. Also, note that the number of pseudo-absences eventually sampled in each cell by the internally-called \code{uniformSampling} function depends on the spatial configuration of the observations within the environmental space. Indeed, in most cases some cells of the sampling grid will be empty (i.e., those at the boundary of the environmental space). For this reason, the number of pseudo-absences returned by \code{paSampling} is likely to be lower than the product between the number of cells of the sampling grid and \code{n.tr}(or \code{n.ts}).
+}
+\examples{
+\donttest{
+env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
+set.seed(1)
+pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
+pa <- paSamplingNn(env.rast = env, pres = pres, n.samples = 50)
+}
 }

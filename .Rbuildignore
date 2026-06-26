@@ -13,3 +13,11 @@
 ^\.github$
 ^\.positai$
 ^\.claude$
+^vignettes/climate$
+^vignettes/.*_files$
+^vignettes/.*\.gif$
+^CLAUDE\.md$
+^R/\.Rhistory$
+^.*\.Rhistory$
+^tests/testthat/Rplots\.pdf$
+^.*Rplots\.pdf$

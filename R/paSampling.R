@@ -20,8 +20,16 @@
 #' @param verbose (logical) Print verbose
 #' @importFrom stats na.omit quantile
 #' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+#' @examples
+#' \donttest{
+#' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+#' df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
+#' set.seed(1)
+#' pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
+#' pa <- paSampling(env.rast = env, pres = pres, grid.res = 10, n.tr = 2)
+#' }
 #' @export
-#' 
+#'
 paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = NULL,
                          n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
                          verbose = FALSE)

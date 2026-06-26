@@ -34,7 +34,6 @@ getVirtualSpeciesPresencePoints <- function(env.data = NULL, n.samples = 0, plot
                                           alpha = -0.05, plot = FALSE)
 
   # Sample true occurrences
-  print(n.samples)
   presence.data <- virtualspecies::sampleOccurrences(new.pres,
                                                        n = n.samples, # The number of points to sample
                                                        type = "presence only",

@@ -21,7 +21,7 @@ plotInGeographicalSpace(
 \item{minimal}{Boolean if TRUE removes the labels legend and title}
 }
 \value{
-NULL, as the function just plots
+A \pkg{ggplot2} object: the presence/absence raster with the presence and pseudo-absence points overlaid.
 }
 \description{
 Function that plots the geographical location of points onto a raster

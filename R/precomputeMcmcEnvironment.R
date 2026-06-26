@@ -94,7 +94,7 @@ precomputeMcmcEnvironment <- function(env.data.raster = NULL,
   environmental.data.model <- mclust::densityMclust(env.data.cleaned.subsampled,
                                                     plot = plot_proc,
                                                     verbose = verbose)
-  environmental.densities <- mclust::predict.densityMclust(environmental.data.model, env.data.cleaned)
+  environmental.densities <- stats::predict(environmental.data.model, env.data.cleaned)
 
   # proposal covariance (env-only)
   covariance.matrix <- stats::cov(sf::st_drop_geometry(env.with.pc.sf)[dimensions])

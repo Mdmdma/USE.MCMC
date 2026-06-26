@@ -8,6 +8,11 @@
 #' @param env.rast a SpatRaster object with environmental layers to generate the spatial layer of probabilities.
 #' @param quadr_term a named vector with names of coefs for which a quadratic term is specified (without prefix 'quadr_').
 #' @param marginalPlots logical, if TRUE, returns marginal plots.
+#' @returns If \code{marginalPlots = FALSE}, a single-layer SpatRaster named "TrueProba" of presence probabilities (0-1). If \code{TRUE}, a list with \code{$rast} (that SpatRaster) and \code{$margEff} (a cowplot grid of the marginal-effect plots).
+#' @examples
+#' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
+#' coefs <- c(intercept = -1, wc2.1_10m_bio_4 = -0.5, wc2.1_10m_bio_3 = 0.3)
+#' p <- SpatialProba(coefs = coefs, env.rast = env, marginalPlots = FALSE)
 #' @importFrom grDevices recordPlot
 #' @importFrom stats plogis
 #' @export

@@ -7,13 +7,15 @@ vignette: >
   %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-resource_files:
-  - gif_example_chain.gif
-  - gif_example_chain_gaussian.gif
-  - gif_example_chain_gaussian_long.gif
-  - chain.naive.density.gif
-  - chain.ps.density.gif
 ---
+
+<!--
+The animation GIFs are NOT shipped in the CRAN tarball (they are .Rbuildignore'd
+to keep it small). They live in vignettes/ for the pkgdown website only. Each
+"show-gif-*" chunk below is eval = file.exists(<gif>): it renders on the website
+(gifs present) and is skipped silently when the package is built for CRAN.
+-->
+
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -106,7 +108,7 @@ a.example.chain <- p.example.chain +
 gif.example.chain <- gganimate::animate(a.example.chain, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 4)
 anim_save("gif_example_chain.gif", gif.example.chain)
 ```
-```{r show-gif-example-chain, echo=FALSE}
+```{r show-gif-example-chain, echo=FALSE, eval=file.exists("gif_example_chain.gif")}
 knitr::include_graphics("gif_example_chain.gif")
 ```
 
@@ -152,7 +154,7 @@ gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifsk
 anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ```
 
-```{r show-gif-gaussian, echo=FALSE}
+```{r show-gif-gaussian, echo=FALSE, eval=file.exists("gif_example_chain_gaussian.gif")}
 knitr::include_graphics("gif_example_chain_gaussian.gif")
 ```
 As before the proposal step is completely random. The algorithm now decides if it wants to accept the proposed next point using the Metropolis-Hastings algorithm.
@@ -220,7 +222,7 @@ a.example.chain.gaussian <- p.example.chain.gaussian +
 gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 6)
 anim_save("gif_example_chain_gaussian_long.gif", gif.example.chain.gaussian)
 ```
-```{r show-gif-gaussian-long, echo=FALSE}
+```{r show-gif-gaussian-long, echo=FALSE, eval=file.exists("gif_example_chain_gaussian_long.gif")}
 knitr::include_graphics("gif_example_chain_gaussian_long.gif")
 ```
 ```{r gaussian-posterior-plot-more-samples, echo=FALSE, fig.height=5, fig.width=7, warning=FALSE}
@@ -427,7 +429,7 @@ a.chain.naive.density <- p.chain.naive.density +
 gif.chain.naive.density <- animate(a.chain.naive.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.naive.density.gif", gif.chain.naive.density)
 ```
-```{r show-gif-naive-density, echo=FALSE}
+```{r show-gif-naive-density, echo=FALSE, eval=file.exists("chain.naive.density.gif")}
 knitr::include_graphics("chain.naive.density.gif")
 ```
 
@@ -612,7 +614,7 @@ a.chain.ps.density <- p.chain.ps.density +
 gif.chain.ps.density <- animate(a.chain.ps.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.ps.density.gif", gif.chain.ps.density)
 ```
-```{r show-gif-ps-density, echo=FALSE}
+```{r show-gif-ps-density, echo=FALSE, eval=file.exists("chain.ps.density.gif")}
 knitr::include_graphics("chain.ps.density.gif")
 ```
 
