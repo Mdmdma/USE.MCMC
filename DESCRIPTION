@@ -55,7 +55,9 @@ Suggests:
     gganimate,
     rnaturalearth,
     rnaturalearthdata,
-    purrr
+    purrr,
+    showtext,
+    sysfonts
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

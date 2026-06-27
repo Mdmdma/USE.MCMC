@@ -21,13 +21,16 @@ This vignette gives some insights on the concept of nearest neighbor search in t
 ```{r, setup, message=FALSE}
 library(USE.MCMC)
 library(ggplot2)
-library(rnaturalearth)
-library(rnaturalearthdata)
 library(FNN)
 library(sf)
 library(dplyr)
 library(cowplot)
 library(virtualspecies)
+# The first figure draws a country outline from rnaturalearth + rnaturalearthdata
+# (data-only optional packages). If they are not installed we simply skip that
+# illustrative map instead of failing the whole vignette.
+have_naturalearth <- requireNamespace("rnaturalearth", quietly = TRUE) &&
+  requireNamespace("rnaturalearthdata", quietly = TRUE)
 ```
 
 
@@ -35,33 +38,40 @@ The foundation of the approach is the assumption that we can map a point in vari
 
 In the geographical space this concept is very intuitive. The closest city to a given test point is the one with the least distance.
 
-```{r, geographical-space-example, fig.height=5, fig.width=7, echo=FALSE}
+```{r, geographical-space-example, fig.height=5, fig.width=7, echo=FALSE, eval=have_naturalearth}
 countries_sf <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 italy <- countries_sf[countries_sf$admin == "Italy", ]
 italy <- italy$geometry
 ```
 
-```{r, geographical-space-example-part-2, fig.height=5, fig.width=7, echo=FALSE}
-
+```{r, geographical-space-points, echo=FALSE}
+# City + test-point coordinates and the city->test-point distance helper. These are
+# reused in environmental and PCA space further down, so they are defined here
+# unconditionally; only the country-outline maps need rnaturalearth/rnaturalearthdata.
 city.points <- data.frame(
   name = c("Rome", "Milan", "Venice", "Naples", "Turin", "Palermo"),
   lon = c(12.4964, 9.1900, 12.3155, 14.2681, 7.6869, 13.3615),
   lat = c(41.9028, 45.4642, 45.4408, 40.8518, 45.0703, 38.1157)
 )
-city.points.sf <-  sf::st_as_sf(city.points,
-                                coords = c("lon", "lat"),
-                                crs = 4326)
+city.points.sf <- sf::st_as_sf(city.points, coords = c("lon", "lat"), crs = 4326)
+test.point <- data.frame(name = "Test point", lon = 12.6, lat = 43.7)
+test.point.sf <- sf::st_as_sf(test.point, coords = c("lon", "lat"), crs = 4326)
+create.lines.with.distances <- function(cities.sf, test.point.sf) {
+  lines.list <- list()
+  distances <- numeric(nrow(cities.sf))
+  for (i in 1:nrow(cities.sf)) {
+    line.coords <- rbind(st_coordinates(cities.sf[i, ]),
+                         st_coordinates(test.point.sf))
+    lines.list[[i]] <- st_linestring(line.coords)
+    distances[i] <- as.numeric(st_distance(cities.sf[i, ], test.point.sf)) / 1000
+  }
+  st_sf(city = cities.sf$name, distance.km = round(distances, 1),
+        geometry = st_sfc(lines.list, crs = st_crs(cities.sf)))
+}
+```
 
-test.point <- data.frame(
-  name = c("Test point"),
-  lon = c(12.6),
-  lat = c(43.7)
-)
-test.point.sf <- sf::st_as_sf(test.point, 
-                              coords = c("lon", "lat"),
-                              crs = 4326)
-
-p.real.space <- ggplot() + 
+```{r, geographical-space-example-part-2, fig.height=5, fig.width=7, echo=FALSE, eval=have_naturalearth}
+p.real.space <- ggplot() +
   geom_sf(data = italy, fill = "lightgray", color = "black") + 
   geom_sf(data = city.points.sf, color = "lightgreen", size = 2) + 
   geom_sf(data = test.point.sf, color = "red", size = 2) + 
@@ -72,42 +82,7 @@ p.real.space <- ggplot() +
   theme_minimal() +
   labs(title = "Map of Italy with 7 Cities", x = NULL, y = NULL)
 
-
-# Function to create lines and calculate distances
-create.lines.with.distances <- function(cities.sf, test.point.sf) {
-  
-  # Create lines from each city to test point
-  lines.list <- list()
-  distances <- numeric(nrow(cities.sf))
-  
-  for(i in 1:nrow(cities.sf)) {
-    # Create line geometry
-    line.coords <- rbind(
-      st_coordinates(cities.sf[i,]),
-      st_coordinates(test.point.sf)
-    )
-    
-    # Create line sf object
-    line.geom <- st_linestring(line.coords)
-    lines.list[[i]] <- line.geom
-    
-    # Calculate distance (in meters, then convert to km)
-    distances[i] <- as.numeric(st_distance(cities.sf[i,], test.point.sf)) / 1000
-  }
-  
-  # Combine lines into sf dataframe
-  lines.sf <- st_sf(
-    city = cities.sf$name,
-    distance.km = round(distances, 1),
-    geometry = st_sfc(lines.list, crs = st_crs(cities.sf))
-  )
-  
-  return(lines.sf)
-}
-
-
-
-# Create lines with distances
+# Create lines with distances (helper defined in the chunk above)
 lines.sf <- create.lines.with.distances(city.points.sf, test.point.sf)
 
 city.points.sf$distance <- round(lines.sf$distance.km)
@@ -395,9 +370,9 @@ print(p.grid)
 As we may want multiple points sampled from the same grid cell, we repeat the grid the respective number of times.
 
 ```{r repeat-grid}
-grid.repeated <- do.call(rbind, replicate(num.samples.per.cell,
-                                          grid,
-                                          simplify = FALSE))
+# Repeat every grid point num.samples.per.cell times (rows 1..N, then 1..N again,
+# ...), so we can later draw several pseudo-absences from the same cell.
+grid.repeated <- grid[rep(seq_len(nrow(grid)), num.samples.per.cell), ]
 ```
 
 So far this does not work, as these repeated points would all map to the same nearest neighbor in the environment. In addition to that the grid adds a bias to the sampled points.
@@ -487,6 +462,9 @@ We see that the distance histogram is dominated by the low distances originating
 ```{r find-advanced-threshold}
 sorted.nearest.neighbor.distances <- sort(nearest.neighbors.distance, 
                                           decreasing=TRUE)
+# Use the 2nd-largest neighbour distance (skip the single largest, which may be an
+# outlier), halved, as the cut-off: remapped points further than this from any real
+# environment cell are dropped.
 distance.threshold <- sorted.nearest.neighbor.distances[2] / 2
 
 mapped.sampled.points.filtered <- mapped.sampled.points[
@@ -507,11 +485,11 @@ cowplot::plot_grid(p.mapped.sampled.points.filtered, p.mapped.sampled.points.fil
 
 It can still happen that we map two sampled points to the same real point. These points should be removed, as they do not provide additional information. The probability to map twice to the same point is correlated to the distance threshold. Especially at the borders of the environment the probability to map twice to the same point is high, as there is only one direction in which a neighbor can lay, in difference to points inside of the environment for which two directions in which a nearest neighbor can be found. This leads to some oversampling. It is not trivial how to eliminate this issue. 
 
-```{r remove-dublicates}
+```{r remove-duplicates}
 mapped.sampled.points.filtered.unique <- mapped.sampled.points.filtered[
   !duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
 ```
-```{r removed-dublicates-plot, echo=FALSE, fig.height=3, fig.width=7}
+```{r removed-duplicates-plot, echo=FALSE, fig.height=3, fig.width=7}
 #sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[mapped.sampled.points.filtered[[1]]]), ]
 sampled.points.unique <- mapped.sampled.points.filtered[!duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
 removed.points <- mapped.sampled.points.filtered[duplicated(mapped.sampled.points.filtered[["PC1"]]), ]
@@ -537,8 +515,15 @@ virtual.presence.points <- virtual.presence.data$sample.points
 
 
 ```{r exclude-presence-area}
+# Exclude any candidate pseudo-absence that falls inside the species' realised
+# niche. The strategy:
+#   1. estimate how concentrated the presences are in PC space (a kernel density
+#      estimate, ks::kde),
+#   2. treat the densest `thres` fraction of presences as the niche core,
+#   3. wrap that core in a convex hull, and
+#   4. drop every pseudo-absence that lands inside the hull.
 occ.vec <- virtual.presence.points
-thres = 0.7
+thres = 0.7   # keep the densest 70% of presences as the niche core
 id_rast <- terra::rast(vals= 1:terra::ncell(env.data.raster),
                        names ="myID",
                        extent = terra::ext(env.data.raster),
@@ -546,40 +531,39 @@ id_rast <- terra::rast(vals= 1:terra::ncell(env.data.raster),
                        ncols = terra::ncol(env.data.raster),
                        crs = terra::crs(env.data.raster)
 )
-abio.st <- terra::as.data.frame(c(id_rast, env.data.raster))
 dt <- terra::as.data.frame(c(id_rast, rpc$PCs[[c("PC1", "PC2")]]), xy = TRUE)
 PC12occ <- terra::extract(id_rast,  occ.vec, cells = FALSE,
                           df = FALSE, ID=FALSE)[,1]
-PC12ex <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
+presence_absence_pc <- na.omit(data.frame(dt, PA= ifelse(dt$myID %in% PC12occ, 1, 0)))
 
-H <- ks::Hpi(x = PC12ex[, c("PC1", "PC2")])
+H <- ks::Hpi(x = presence_absence_pc[, c("PC1", "PC2")])
 
-estimate <- data.frame(KDE = ks::kde(PC12ex[PC12ex$PA == 1, c("PC1", "PC2")],
-                                     eval.points = PC12ex[PC12ex$PA ==1,
+estimate <- data.frame(KDE = ks::kde(presence_absence_pc[presence_absence_pc$PA == 1, c("PC1", "PC2")],
+                                     eval.points = presence_absence_pc[presence_absence_pc$PA ==1,
                                                           c("PC1", "PC2")],
                                      h = H)$estimate,
-                       PC12ex[PC12ex$PA == 1, c("PC1", "PC2", "myID", "PA")])
+                       presence_absence_pc[presence_absence_pc$PA == 1, c("PC1", "PC2", "myID", "PA")])
 
-quantP <- quantile(estimate[, "KDE"], thres)
-estimate$percP <- ifelse(estimate$KDE <= unname(quantP[1]), "out", "in")
-point.data <- merge(x = PC12ex, 
-                    y = estimate[estimate$PA == 1,c("myID","percP")],
+density_cutoff <- quantile(estimate[, "KDE"], thres)
+estimate$in_niche <- ifelse(estimate$KDE <= density_cutoff, "out", "in")
+point.data <- merge(x = presence_absence_pc, 
+                    y = estimate[estimate$PA == 1,c("myID","in_niche")],
                   by = "myID", all.x = TRUE)
-point.data$percP <- ifelse(is.na(point.data$percP), "pabs",point.data$percP)
-chull <- sf::st_as_sf(subset(point.data, point.data$percP=="in", 
+point.data$in_niche <- ifelse(is.na(point.data$in_niche), "pabs",point.data$in_niche)
+niche_hull <- sf::st_as_sf(subset(point.data, point.data$in_niche=="in", 
                              select=c( "PC1","PC2" )),
                       coords=c( "PC1","PC2" ))
-chull <- sf::st_union(chull)
-chull <- sf::st_convex_hull(chull)
+niche_hull <- sf::st_union(niche_hull)
+niche_hull <- sf::st_convex_hull(niche_hull)
 point.data.sf <- sf::st_as_sf(mapped.sampled.points.filtered.unique,
                               coords=c( "PC1","PC2" ))
 outside.the.region.with.presence <- point.data.sf[!sf::st_within(point.data.sf,
-                               chull, sparse = FALSE), ]
+                               niche_hull, sparse = FALSE), ]
 
 # Reorganize the columns of the sf object so that the output is more convenient
 sampled.points.absence <- sf::st_coordinates(outside.the.region.with.presence)
 colnames(sampled.points.absence) <- c("PC1", "PC2")
-sampled.points.without.points.not.assosiated.with.the.species <- cbind(
+pseudo_absences <- cbind(
   sf::st_drop_geometry(outside.the.region.with.presence),
   sampled.points.absence)
 
@@ -597,21 +581,21 @@ virtual.presence.points.pc <- sf::st_set_crs(virtual.presence.points.pc, "")
 
 ```{r plot-sampled-point-with-pres-differenciated, echo=FALSE, fig.height=4, fig.width=7}
 inside.the.region.with.presence <- point.data.sf[sf::st_within(point.data.sf, 
-                                                               chull,
+                                                               niche_hull,
                                                                sparse = FALSE),]
 
 sampled.points.presence <- sf::st_coordinates(inside.the.region.with.presence)
 colnames(sampled.points.presence) <- c("PC1", "PC2")
-sampled.points.without.points.assosiated.with.the.species <- cbind(
+excluded_points <- cbind(
   sf::st_drop_geometry(inside.the.region.with.presence), 
   sampled.points.presence)
 
-sampled.points.without.points.not.assosiated.with.the.species$type = "Pseudo-absence"
-sampled.points.without.points.assosiated.with.the.species$type = "Excluded"
+pseudo_absences$type = "Pseudo-absence"
+excluded_points$type = "Excluded"
 
 sampled.points.complete <- rbind(
-  sampled.points.without.points.not.assosiated.with.the.species,
-  sampled.points.without.points.assosiated.with.the.species)
+  pseudo_absences,
+  excluded_points)
 
 
 

@@ -53,7 +53,7 @@ envData <- USE.MCMC::Worldclim_tmp
 envData <- terra::rast(envData,  type="xyz")
 ```
 
-Then, generate a virtual species using the bioclimatic variables downloaded in the previous step. For details about the methodology used to create a virtual species, see the [vignette](http://borisleroy.com/files/virtualspecies-tutorial.html#introduction) of the `virtualspecies` R package.
+Then, generate a virtual species using the bioclimatic variables downloaded in the previous step. For details about the methodology used to create a virtual species, see the [documentation](https://CRAN.R-project.org/package=virtualspecies) of the `virtualspecies` R package.
 
 ```{r, eval=FALSE, message=FALSE}
 #create virtual species
@@ -85,8 +85,10 @@ presence.points <- virtualspecies::sampleOccurrences(new.pres,
 Generate a presence-only data set.
 
 ```{r, eval=TRUE}
-myPres <- presence.points$sample.points[which(presence.points$sample.points$Observed==1), c( "x", "y",  "Observed")]
-myPres <- st_as_sf(myPres, coords=c("x", "y"), crs=4326)
+# Keep only the sampled locations that are presences (Observed == 1).
+all.samples <- presence.points$sample.points
+myPres <- all.samples[all.samples$Observed == 1, c("x", "y", "Observed")]
+myPres <- st_as_sf(myPres, coords = c("x", "y"), crs = 4326)
 ```
 
 # 2. Generating the environmental space
@@ -100,6 +102,9 @@ The function `USE.MCMC::optimRes` can be used to find the optimal resolution (i.
 ```{r, eval=TRUE}
 rpc <- rastPCA(envData, stand = TRUE)
 dt <- na.omit(as.data.frame(rpc$PCs[[c("PC1", "PC2")]], xy = TRUE))
+# Store each pixel's PC scores AS the coordinates of an sf point: every environmental
+# pixel becomes a point in 2-D environmental space. (Later, sf::st_coordinates() pulls
+# the PC scores back out as columns named X = PC1 and Y = PC2.)
 dt <- sf::st_as_sf(dt, coords = c("PC1", "PC2"))
 ```
 
@@ -233,15 +238,17 @@ ggplot(env_pca, aes(x=PC2))+
 Visualizing the geographic coordinates of the pseudo-absences sampled in the environmental space using `USE.MCMC::paSampling`
 
 ```{r, eval=TRUE, message=FALSE, warning=FALSE, fig.height = 8, fig.width = 8, fig.align='center'}
+# Pseudo-absences as an sf object back in geographic (lon/lat) coordinates for the map.
+pa.points.geo <- st_as_sf(st_drop_geometry(myGrid.psAbs$obs.tr),
+                          coords = c("x", "y"), crs = 4326)
 ggplot()+
   tidyterra::geom_spatraster(data = new.pres$pa.raster)+
   scale_fill_viridis_c(na.value = "transparent", breaks=c(0,1)) +
   geom_sf(data=myPres, 
           aes(color= "Presences"), 
           alpha=1, size=2, shape= 19)+
-  geom_sf(data=st_as_sf(st_drop_geometry(myGrid.psAbs$obs.tr), 
-                        coords = c("x","y"), crs=4326), 
-          aes(color="Pseudo-absences"), 
+  geom_sf(data = pa.points.geo,
+          aes(color="Pseudo-absences"),
           alpha=0.8, size=2, shape = 19 )+
     scale_colour_manual(name=NULL,
                         values=c('Presences'='steelblue','Pseudo-absences'='#A41616'))+

@@ -4,7 +4,7 @@ output:
   rmarkdown::html_vignette:
     self_contained: false
 vignette: >
-  %\VignetteIndexEntry{insights-on-MCMC-pseudo-absence-sampling-vignette}
+  %\VignetteIndexEntry{Insights on Markov chain based pseudo-absence sampling}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -275,7 +275,8 @@ env.data.sf <- env.data.raster %>%
     as.data.frame(xy = TRUE) %>%
     sf::st_as_sf(coords = c("x", "y"))
 
-  # Attaching the data in the PCA coordinates
+# Build one sf table per pixel: PC1/PC2 (and the bioclim layers) are ordinary
+# columns, while the geographic x/y are kept as the point geometry.
 env.with.pc.sf <- rpc$PCs %>%
   as.data.frame(xy = TRUE) %>%
   na.omit() %>%
@@ -316,10 +317,17 @@ The model density at the points in the environment can be used to find the thres
 ```{r set-environmental-threshold}
 environmental.densities <- mclust::predict.densityMclust(
   environmental.data.model, env.data.cleaned)
+# Cut off the lowest-density environments: keep the densest 99% of cells as the
+# samplable space (raise 0.01 to exclude more of the sparse edges).
 environmental.threshold <- stats::quantile(environmental.densities, 0.01)
 ```
 
-We can now start to construct the function that our chain tries to sample from. 
+We can now construct the function that our chain tries to sample from. The next
+block is a *function that builds another function*: you hand `densityFunctionNaive()`
+the fitted environmental model and a threshold once, and it hands back a ready-to-use
+`densityFunction(point)` that scores any single point (here simply 1 inside the
+environment, 0 outside). We keep that returned function in `densityFunction` and feed
+it to the chain.
 
 ```{r set-naive-density-funciton}
 densityFunctionNaive <- function(env.model, env.threshold, dimensions){
@@ -352,7 +360,8 @@ grid <- expand.grid(
 )
 names(grid) <- c("PC1", "PC2")
 
-grid$density <- purrr::map_dbl(1:nrow(grid), ~ densityFunction(grid[.x, , drop = FALSE]))
+grid$density <- sapply(seq_len(nrow(grid)),               # score every grid cell
+                       function(i) densityFunction(grid[i, , drop = FALSE]))
 
 p.density.naive <- ggplot() +
   geom_raster(data=grid, aes(x=PC1, y=PC2, fill=density)) +
@@ -489,7 +498,8 @@ densityFunction <- densityFunctionPseudoAbsences(environmental.data.model,
 As before we can plot the function we want to sample from.
 
 ```{r plot-pseudo-absence-density, echo=FALSE, fig.height=4, fig.width=7}
-grid$density <- purrr::map_dbl(1:nrow(grid), ~ densityFunction(grid[.x, , drop = FALSE]))
+grid$density <- sapply(seq_len(nrow(grid)),               # score every grid cell
+                       function(i) densityFunction(grid[i, , drop = FALSE]))
 
 p.density.pseudo.absence <- ggplot() +
   geom_raster(data=grid, aes(x=PC1, y=PC2, fill=density)) +
@@ -914,9 +924,9 @@ chain.range.pc2 <- range(chain.df$PC2)
 chain.density.grid <- expand.grid(
   PC1 = seq(chain.range.pc1[1], chain.range.pc1[2], length.out = 120),
   PC2 = seq(chain.range.pc2[1], chain.range.pc2[2], length.out = 120))
-chain.density.grid$density <- purrr::map_dbl(
+chain.density.grid$density <- sapply(            # score every grid cell
   seq_len(nrow(chain.density.grid)),
-  ~ densityFunction(chain.density.grid[.x, , drop = FALSE]))
+  function(i) densityFunction(chain.density.grid[i, , drop = FALSE]))
 panel.d <- ggplot() +
   geom_raster(data = chain.density.grid,
               aes(x = PC1, y = PC2, fill = density)) +
@@ -1091,20 +1101,18 @@ densityFunction <- mclustDensityFunction(env.model = environmental.data.model,
                                          threshold = environmental.threshold,
                                          species.cutoff.threshold = species.cutoff.threshold)
 
-chain.list <- list()
-chain.list <- mclapply(1:4, function(i) {
-  capture.output({
-    sampled.points <- mcmcSampling(dataset = env.with.pc.sf.subsampled,
-                                   dimensions = dimensions,
-                                   n.sample.points = 5000,
-                                   densityFunction = densityFunction,
-                                   proposalFunction = proposalFunction,
-                                   burnIn = 1000,
-                                   covariance.correction = 50,
-                                   verbose = TRUE)
-  })
+chain.list <- list()                          # run 4 independent chains
+for (i in 1:4) {
+  sampled.points <- mcmcSampling(dataset = env.with.pc.sf.subsampled,
+                                 dimensions = dimensions,
+                                 n.sample.points = 5000,
+                                 densityFunction = densityFunction,
+                                 proposalFunction = proposalFunction,
+                                 burnIn = 1000,
+                                 covariance.correction = 50,  # proposal step scale; raise it as dimensions grow
+                                 verbose = FALSE)
   chain.list[[i]] <- coda::as.mcmc(sampled.points[dimensions])
-}, mc.cores = 1)
+}
 coda.chain.list <- coda::mcmc.list(chain.list)
 ```  
 
