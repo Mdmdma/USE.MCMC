@@ -13,9 +13,7 @@
 #' @param H The kernel bandwidth (i.e., the width of the kernel density function that defines its shape) excluding the portion of the environmental space associated with environmental conditions likely suitable for the species. It can be either defined by the user or automatically estimated by \code{paSampling} via \code{ks::Hpi}.
 #' @param grid.res (integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes} function.
 #' @param n.tr (integer) number of pseudo-absences for the training dataset to sample in each cell of the sampling grid
-#' @param n.ts (integer; optional) number of pseudo-absences for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.
-#' @param sub.ts (logical) sample the validation pseudo-absences
-#' @param prev (double) prevalence value to be specified instead of n.tr and n.ts
+#' @param prev (double) prevalence value to be specified instead of n.tr
 #' @param plot_proc (logical) plot progress of the sampling, default FALSE
 #' @param verbose (logical) Print verbose
 #' @param dimensions (string vector) specify the pc components to analyse. Must have length >= 2; any number of components is supported (the method is dimension-general, only the compute cost grows with dimension).
@@ -25,8 +23,9 @@
 #' @param n.samples Number of sample points that are returned
 #' @param n.candidates (integer; optional) number of raw uniform proposals drawn per batch over the environmental bounding box. Defaults to \code{grid.res^2 * n.tr} (the legacy two-dimensional budget). Because the realized environment fills an exponentially smaller share of its bounding box as the number of \code{dimensions} grows, high-dimensional runs need a larger value (or a larger \code{n.tr}); the function draws additional batches up to a cap when \code{n.samples} is requested and warns if it cannot reach it.
 #' @param dim.correction Dimension correction for the support-membership distance threshold, forwarded to \code{\link{optimalDistanceThresholdNn}}. One of \code{"voronoi"} (default), \code{"simplex"}, \code{"none"}, or a positive numeric multiplier. All equal 1 at two dimensions, so two-dimensional results are unchanged.
+#' @param ... reserved; passing a parameter that belongs to another pseudo-absence sampler raises an informative error pointing to the analogous parameter.
 #' @importFrom stats na.omit quantile complete.cases runif
-#' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+#' @return An sf object: one row per pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}..\code{PCk}) plus the environmental-layer values as attribute columns.
 #' @examples
 #' \donttest{
 #' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
@@ -38,14 +37,16 @@
 #' @export
 #'
 paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = 10,
-                        n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
+                        n.tr = 5, prev = NULL, plot_proc = FALSE,
                         verbose = FALSE, dimensions = c("PC1", "PC2"),
                         precomputed.pca = NULL,
                         n.samples = NULL,
                         nn.based.presence.exclusion = TRUE,
                         data.based.distance.threshold = TRUE,
                         n.candidates = NULL,
-                        dim.correction = "voronoi") {
+                        dim.correction = "voronoi", ...) {
+  # Reject (or guide) arguments that belong to another pseudo-absence sampler.
+  check_cross_sampler_args(list(...), "paSamplingNn")
   # Input validation
   check_raster_input(env.rast, "env.rast")
   check_spatial_points(pres, "pres", allow_null = TRUE)
@@ -91,7 +92,6 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
       message(paste("Estimated prevalence of", estPrev))
     } else {
       n.tr <- (nrow(pres)/prev)/(grid.res^2)
-      n.ts <- (nrow(pres)/prev)/(grid.res^2)
       message(paste("User-defined prevalence of", prev))
     }
     if (inherits(env.rast, "BasicRaster")) {
@@ -189,7 +189,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
             "In high dimensions the acceptance rate collapses (the realized environment fills an ",
             "exponentially small fraction of its bounding box) - increase 'n.candidates' or 'n.tr'.",
             call. = FALSE)
-    return(sf::st_as_sf(env.with.pc[0, , drop = FALSE], coords = c("x", "y")))
+    return(sf::st_as_sf(env.with.pc[0, , drop = FALSE], coords = c("x", "y"), crs = 4326))
   }
   if (!is.na(target) && length(kept.index) < target) {
     message(sprintf(paste0("Only %d unique pseudo-absences survived the support filter after %d ",
@@ -263,7 +263,7 @@ paSamplingNn <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, gr
 
   # Each survivor is already a distinct real point (deduplicated above), so build the
   # output sf directly in geographic space.
-  sampled.points.unique <- sf::st_as_sf(sampled.points, coords = c("x", "y"))
+  sampled.points.unique <- sf::st_as_sf(sampled.points, coords = c("x", "y"), crs = 4326)
   message(paste("\nThere were ", n.duplicate.maps,
                 "points that were sampled twice. This indicates undersampling of low density regions or oversampling of the border region.\nThis occures as the probability of beeing close to the same points twice is lower in high denisty regions."))
 

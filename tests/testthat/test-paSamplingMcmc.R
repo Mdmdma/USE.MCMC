@@ -2,64 +2,64 @@ skip_on_cran()
 
 # --- Input validation tests ---
 
-test_that("paSamplingMcmc rejects NULL env.data.raster", {
-  expect_error(paSamplingMcmc(env.data.raster = NULL), "'env.data.raster' must be provided")
+test_that("paSamplingMcmc rejects NULL env.rast", {
+  expect_error(paSamplingMcmc(env.rast = NULL), "'env.rast' must be provided")
 })
 
-test_that("paSamplingMcmc rejects non-raster env.data.raster", {
-  expect_error(paSamplingMcmc(env.data.raster = "bad"), "must be a SpatRaster or BasicRaster")
+test_that("paSamplingMcmc rejects non-raster env.rast", {
+  expect_error(paSamplingMcmc(env.rast = "bad"), "must be a SpatRaster or BasicRaster")
 })
 
 test_that("paSamplingMcmc rejects NULL pres", {
   r <- make_test_raster()
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = NULL), "'pres' must be provided")
+  expect_error(paSamplingMcmc(env.rast = r, pres = NULL), "'pres' must be provided")
 })
 
 test_that("paSamplingMcmc rejects non-spatial pres", {
   r <- make_test_raster()
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = data.frame(x = 1)),
+  expect_error(paSamplingMcmc(env.rast = r, pres = data.frame(x = 1)),
                "must be a spatial object")
 })
 
 test_that("paSamplingMcmc rejects negative n.samples", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres, n.samples = -1),
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, n.samples = -1),
                "'n.samples' must be a positive number")
 })
 
 test_that("paSamplingMcmc rejects non-character dimensions", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres, dimensions = c(1, 2)),
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, dimensions = c(1, 2)),
                "'dimensions' must be a character vector")
 })
 
 test_that("paSamplingMcmc rejects negative burnIn", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres, burnIn = -1),
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, burnIn = -1),
                "'burnIn' must be a non-negative number")
 })
 
 test_that("paSamplingMcmc rejects non-logical verbose", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres, verbose = "yes"),
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, verbose = "yes"),
                "'verbose' must be a single logical")
 })
 
 test_that("paSamplingMcmc rejects invalid precomputed.pca", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres, precomputed.pca = list(a = 1)),
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, precomputed.pca = list(a = 1)),
                "must be a list with a '\\$PCs' element")
 })
 
 test_that("paSamplingMcmc rejects out-of-range percentile", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
-  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres,
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres,
                               environmental.cutof.percentile = 2),
                "must be between 0 and 1")
 })
@@ -70,7 +70,7 @@ test_that("paSamplingMcmc returns sf object with small params", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
   result <- paSamplingMcmc(
-    env.data.raster = r,
+    env.rast = r,
     pres = pres,
     n.samples = 10,
     chain.length = 50,
@@ -89,7 +89,7 @@ test_that("paSamplingMcmc with species.cutoff.threshold = 1 samples the environm
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
   result <- paSamplingMcmc(
-    env.data.raster = r,
+    env.rast = r,
     pres = pres,
     n.samples = 10,
     chain.length = 200,
@@ -114,7 +114,7 @@ test_that("paSamplingMcmc uniform mode (species.cutoff.threshold = 1) accepts pr
   # Uniform mode never reads the presence set, so it must run with pres = NULL.
   r <- make_test_raster()
   result <- paSamplingMcmc(
-    env.data.raster = r,
+    env.rast = r,
     pres = NULL,
     n.samples = 10,
     chain.length = 100,
@@ -134,7 +134,7 @@ test_that("paSamplingMcmc with engine = 'cpp' returns sf with density column", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
   result <- paSamplingMcmc(
-    env.data.raster = r,
+    env.rast = r,
     pres = pres,
     n.samples = 50,
     chain.length = 1000,
@@ -149,4 +149,36 @@ test_that("paSamplingMcmc with engine = 'cpp' returns sf with density column", {
   expect_true(inherits(result, "sf"))
   expect_true(nrow(result) <= 50)
   expect_true("density" %in% names(result))
+})
+
+# --- Unified interface: renamed raster arg, CRS, cross-sampler guidance ---
+
+test_that("paSamplingMcmc errors on the renamed env.data.raster argument", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 30)
+  expect_error(paSamplingMcmc(env.data.raster = r, pres = pres),
+               "renamed to 'env.rast'")
+})
+
+test_that("paSamplingMcmc guides parameters that belong to another sampler", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 30)
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, thres = 0.5),
+               "species.cutoff.threshold")
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, grid.res = 5),
+               "paSampling")
+  expect_error(paSamplingMcmc(env.rast = r, pres = pres, notarg = 1),
+               "unknown argument")
+})
+
+test_that("paSamplingMcmc return carries CRS 4326 and PC columns", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 30)
+  result <- paSamplingMcmc(env.rast = r, pres = pres, n.samples = 10,
+                           chain.length = 100, burnIn = 0, num.chains = 1,
+                           num.cores = 1, verbose = FALSE, plot_proc = FALSE,
+                           covariance.correction = 100)
+  expect_true(inherits(result, "sf"))
+  expect_equal(sf::st_crs(result)$epsg, 4326L)
+  expect_true(all(c("PC1", "PC2") %in% names(result)))
 })

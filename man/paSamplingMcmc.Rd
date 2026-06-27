@@ -5,7 +5,7 @@
 \title{MCMC pseudo-absence sampling in environmental space}
 \usage{
 paSamplingMcmc(
-  env.data.raster = NULL,
+  env.rast = NULL,
   pres = NULL,
   n.samples = 300,
   chain.length = 10000,
@@ -24,11 +24,12 @@ paSamplingMcmc(
   plot_proc = FALSE,
   num.chains = 1,
   num.cores = 1,
-  engine = c("auto", "R", "cpp")
+  engine = c("auto", "R", "cpp"),
+  ...
 )
 }
 \arguments{
-\item{env.data.raster}{Terra raster containing the environment. Required unless a \code{precomputed.env} bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).}
+\item{env.rast}{Terra raster containing the environment. Required unless a \code{precomputed.env} bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).}
 
 \item{pres}{Sf dataframe containing the presence locations}
 
@@ -67,9 +68,11 @@ paSamplingMcmc(
 \item{num.cores}{Number of cores available for parallelization of the multi-chain computation}
 
 \item{engine}{One of \code{"auto"} (default), \code{"R"}, or \code{"cpp"}. \code{"auto"} picks the C++ inner loop when both the internal density and proposal functions are built by \code{mclustDensityFunction()} and \code{addHighDimGaussian()} (which is the case here) and falls back to the R loop otherwise. \code{"cpp"} forces the C++ path. \code{"R"} forces the pure-R reference loop.}
+
+\item{...}{reserved; passing a parameter that belongs to another pseudo-absence sampler (e.g. \code{thres}, \code{grid.res}) raises an informative error pointing to the analogous parameter.}
 }
 \value{
-dataframe containing the sampled points
+An sf object: one row per sampled pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}..\code{PCk}) plus the environmental-layer values as attribute columns, and the method-specific \code{density} and \code{distance} diagnostics.
 }
 \description{
 A near drop-in replacement for \code{paSampling} from the original USE package that performs Gaussian-mixture-based pseudo
@@ -82,7 +85,7 @@ env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
 df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
 set.seed(1)
 pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
-pa <- paSamplingMcmc(env.data.raster = env, pres = pres,
+pa <- paSamplingMcmc(env.rast = env, pres = pres,
                      n.samples = 50, chain.length = 2000, burnIn = 200)
 }
 }

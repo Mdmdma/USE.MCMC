@@ -20,24 +20,11 @@ test_that("paSampling rejects non-spatial pres", {
   expect_error(paSampling(env.rast = r, pres = data.frame(x = 1)), "must be a spatial object")
 })
 
-test_that("paSampling rejects NULL grid.res", {
-  r <- make_test_raster()
-  pres <- make_test_presence_sf(r, 20)
-  expect_error(paSampling(env.rast = r, pres = pres, grid.res = NULL), "'grid.res' must be provided")
-})
-
 test_that("paSampling rejects thres out of range", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 20)
   expect_error(paSampling(env.rast = r, pres = pres, grid.res = 5, thres = 2.0),
                "must be between 0 and 1")
-})
-
-test_that("paSampling rejects non-logical sub.ts", {
-  r <- make_test_raster()
-  pres <- make_test_presence_sf(r, 20)
-  expect_error(paSampling(env.rast = r, pres = pres, grid.res = 5, sub.ts = "yes"),
-               "'sub.ts' must be a single logical")
 })
 
 test_that("paSampling rejects non-numeric n.tr", {
@@ -47,22 +34,39 @@ test_that("paSampling rejects non-numeric n.tr", {
                "'n.tr' must be a positive number")
 })
 
-# --- Positive tests ---
+# --- Cross-sampler argument guidance ---
 
-test_that("paSampling returns sf object", {
+test_that("paSampling guides parameters that belong to another sampler", {
+  r <- make_test_raster()
+  pres <- make_test_presence_sf(r, 20)
+  # a paSamplingNn/Mcmc-only parameter
+  expect_error(paSampling(env.rast = r, pres = pres, dimensions = c("PC1", "PC2")),
+               "paSamplingNn")
+  # a paSamplingMcmc-only parameter
+  expect_error(paSampling(env.rast = r, pres = pres, chain.length = 100),
+               "paSamplingMcmc")
+  # a genuine typo
+  expect_error(paSampling(env.rast = r, pres = pres, notarg = 1),
+               "unknown argument")
+})
+
+# --- Return shape (unified style) ---
+
+test_that("paSampling returns a single sf in the unified style", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
   result <- paSampling(env.rast = r, pres = pres, grid.res = 3, n.tr = 2,
                        plot_proc = FALSE, verbose = FALSE)
   expect_true(inherits(result, "sf"))
+  # geographic-point geometry, CRS 4326
+  expect_equal(sf::st_crs(result)$epsg, 4326L)
+  # PC scores are now attribute COLUMNS (not the geometry)
+  expect_true(all(c("PC1", "PC2") %in% names(result)))
 })
 
-test_that("paSampling with sub.ts returns list with obs.tr and obs.ts", {
+test_that("paSampling works with defaults (no grid.res / shared easy call)", {
   r <- make_test_raster()
   pres <- make_test_presence_sf(r, 30)
-  result <- paSampling(env.rast = r, pres = pres, grid.res = 3, n.tr = 2,
-                       sub.ts = TRUE, n.ts = 1, plot_proc = FALSE, verbose = FALSE)
-  expect_type(result, "list")
-  expect_true("obs.tr" %in% names(result))
-  expect_true("obs.ts" %in% names(result))
+  result <- paSampling(env.rast = r, pres = pres)
+  expect_true(inherits(result, "sf"))
 })

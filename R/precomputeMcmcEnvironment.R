@@ -26,7 +26,7 @@
 #' **identical** whether the environment was computed inline or loaded from a
 #' cached bundle.
 #'
-#' @param env.data.raster Terra raster containing the environment.
+#' @param env.rast Terra raster containing the environment.
 #' @param dimensions Character vector of the PC dimensions to retain (e.g.
 #'   `c("PC1", "PC2")`). Must match the `dimensions` later passed to
 #'   [paSamplingMcmc()].
@@ -37,6 +37,7 @@
 #'   element) to reuse instead of recomputing the PCA.
 #' @param plot_proc If TRUE, `mclust` draws its fit diagnostics.
 #' @param verbose If TRUE, prints progress.
+#' @param ... reserved; the deprecated \code{env.data.raster} name (use \code{env.rast}) or any unknown argument raises an informative error.
 #'
 #' @returns A list (S3 class `mcmc_environment`) with elements `pcs_packed`,
 #'   `env.with.pc.sf`, `env.data.cleaned`, `environmental.data.model`,
@@ -44,14 +45,24 @@
 #'   `dimensions`, `seed.number` and `rng_state`. Pass it to
 #'   [paSamplingMcmc()]'s `precomputed.env` argument.
 #' @export
-precomputeMcmcEnvironment <- function(env.data.raster = NULL,
+precomputeMcmcEnvironment <- function(env.rast = NULL,
                                       dimensions = c("PC1", "PC2"),
                                       seed.number = 42,
                                       precomputed.pca = NULL,
                                       plot_proc = FALSE,
-                                      verbose = FALSE) {
+                                      verbose = FALSE, ...) {
+  # Guide the deprecated raster name and reject unknown arguments (mirrors the
+  # samplers' behaviour rather than silently swallowing them via `...`).
+  .dots <- list(...)
+  if (length(.dots)) {
+    if ("env.data.raster" %in% names(.dots)) {
+      stop_config("'env.data.raster' has been renamed to 'env.rast'. Pass env.rast = ... instead.")
+    }
+    stop_config("unknown argument(s) passed to precomputeMcmcEnvironment(): ",
+                paste(names(.dots), collapse = ", "))
+  }
   # Input validation
-  check_raster_input(env.data.raster, "env.data.raster")
+  check_raster_input(env.rast, "env.rast")
   if (!is.character(dimensions) || length(dimensions) < 2) {
     stop("'dimensions' must be a character vector with at least 2 elements", call. = FALSE)
   }
@@ -64,21 +75,21 @@ precomputeMcmcEnvironment <- function(env.data.raster = NULL,
     }
   }
 
-  if (inherits(env.data.raster, "BasicRaster")) {
-    env.data.raster <- terra::rast(env.data.raster)
+  if (inherits(env.rast, "BasicRaster")) {
+    env.rast <- terra::rast(env.rast)
   }
 
   set.seed(seed.number)
 
   # Generate the environmental space using PCA
   if (is.null(precomputed.pca)) {
-    rpc <- rastPCA(env.data.raster, stand = TRUE)
+    rpc <- rastPCA(env.rast, stand = TRUE)
   } else {
     rpc <- precomputed.pca
   }
 
   # Combine environment and PCA layers on the shared raster grid.
-  env.with.pc.sf <- terra::as.data.frame(c(env.data.raster, rpc$PCs), xy = TRUE) %>%
+  env.with.pc.sf <- terra::as.data.frame(c(env.rast, rpc$PCs), xy = TRUE) %>%
     na.omit() %>%
     sf::st_as_sf(coords = c("x", "y"))
 

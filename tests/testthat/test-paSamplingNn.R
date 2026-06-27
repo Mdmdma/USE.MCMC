@@ -71,6 +71,7 @@ test_that("paSamplingNn returns sf object without presence exclusion", {
   )
   expect_true(inherits(result, "sf"))
   expect_true(nrow(result) <= 20)
+  expect_equal(sf::st_crs(result)$epsg, 4326L)   # geographic geometry, CRS set
 })
 
 test_that("paSamplingNn works without pres (uniform sampling)", {
@@ -120,4 +121,13 @@ test_that("paSamplingNn samples in 4D (compute-bound, more candidates)", {
   )
   expect_true(inherits(result, "sf"))
   expect_true(nrow(result) <= 8)
+})
+
+# --- Cross-sampler argument guidance ---
+
+test_that("paSamplingNn guides parameters that belong to another sampler", {
+  r <- make_test_raster()
+  expect_error(paSamplingNn(env.rast = r, chain.length = 100), "paSamplingMcmc")
+  expect_error(paSamplingNn(env.rast = r, species.cutoff.threshold = 0.9), "paSamplingMcmc")
+  expect_error(paSamplingNn(env.rast = r, notarg = 1), "unknown argument")
 })

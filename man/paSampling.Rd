@@ -9,13 +9,12 @@ paSampling(
   pres = NULL,
   thres = 0.75,
   H = NULL,
-  grid.res = NULL,
+  grid.res = 10,
   n.tr = 5,
-  sub.ts = FALSE,
-  n.ts = 5,
   prev = NULL,
   plot_proc = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{
@@ -29,20 +28,18 @@ paSampling(
 
 \item{grid.res}{(integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes} function.}
 
-\item{n.tr}{(integer) number of pseudo-absences for the training dataset to sample in each cell of the sampling grid}
+\item{n.tr}{(integer) number of pseudo-absences to sample in each cell of the sampling grid}
 
-\item{sub.ts}{(logical) sample the validation pseudo-absences}
-
-\item{n.ts}{(integer; optional) number of pseudo-absences for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.}
-
-\item{prev}{(double) prevalence value to be specified instead of n.tr and n.ts}
+\item{prev}{(double) prevalence value to be specified instead of n.tr}
 
 \item{plot_proc}{(logical) plot progress of the sampling, default FALSE}
 
 \item{verbose}{(logical) Print verbose}
+
+\item{...}{reserved; passing a parameter that belongs to another pseudo-absence sampler (e.g. \code{chain.length}, \code{dimensions}) raises an informative error pointing to the analogous parameter.}
 }
 \value{
-An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+An sf object: one row per pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}, \code{PC2}) plus the environmental-layer values as attribute columns.
 }
 \description{
 \code{paSampling} performs a two-step procedure for uniformly sampling pseudo-absences within the environmental space.

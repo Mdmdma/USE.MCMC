@@ -1017,7 +1017,7 @@ Since USE.MCMC 0.0.3 the MCMC inner loop runs in C++ whenever the density and pr
 
 ```{r sample-in-higher-dim, message=FALSE, results="hide"}
 # One core is used for rendering the vignette, for interactive use this can be set higher
-sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.data.raster = env.data.raster,
+sampled.points.mcmc.higher.dim <- paSamplingMcmc(env.rast = env.data.raster,
                                       pres = virtual.presence.points,
                                       precomputed.pca = rpc,
                                       environmental.cutof.percentile = 0.001,
@@ -1200,10 +1200,8 @@ We can now compare our newly introduced method to other sampling approaches. Her
 sampled.points.uniform.p <- paSampling(env.rast = env.data.raster,
                                        pres = virtual.presence.points, 
                                        grid.res = 10)
-sampled.points.uniform.p.location <- sf::st_drop_geometry(
-  sampled.points.uniform.p) %>%
-  dplyr::select(c("x", "y")) %>%
-  sf::st_as_sf(coords = c("x", "y"))
+# paSampling now returns a single sf already in geographic coordinates.
+sampled.points.uniform.p.location <- sampled.points.uniform.p
 sampled.points.uniform.paper <- terra::extract(
   env.data.raster.with.pc, 
   sampled.points.uniform.p.location)

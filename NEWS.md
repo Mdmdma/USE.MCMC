@@ -1,3 +1,21 @@
+# USE.MCMC 0.0.5
+
+## Pseudo-absence sampler interface (breaking changes)
+* All three samplers (`paSampling()`, `paSamplingNn()`, `paSamplingMcmc()`) now return a
+  single `sf` in one unified style: geographic (x, y) point geometry with CRS EPSG:4326,
+  and the PC scores (`PC1`..`PCk`) plus environmental-layer values as attribute columns.
+  **Breaking:** `paSampling()` no longer returns an sf whose geometry is the
+  PC/environmental space, and never returns an `obs.tr`/`obs.ts` list. (The old
+  PC-as-geometry style cannot represent more than two dimensions.)
+* `paSampling()` and `paSamplingNn()` drop the unused `sub.ts`/`n.ts` arguments;
+  `paSampling()`'s `grid.res` now defaults to 10 so `paSampling(env.rast, pres)` runs.
+* The raster argument is now `env.rast` everywhere: `paSamplingMcmc()` and
+  `precomputeMcmcEnvironment()` rename `env.data.raster` -> `env.rast`; passing the old
+  name raises an informative error.
+* Passing a parameter that belongs to a different sampler now raises an informative error
+  naming the analogous parameter in the sampler you called (e.g. `chain.length` ->
+  use `grid.res`/`n.tr`); unknown arguments are rejected rather than silently ignored.
+
 # USE.MCMC 0.0.4
 
 ## MCMC backend

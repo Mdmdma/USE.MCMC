@@ -22,6 +22,29 @@ Custom user closures lack the attribute and stay on the R reference loop. `engin
 
 `mclustDensityFunction(species.model = NULL)` builds the "uniform environment" target: density **1 inside** the environmental support (env GMM density ≥ `threshold`) and the floor outside, with no presence GMM subtracted. `paSamplingMcmc(species.cutoff.threshold = 1)` uses it to skip the presence-GMM fit and sample the environment uniformly. The load-bearing convention spans R and C++: the R closure returns `1` directly, and the `rcpp_spec` carries `species_cutoff = Inf` as the **sentinel** plus a *dummy* single-component species GMM. `combined_density()` in `src/mcmc_loop.cpp` detects `std::isinf(sp_cutoff)` and returns `1.0` directly — the dummy species arrays are valid-shaped marshalling ballast only and are never evaluated. If you add finite-cutoff validation in `mclustDensityFunction`, or refactor `combined_density`, preserve this `Inf`-sentinel path or `species.cutoff.threshold = 1` silently breaks. The `mcmc_loop_cpp` **signature is unchanged**, so this needed no `compileAttributes()` regen. Note the percentile direction: **higher `species.cutoff.threshold` = weaker exclusion** (it is fed to `quantile(species.densities, …)`; the target is `1 − sp_density/quantile`, so a high quantile excludes only the densest points), and at the limit `= 1` only the single max-density point would be excluded — uniform mode is the continuous endpoint of that, NOT an inversion.
 
+### Unified pseudo-absence sampler interface
+
+The three samplers (`paSampling`, `paSamplingNn`, `paSamplingMcmc`) share one interface,
+enforced as a convention — keep it:
+
+- **Raster argument is `env.rast`** in all three (and in `precomputeMcmcEnvironment`). The
+  old `env.data.raster` is gone; passing it raises an informative error.
+- **Return is one unified style:** a single `sf` with geographic (x, y) point geometry,
+  **CRS EPSG:4326**, and the PC scores (`PC1`..`PCk`) + environmental-layer values as
+  attribute columns. Method-specific extra columns are allowed (`paSamplingMcmc`:
+  `density`/`distance`; `paSampling`: `myID`/`PA`/`percP`). No sampler returns a list. The
+  PC-as-geometry style is forbidden (it cannot hold >2 dimensions). `paSampling`
+  post-processes its `uniformSampling` result to this style (re-keying x/y and PC1/PC2
+  from `dt` by `myID`); `uniformSampling` itself is left PC-space (it grids on that
+  geometry and is used directly in the vignette).
+- **Cross-argument guard:** every sampler takes `...` and calls
+  `check_cross_sampler_args(list(...), "<sampler>")` first. The registry +
+  helper live in `R/validation-helpers.R`; passing another sampler's parameter errors
+  with the analogous parameter, and unknown args are rejected (not swallowed). When you
+  add or rename a sampler parameter, update the registry.
+- **Easy case:** `paSamplingX(env.rast = r, pres = p)` must work for all three (defaults
+  cover everything else, incl. `paSampling`'s `grid.res = 10`).
+
 ### Gotcha: roxygen export tag and `MIN_COV_CORRECTION`
 
 `R/mcmcSampling.R` defines a top-level constant `MIN_COV_CORRECTION <- 1e-10`. It must stay **above** the `mcmcSampling()` roxygen block: if it lands between the `#' @export` tag and the function definition, roxygen2 binds the export to the constant and silently drops `mcmcSampling` from `NAMESPACE`. Keep the constant above the `#'` block (with its own one-line comment) when editing this file.

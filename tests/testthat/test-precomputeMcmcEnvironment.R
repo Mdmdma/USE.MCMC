@@ -9,10 +9,10 @@ seed     <- 7L
 run_args <- list(n.samples = 50, chain.length = 2000, burnIn = 200,
                  num.chains = 1, num.cores = 1, dimensions = dims, seed.number = seed)
 
-env_bundle <- precomputeMcmcEnvironment(env.data.raster = r, dimensions = dims, seed.number = seed)
+env_bundle <- precomputeMcmcEnvironment(env.rast = r, dimensions = dims, seed.number = seed)
 
 do_run <- function(...) {
-  do.call(paSamplingMcmc, c(list(env.data.raster = r, pres = pres), run_args, list(...)))
+  do.call(paSamplingMcmc, c(list(env.rast = r, pres = pres), run_args, list(...)))
 }
 ref_uncached <- do_run()
 
@@ -27,10 +27,10 @@ test_that("precomputeMcmcEnvironment returns a complete, serialisable bundle", {
 })
 
 test_that("precomputeMcmcEnvironment validates its inputs", {
-  expect_error(precomputeMcmcEnvironment(env.data.raster = NULL), "must be provided")
-  expect_error(precomputeMcmcEnvironment(env.data.raster = r, dimensions = "PC1"),
+  expect_error(precomputeMcmcEnvironment(env.rast = NULL), "must be provided")
+  expect_error(precomputeMcmcEnvironment(env.rast = r, dimensions = "PC1"),
                "at least 2 elements")
-  expect_error(precomputeMcmcEnvironment(env.data.raster = r, seed.number = "x"),
+  expect_error(precomputeMcmcEnvironment(env.rast = r, seed.number = "x"),
                "seed.number")
 })
 
@@ -47,9 +47,9 @@ test_that("the bundle survives a saveRDS/readRDS round-trip", {
   expect_equal(sf::st_coordinates(res_rt), sf::st_coordinates(ref_uncached))
 })
 
-test_that("env.data.raster is optional once a bundle is supplied", {
+test_that("env.rast is optional once a bundle is supplied", {
   res <- do.call(paSamplingMcmc,
-                 c(list(env.data.raster = NULL, pres = pres), run_args,
+                 c(list(env.rast = NULL, pres = pres), run_args,
                    list(precomputed.env = env_bundle)))
   expect_equal(sf::st_coordinates(res), sf::st_coordinates(ref_uncached))
 })

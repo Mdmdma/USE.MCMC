@@ -4,7 +4,7 @@
 #' absence sampling using a Markov chain. In a first step a density function is constructed using a GMM fitted to the environment as a
 #' limit to the sampling space and a GMM fitted on the target species as a way to evade regions associated with the presence.
 #'
-#' @param env.data.raster Terra raster containing the environment. Required unless a `precomputed.env` bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).
+#' @param env.rast Terra raster containing the environment. Required unless a `precomputed.env` bundle is supplied, in which case it is optional (the environment is already built and presence PC scores are read from the cached PC rasters).
 #' @param pres Sf dataframe containing the presence locations
 #' @param n.samples number of samples that should be put out
 #' @param chain.length number of points that are sampled for the chain
@@ -24,20 +24,21 @@
 #' @param num.chains Number of chains from which samples should be picked
 #' @param num.cores Number of cores available for parallelization of the multi-chain computation
 #' @param engine One of `"auto"` (default), `"R"`, or `"cpp"`. `"auto"` picks the C++ inner loop when both the internal density and proposal functions are built by `mclustDensityFunction()` and `addHighDimGaussian()` (which is the case here) and falls back to the R loop otherwise. `"cpp"` forces the C++ path. `"R"` forces the pure-R reference loop.
+#' @param ... reserved; passing a parameter that belongs to another pseudo-absence sampler (e.g. \code{thres}, \code{grid.res}) raises an informative error pointing to the analogous parameter.
 #'
-#' @returns dataframe containing the sampled points
+#' @returns An sf object: one row per sampled pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}..\code{PCk}) plus the environmental-layer values as attribute columns, and the method-specific \code{density} and \code{distance} diagnostics.
 #' @examples
 #' \donttest{
 #' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
 #' df  <- terra::as.data.frame(env, xy = TRUE, na.rm = TRUE)
 #' set.seed(1)
 #' pres <- sf::st_as_sf(df[sample(nrow(df), 50), ], coords = c("x", "y"), crs = 4326)
-#' pa <- paSamplingMcmc(env.data.raster = env, pres = pres,
+#' pa <- paSamplingMcmc(env.rast = env, pres = pres,
 #'                      n.samples = 50, chain.length = 2000, burnIn = 200)
 #' }
 #' @export
 
-paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, chain.length = 10000,
+paSamplingMcmc <- function (env.rast=NULL, pres = NULL, n.samples = 300, chain.length = 10000,
                           verbose = FALSE, dimensions = c("PC1", "PC2"),
                           burnIn = 1000,
                           covariance.correction = 1,
@@ -49,13 +50,16 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                           species.cutoff.threshold = 0.95,
                           plot_proc = FALSE,
                           num.chains = 1, num.cores = 1,
-                          engine = c("auto", "R", "cpp")) {
+                          engine = c("auto", "R", "cpp"), ...) {
+  # Reject (or guide) arguments that belong to another pseudo-absence sampler
+  # (and map the deprecated env.data.raster name to env.rast).
+  check_cross_sampler_args(list(...), "paSamplingMcmc")
   engine <- match.arg(engine)
-  # Input validation. env.data.raster is only needed to build the environment
+  # Input validation. env.rast is only needed to build the environment
   # (PCA + GMM fit); when a precomputed.env bundle is supplied that work is
   # already done and the raster is optional.
-  if (is.null(precomputed.env) || !is.null(env.data.raster)) {
-    check_raster_input(env.data.raster, "env.data.raster")
+  if (is.null(precomputed.env) || !is.null(env.rast)) {
+    check_raster_input(env.rast, "env.rast")
   }
   # Uniform mode (species.cutoff.threshold = 1) never reads `pres`, so it is
   # allowed to be NULL there; every other mode fits the presence GMM and requires it.
@@ -116,8 +120,8 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   check_in_range(environmental.cutof.percentile, "environmental.cutof.percentile", min_val = 0, max_val = 1)
   check_in_range(species.cutoff.threshold, "species.cutoff.threshold", min_val = 0, max_val = 1)
 
-  if (inherits(env.data.raster, "BasicRaster")) {
-    env.data.raster <- terra::rast(env.data.raster)
+  if (inherits(env.rast, "BasicRaster")) {
+    env.rast <- terra::rast(env.rast)
   }
   # Seeds the inline environment block below; overridden by the RNG-state restore
   # when a precomputed.env bundle is supplied (kept as a fallback otherwise).
@@ -129,7 +133,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
   # is supplied, or reused verbatim from `precomputed.env`. Sharing the one code
   # path guarantees the cached and uncached results are identical.
   if (is.null(precomputed.env)) {
-    precomputed.env <- precomputeMcmcEnvironment(env.data.raster = env.data.raster,
+    precomputed.env <- precomputeMcmcEnvironment(env.rast = env.rast,
                                                  dimensions = dimensions,
                                                  seed.number = seed.number,
                                                  precomputed.pca = precomputed.pca,
@@ -170,7 +174,7 @@ paSamplingMcmc <- function (env.data.raster=NULL, pres = NULL, n.samples = 300, 
                                              threshold = environment.threshold)
   } else {
     # Presence PC scores come from the (cached or freshly computed) PC rasters
-    # alone; the original env layers are not needed here, so env.data.raster is
+    # alone; the original env layers are not needed here, so env.rast is
     # optional once a precomputed.env bundle is supplied.
     virtual.presence.points <- pres
     virtual.presence.points.pc <- terra::extract(rpc$PCs, virtual.presence.points, bind = TRUE) %>%

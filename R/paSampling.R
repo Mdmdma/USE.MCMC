@@ -12,14 +12,13 @@
 #' @param thres (double) This value identifies the quantile value used to specify the boundary of the kernel density estimate (default \code{thres=0.75} ). Thus, probability values higher than the threshold should indicate portions of the multivariate space likely associated with presence points.
 #' @param H The kernel bandwidth (i.e., the width of the kernel density function that defines its shape) excluding the portion of the environmental space associated with environmental conditions likely suitable for the species. It can be either defined by the user or automatically estimated by \code{paSampling} via \code{ks::Hpi}. 
 #' @param grid.res (integer) resolution of the sampling grid. The resolution can be arbitrarily selected or defined using the \code{optimRes} function. 
-#' @param n.tr (integer) number of pseudo-absences for the training dataset to sample in each cell of the sampling grid
-#' @param n.ts (integer; optional) number of pseudo-absences for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.
-#' @param sub.ts (logical) sample the validation pseudo-absences
-#' @param prev (double) prevalence value to be specified instead of n.tr and n.ts
+#' @param n.tr (integer) number of pseudo-absences to sample in each cell of the sampling grid
+#' @param prev (double) prevalence value to be specified instead of n.tr
 #' @param plot_proc (logical) plot progress of the sampling, default FALSE
 #' @param verbose (logical) Print verbose
+#' @param ... reserved; passing a parameter that belongs to another pseudo-absence sampler (e.g. \code{chain.length}, \code{dimensions}) raises an informative error pointing to the analogous parameter.
 #' @importFrom stats na.omit quantile
-#' @return An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+#' @return An sf object: one row per pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}, \code{PC2}) plus the environmental-layer values as attribute columns.
 #' @examples
 #' \donttest{
 #' env <- terra::rast(USE.MCMC::Worldclim_tmp, type = "xyz")
@@ -30,25 +29,21 @@
 #' }
 #' @export
 #'
-paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = NULL,
-                         n.tr = 5, sub.ts = FALSE, n.ts = 5, prev = NULL, plot_proc = FALSE,
-                         verbose = FALSE)
+paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid.res = 10,
+                         n.tr = 5, prev = NULL, plot_proc = FALSE,
+                         verbose = FALSE, ...)
 {
+  # Reject (or guide) arguments that belong to another pseudo-absence sampler.
+  check_cross_sampler_args(list(...), "paSampling")
   # Input validation
   check_raster_input(env.rast, "env.rast")
   check_spatial_points(pres, "pres")
-  if (is.null(grid.res)) {
-    stop("'grid.res' must be provided as a positive integer (got NULL)", call. = FALSE)
-  }
   if (!is.numeric(grid.res) || length(grid.res) != 1 || grid.res < 1) {
     stop(paste0("'grid.res' must be a positive number, got ", deparse(grid.res)), call. = FALSE)
   }
   check_in_range(thres, "thres", min_val = 0, max_val = 1)
   if (!is.numeric(n.tr) || length(n.tr) != 1 || n.tr < 1) {
     stop(paste0("'n.tr' must be a positive number, got ", deparse(n.tr)), call. = FALSE)
-  }
-  if (!is.logical(sub.ts) || length(sub.ts) != 1) {
-    stop(paste0("'sub.ts' must be a single logical value, got '", paste(class(sub.ts), collapse = "/"), "'"), call. = FALSE)
   }
   if (!is.logical(verbose) || length(verbose) != 1) {
     stop(paste0("'verbose' must be a single logical value, got '", paste(class(verbose), collapse = "/"), "'"), call. = FALSE)
@@ -64,7 +59,6 @@ paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid
     message(paste("Estimated prevalence of", estPrev))
   } else {
     n.tr <- (nrow(pres)/prev)/(grid.res^2)
-    n.ts <- (nrow(pres)/prev)/(grid.res^2)
     message(paste("User-defined prevalence of", prev))
   }
   if (inherits(env.rast, "BasicRaster")) {
@@ -115,23 +109,22 @@ paSampling <- function (env.rast=NULL, pres = NULL, thres = 0.75, H = NULL, grid
     myPas <- floor(nrow(pres)/prev)
   }
   message("\nPerforming pseudo-absences sampling in the environmental space\n")
-  Res <- uniformSampling(sdf = fullDB.sp, grid.res = grid.res, 
-                         n.tr = n.tr, n.prev = myPas, sub.ts = sub.ts, n.ts = n.ts, 
+  Res <- uniformSampling(sdf = fullDB.sp, grid.res = grid.res,
+                         n.tr = n.tr, n.prev = myPas, sub.ts = FALSE,
                          plot_proc = plot_proc, verbose = verbose)
-  if (sub.ts) {
-    message("\n", paste(nrow(Res$obs.tr), "training pseudo-absences sampled in the environmental space, \n and", 
-                        nrow(Res$obs.ts), "testing pseudo-absences sampled in the environmental space.", 
-                        sep = " "), "\n")
-    message("\n", paste("Estimated final prevalence of", 
-                        round(nrow(pres)/nrow(Res$obs.tr), 2), "instead of", 
-                        prev), "\n")
-  }
-  else {
-    message("\n", paste(nrow(Res), "training pseudo-absences sampled in the environmental space", 
-                        sep = " "), "\n")
-    message("\n", paste("Estimated final prevalence of", 
-                        round(nrow(pres)/nrow(Res), 2), "instead of", prev), 
-            "\n")
-  }
-  return(Res)
+  message("\n", paste(nrow(Res), "pseudo-absences sampled in the environmental space",
+                      sep = " "), "\n")
+  message("\n", paste("Estimated final prevalence of",
+                      round(nrow(pres)/nrow(Res), 2), "instead of", prev), "\n")
+
+  # Repackage to the unified return style: a single sf with GEOGRAPHIC point geometry
+  # (CRS 4326) and the PC scores + environmental layers as attribute columns. The
+  # selected cells (rows) are unchanged; the geographic x/y and PC1/PC2 are re-keyed
+  # from `dt` by the cell id `myID`, which is robust regardless of which space the
+  # intermediate `Res` geometry holds.
+  res_df  <- sf::st_drop_geometry(Res)
+  res_df  <- res_df[, setdiff(names(res_df), c("x", "y", "PC1", "PC2")), drop = FALSE]
+  coords  <- dt[match(res_df$myID, dt$myID), c("x", "y", "PC1", "PC2")]
+  out <- sf::st_as_sf(cbind(res_df, coords), coords = c("x", "y"), crs = 4326)
+  return(out)
 }

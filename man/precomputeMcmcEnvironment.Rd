@@ -5,16 +5,17 @@
 \title{precomputeMcmcEnvironment}
 \usage{
 precomputeMcmcEnvironment(
-  env.data.raster = NULL,
+  env.rast = NULL,
   dimensions = c("PC1", "PC2"),
   seed.number = 42,
   precomputed.pca = NULL,
   plot_proc = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{
-\item{env.data.raster}{Terra raster containing the environment.}
+\item{env.rast}{Terra raster containing the environment.}
 
 \item{dimensions}{Character vector of the PC dimensions to retain (e.g.
 \code{c("PC1", "PC2")}). Must match the \code{dimensions} later passed to
@@ -30,6 +31,8 @@ element) to reuse instead of recomputing the PCA.}
 \item{plot_proc}{If TRUE, \code{mclust} draws its fit diagnostics.}
 
 \item{verbose}{If TRUE, prints progress.}
+
+\item{...}{reserved; the deprecated \code{env.data.raster} name (use \code{env.rast}) or any unknown argument raises an informative error.}
 }
 \value{
 A list (S3 class \code{mcmc_environment}) with elements \code{pcs_packed},

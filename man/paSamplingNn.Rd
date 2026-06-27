@@ -11,8 +11,6 @@ paSamplingNn(
   H = NULL,
   grid.res = 10,
   n.tr = 5,
-  sub.ts = FALSE,
-  n.ts = 5,
   prev = NULL,
   plot_proc = FALSE,
   verbose = FALSE,
@@ -22,7 +20,8 @@ paSamplingNn(
   nn.based.presence.exclusion = TRUE,
   data.based.distance.threshold = TRUE,
   n.candidates = NULL,
-  dim.correction = "voronoi"
+  dim.correction = "voronoi",
+  ...
 )
 }
 \arguments{
@@ -38,11 +37,7 @@ paSamplingNn(
 
 \item{n.tr}{(integer) number of pseudo-absences for the training dataset to sample in each cell of the sampling grid}
 
-\item{sub.ts}{(logical) sample the validation pseudo-absences}
-
-\item{n.ts}{(integer; optional) number of pseudo-absences for the testing dataset to sample in each cell of the sampling grid. sub.ts argument must be TRUE.}
-
-\item{prev}{(double) prevalence value to be specified instead of n.tr and n.ts}
+\item{prev}{(double) prevalence value to be specified instead of n.tr}
 
 \item{plot_proc}{(logical) plot progress of the sampling, default FALSE}
 
@@ -61,9 +56,11 @@ paSamplingNn(
 \item{n.candidates}{(integer; optional) number of raw uniform proposals drawn per batch over the environmental bounding box. Defaults to \code{grid.res^2 * n.tr} (the legacy two-dimensional budget). Because the realized environment fills an exponentially smaller share of its bounding box as the number of \code{dimensions} grows, high-dimensional runs need a larger value (or a larger \code{n.tr}); the function draws additional batches up to a cap when \code{n.samples} is requested and warns if it cannot reach it.}
 
 \item{dim.correction}{Dimension correction for the support-membership distance threshold, forwarded to \code{\link{optimalDistanceThresholdNn}}. One of \code{"voronoi"} (default), \code{"simplex"}, \code{"none"}, or a positive numeric multiplier. All equal 1 at two dimensions, so two-dimensional results are unchanged.}
+
+\item{...}{reserved; passing a parameter that belongs to another pseudo-absence sampler raises an informative error pointing to the analogous parameter.}
 }
 \value{
-An sf object with the coordinates of the pseudo-absences both in the geographical and environmental space.
+An sf object: one row per pseudo-absence, with geographic (x, y) point geometry (CRS EPSG:4326) and the environmental-space PC scores (\code{PC1}..\code{PCk}) plus the environmental-layer values as attribute columns.
 }
 \description{
 \code{paSampling} performs a two-step procedure for uniformly sampling pseudo-absences within the environmental space.

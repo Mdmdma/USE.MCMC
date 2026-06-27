@@ -123,3 +123,88 @@ stop_config <- function(...) {
     list(message = paste0(...), call = NULL)
   ))
 }
+
+# Registry of method-specific pseudo-absence-sampler parameters, used by
+# check_cross_sampler_args() to turn "argument passed to the wrong sampler" into
+# actionable guidance. Keyed by parameter name; each entry has $owners (the samplers
+# for which the parameter is valid) and $analog (named by each OTHER sampler -> the
+# one-line instruction shown when the parameter reaches that sampler). The shared
+# arguments env.rast/pres/plot_proc/verbose are real formals of every sampler and so
+# never reach `...`; they are intentionally absent here.
+.sampler_arg_registry <- local({
+  reg <- list()
+  add <- function(params, owners, analog) {
+    for (p in params) reg[[p]] <<- list(owners = owners, analog = analog)
+  }
+  add(c("thres", "H", "grid.res", "n.tr", "prev"),
+      owners = c("paSampling", "paSamplingNn"),
+      analog = c(paSamplingMcmc = paste0(
+        "paSamplingMcmc() has no sampling grid; size the output with 'n.samples'/",
+        "'chain.length' and tune presence exclusion with 'species.cutoff.threshold'.")))
+  add(c("dimensions", "precomputed.pca", "n.samples"),
+      owners = c("paSamplingNn", "paSamplingMcmc"),
+      analog = c(paSampling = paste0(
+        "paSampling() is 2-D only and sizes output per grid cell; use 'grid.res'/'n.tr'/",
+        "'prev' (and switch to paSamplingNn()/paSamplingMcmc() for >2 dimensions).")))
+  add(c("nn.based.presence.exclusion", "data.based.distance.threshold",
+        "n.candidates", "dim.correction"),
+      owners = "paSamplingNn",
+      analog = c(
+        paSampling = paste0(
+          "paSampling() uses a KDE + convex-hull filter on a 2-D grid; tune it with ",
+          "'thres'/'H'/'grid.res'."),
+        paSamplingMcmc = paste0(
+          "paSamplingMcmc() samples with a Markov chain; tune exclusion with ",
+          "'species.cutoff.threshold' and coverage with 'chain.length'/'n.samples'.")))
+  add(c("chain.length", "burnIn", "covariance.correction", "seed.number", "num.chains",
+        "num.cores", "engine", "precomputed.env", "n.neighbors.for.statistics",
+        "low.end.of.inclueded.points", "high.end.of.included.points",
+        "environmental.cutof.percentile"),
+      owners = "paSamplingMcmc",
+      analog = c(
+        paSampling = paste0(
+          "paSampling() has no Markov chain; control sampling with 'thres'/'grid.res'/'n.tr'."),
+        paSamplingNn = paste0(
+          "paSamplingNn() has no Markov chain; control coverage with 'n.candidates'/'n.tr' ",
+          "and exclusion with 'thres'/'dim.correction'.")))
+  add("species.cutoff.threshold",
+      owners = "paSamplingMcmc",
+      analog = c(
+        paSampling   = "the paSampling() analog is 'thres' (KDE presence-exclusion quantile).",
+        paSamplingNn = "the paSamplingNn() analog is 'thres' (presence-exclusion quantile)."))
+  reg
+})
+
+#' Reject (or guide) arguments passed to the wrong pseudo-absence sampler
+#'
+#' Each sampler captures unmatched arguments via \code{...} and calls this helper as its
+#' first step, so that passing another sampler's parameter yields actionable guidance
+#' instead of R's opaque "unused argument" error. The deprecated \code{env.data.raster}
+#' name maps to \code{env.rast}; a name belonging to a different sampler reports the
+#' analogous parameter; a name in neither the registry nor the formals (a typo) is
+#' rejected outright. Errors use \code{stop_config()} so wrappers that \code{tryCatch}
+#' the samplers re-raise them loudly instead of silently falling back.
+#' @param dots List of the \code{...} arguments captured by the sampler.
+#' @param this.sampler character(1): the sampler that was called.
+#' @keywords internal
+check_cross_sampler_args <- function(dots, this.sampler) {
+  nms <- names(dots)
+  if (is.null(nms) || !length(nms)) return(invisible(NULL))
+  for (nm in nms) {
+    if (!nzchar(nm)) {
+      stop_config("unexpected unnamed argument passed to ", this.sampler, "().")
+    }
+    if (identical(nm, "env.data.raster")) {
+      stop_config("'env.data.raster' has been renamed to 'env.rast'. Pass env.rast = ... instead.")
+    }
+    entry <- .sampler_arg_registry[[nm]]
+    if (is.null(entry)) {
+      stop_config("unknown argument '", nm, "' passed to ", this.sampler, "().")
+    }
+    if (!this.sampler %in% entry$owners) {
+      stop_config("'", nm, "' is a ", paste(entry$owners, collapse = "/"),
+                  "() parameter, not ", this.sampler, "(). ", entry$analog[[this.sampler]])
+    }
+  }
+  invisible(NULL)
+}
