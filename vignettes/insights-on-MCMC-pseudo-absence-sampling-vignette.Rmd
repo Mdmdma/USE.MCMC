@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   ## Paper figures are vector PDFs by default (see the publication-figures skill).
-  ## cairo_pdf embeds glyphs/lines as vectors; the gif chunks render via gifski +
+  ## cairo_pdf embeds glyphs/lines as vectors; the gif chunks render via magick +
   ## anim_save and are unaffected by this device. Override per-chunk
   ## (dev = "png", dpi = 600) only if a raster output is genuinely required.
   dev = "cairo_pdf"
@@ -105,7 +105,7 @@ a.example.chain <- p.example.chain +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.example.chain <- gganimate::animate(a.example.chain, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 4)
+gif.example.chain <- gganimate::animate(a.example.chain, renderer = magick_renderer(), width = 700, height = 600, fps = 10, duration = 4)
 anim_save("gif_example_chain.gif", gif.example.chain)
 ```
 ```{r show-gif-example-chain, echo=FALSE, eval=file.exists("gif_example_chain.gif")}
@@ -150,7 +150,7 @@ a.example.chain.gaussian <- p.example.chain.gaussian +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 6)
+gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = magick_renderer(), width = 700, height = 600, fps = 10, duration = 6)
 anim_save("gif_example_chain_gaussian.gif", gif.example.chain.gaussian)
 ```
 
@@ -219,7 +219,7 @@ a.example.chain.gaussian <- p.example.chain.gaussian +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = gifski_renderer(), width = 700, height = 600, fps = 10, duration = 6)
+gif.example.chain.gaussian <- animate(a.example.chain.gaussian, renderer = magick_renderer(), width = 700, height = 600, fps = 10, duration = 6)
 anim_save("gif_example_chain_gaussian_long.gif", gif.example.chain.gaussian)
 ```
 ```{r show-gif-gaussian-long, echo=FALSE, eval=file.exists("gif_example_chain_gaussian_long.gif")}
@@ -435,7 +435,7 @@ a.chain.naive.density <- p.chain.naive.density +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.chain.naive.density <- animate(a.chain.naive.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
+gif.chain.naive.density <- animate(a.chain.naive.density, renderer = magick_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.naive.density.gif", gif.chain.naive.density)
 ```
 ```{r show-gif-naive-density, echo=FALSE, eval=file.exists("chain.naive.density.gif")}
@@ -621,7 +621,7 @@ a.chain.ps.density <- p.chain.ps.density +
   exit_shrink() +
   shadow_trail(alpha = 0.3)
 
-gif.chain.ps.density <- animate(a.chain.ps.density, renderer = gifski_renderer(), width = 700, height = 400, fps = 10, duration = 10)
+gif.chain.ps.density <- animate(a.chain.ps.density, renderer = magick_renderer(), width = 700, height = 400, fps = 10, duration = 10)
 anim_save("chain.ps.density.gif", gif.chain.ps.density)
 ```
 ```{r show-gif-ps-density, echo=FALSE, eval=file.exists("chain.ps.density.gif")}
