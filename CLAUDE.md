@@ -26,6 +26,17 @@ Custom user closures lack the attribute and stay on the R reference loop. `engin
 
 `R/mcmcSampling.R` defines a top-level constant `MIN_COV_CORRECTION <- 1e-10`. It must stay **above** the `mcmcSampling()` roxygen block: if it lands between the `#' @export` tag and the function definition, roxygen2 binds the export to the constant and silently drops `mcmcSampling` from `NAMESPACE`. Keep the constant above the `#'` block (with its own one-line comment) when editing this file.
 
+## CRAN-readiness (keep it submittable)
+
+This package targets CRAN; keep `R CMD check --as-cran` clean (no ERROR/WARNING; only the unavoidable "New submission" NOTE). Before committing anything that touches `DESCRIPTION`, `R/`, `man/`, `src/`, or `vignettes/`, preserve these invariants:
+
+- **License is `GPL (>= 2)`** — the package vendors GPL code from the upstream USE package; never relicense (e.g. to Apache).
+- **Tarball stays small (< 5 MB).** Never commit data/download caches (e.g. a `geodata`/WorldClim cache under `vignettes/`) or rendered `vignettes/*_files/` dirs — both are `.Rbuildignore`d / `.gitignore`d; don't un-ignore them. The animation GIFs under `vignettes/` are pkgdown-only and `.Rbuildignore`d.
+- **No build-time internet in vignettes.** Use the bundled `Worldclim_tmp`; gate any Suggests / data-package use behind `requireNamespace(...)` (see the `rnaturalearthdata` guard in the nearest-neighbor vignette, and `geodata` chunks set `eval = FALSE`).
+- **Docs/deps:** every exported function needs `@return` + documented arguments (incl. `...`); declare every package used anywhere — code, examples, **and vignettes** — in `Imports`/`Suggests`; keep R sources ASCII; `man/`+`NAMESPACE` are roxygen-generated, so edit the `#'` source and re-run `devtools::document()`, never the `.Rd`/`NAMESPACE` by hand.
+- **Parallelism:** respect `_R_CHECK_LIMIT_CORES_` — never hardcode `parallel::detectCores()`; cap at 2 under check (see `plotDensityLines.R`).
+- **Verify before committing:** `sbatch ../GaussNiche/sbatch/submit_cran_full_check.sh` (builds vignettes via the ETH proxy + runs `--as-cran`). The NOTEs/WARNING it leaves are environment-only — missing `qpdf`, proxy-blocked URL/ORCID checks (`CONNECT tunnel failed, 403`), "unable to verify current time", and the container's compile flags — all clear on CRAN.
+
 ## Sister repositories
 
 Two repos at `../` depend on or describe this package and are part of the same project. Treat them as in-scope when relevant: read freely, and edit them as part of a task when a change here has clear downstream impact. Mention what you touched.
