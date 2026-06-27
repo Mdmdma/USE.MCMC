@@ -16,5 +16,5 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom magrittr %>%
 #' @importFrom graphics abline plot
-#' @importFrom utils chkDots setTxtProgressBar txtProgressBar
+#' @importFrom utils setTxtProgressBar txtProgressBar
 "_PACKAGE"
