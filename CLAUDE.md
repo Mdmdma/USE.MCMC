@@ -28,6 +28,8 @@ Custom user closures lack the attribute and stay on the R reference loop. `engin
 
 ## CRAN-readiness (keep it submittable)
 
+**Not submitting yet.** We are keeping the package CRAN-*ready* but are **NOT** submitting to CRAN at this time. Do not run `devtools::release()` / `devtools::submit_cran()`, do not upload a tarball to the CRAN incoming queue, and do not bump the version "for release" — actual submission is a future, human-initiated decision. Your job is only to keep the invariants below green so that submission is a one-step action when the maintainer decides to.
+
 This package targets CRAN; keep `R CMD check --as-cran` clean (no ERROR/WARNING; only the unavoidable "New submission" NOTE). Before committing anything that touches `DESCRIPTION`, `R/`, `man/`, `src/`, or `vignettes/`, preserve these invariants:
 
 - **License is `GPL (>= 2)`** — the package vendors GPL code from the upstream USE package; never relicense (e.g. to Apache).
